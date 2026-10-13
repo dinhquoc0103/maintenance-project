@@ -1,0 +1,1235 @@
+<div class="page-container" *ngIf="project">
+  <!-- Master Header -->
+  <div class="detail-header-card">
+    <div class="header-top">
+      <div class="breadcrumb">
+        <a routerLink="/projects">Danh sách dự án</a>
+        <i class="bi bi-chevron-right"></i>
+        <span>{{ project.code }}</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-secondary btn-sm" routerLink="/projects">
+          <i class="bi bi-arrow-left"></i>
+          <span>Quay lại</span>
+        </button>
+        <div class="status-dropdown-wrap">
+          <label class="status-label">Trạng thái vòng đời:</label>
+          <select
+            class="form-select form-select-sm status-select"
+            [ngModel]="project.status"
+            (ngModelChange)="updateProjectStatus($event)"
+          >
+            <option value="Khởi tạo">Khởi tạo</option>
+            <option value="Chuẩn bị">Chuẩn bị</option>
+            <option value="Đang thi công">Đang thi công</option>
+            <option value="Nghiệm thu">Nghiệm thu</option>
+            <option value="Hoàn thành">Hoàn thành</option>
+            <option value="Hủy">Hủy</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-main">
+      <div class="title-area">
+        <div class="code-and-type">
+          <span class="project-code">{{ project.code }}</span>
+          <span class="badge badge-primary">{{ project.type }}</span>
+          <span class="route-badge"><i class="bi bi-geo-alt-fill"></i> {{ project.routeName }}</span>
+        </div>
+        <h1 class="project-title">{{ project.name }}</h1>
+        <p class="project-desc">{{ project.description }}</p>
+      </div>
+
+      <div class="header-kpi">
+        <div class="progress-box">
+          <div class="progress-label">
+            <span>Tiến độ hoàn thành khối lượng</span>
+            <strong>{{ project.progressPercent }}%</strong>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" [style.width.%]="project.progressPercent"></div>
+          </div>
+          <div class="progress-sub">
+            <span>{{ project.completedAssetsCount }} / {{ project.totalAssetsCount }} tài sản đã xong</span>
+          </div>
+        </div>
+
+        <div class="kpi-mini-grid">
+          <div class="kpi-mini">
+            <span class="label">Tổng dự toán:</span>
+            <span class="val">{{ formatMoney(project.budget) }} đ</span>
+          </div>
+          <div class="kpi-mini">
+            <span class="label">Nhà thầu:</span>
+            <span class="val truncate">{{ project.contractor }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 Master Tabs Navigation -->
+    <div class="tabs-nav-bar">
+      <button
+        class="tab-nav-btn"
+        [class.active]="activeTab === 'info'"
+        (click)="setActiveTab('info')"
+      >
+        <i class="bi bi-info-circle-fill"></i>
+        <span>1. Thông tin chung</span>
+      </button>
+
+      <button
+        class="tab-nav-btn"
+        [class.active]="activeTab === 'docs'"
+        (click)="setActiveTab('docs')"
+      >
+        <i class="bi bi-folder-fill"></i>
+        <span>2. Hồ sơ dự án</span>
+        <span class="tab-badge">{{ projectService.getDocuments(projectId).length }}</span>
+      </button>
+
+      <button
+        class="tab-nav-btn"
+        [class.active]="activeTab === 'assets'"
+        (click)="setActiveTab('assets')"
+      >
+        <i class="bi bi-geo-alt-fill"></i>
+        <span>3. Quản lý tài sản (Mapping)</span>
+        <span class="tab-badge primary">{{ projectAssets.length }}</span>
+      </button>
+
+      <button
+        class="tab-nav-btn"
+        [class.active]="activeTab === 'tasks'"
+        (click)="setActiveTab('tasks')"
+      >
+        <i class="bi bi-list-task"></i>
+        <span>4. Quản lý công việc</span>
+        <span class="tab-badge">{{ projectTasks.length }}</span>
+      </button>
+
+      <button
+        class="tab-nav-btn"
+        [class.active]="activeTab === 'reports'"
+        (click)="setActiveTab('reports')"
+      >
+        <i class="bi bi-cash-coin"></i>
+        <span>5. Báo cáo & Thanh toán</span>
+        <span class="tab-badge warning">{{ projectReports.length }}</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- TAB 1: THÔNG TIN CHUNG -->
+  <div *ngIf="activeTab === 'info'" class="tab-content-panel">
+    <div class="general-grid">
+      <div class="app-card flex-2">
+        <h3 class="card-title"><i class="bi bi-building-gear"></i> Thông Tin Chi Tiết Dự Án</h3>
+        <div class="info-list">
+          <div class="info-item">
+            <span class="label">Mã dự án:</span>
+            <span class="value font-semibold">{{ project.code }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Chủ đầu tư / Ban QLDA:</span>
+            <span class="value">{{ project.managementUnit }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Nhà thầu thực hiện:</span>
+            <span class="value font-semibold text-primary">{{ project.contractor }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Tuyến đường thi công:</span>
+            <span class="value">{{ project.routeName }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Thời gian thực hiện:</span>
+            <span class="value">{{ project.startDate | date:'dd/MM/yyyy' }} — {{ project.endDate | date:'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Nguồn vốn:</span>
+            <span class="value">Vốn sự nghiệp kinh tế đô thị năm 2026</span>
+          </div>
+          <div class="info-item">
+            <span class="label">Kinh phí dự toán phê duyệt:</span>
+            <span class="value text-danger font-bold">{{ formatMoney(project.budget) }} VNĐ</span>
+          </div>
+        </div>
+
+        <div class="project-milestones mt-4">
+          <h4 class="sub-title">Vòng đời thực hiện dự án</h4>
+          <div class="lifecycle-steps">
+            <div class="step-item" [class.done]="true">
+              <div class="step-circle"><i class="bi bi-check"></i></div>
+              <div class="step-title">Khởi tạo</div>
+              <div class="step-time">Tháng 2/2026</div>
+            </div>
+            <div class="step-line" [class.done]="true"></div>
+            <div class="step-item" [class.done]="true">
+              <div class="step-circle"><i class="bi bi-check"></i></div>
+              <div class="step-title">Chuẩn bị & Giao thầu</div>
+              <div class="step-time">Tháng 2/2026</div>
+            </div>
+            <div class="step-line" [class.done]="project.status === 'Đang thi công' || project.status === 'Nghiệm thu' || project.status === 'Hoàn thành'"></div>
+            <div class="step-item" [class.active]="project.status === 'Đang thi công'" [class.done]="project.status === 'Nghiệm thu' || project.status === 'Hoàn thành'">
+              <div class="step-circle">3</div>
+              <div class="step-title">Đang thi công</div>
+              <div class="step-time">Tháng 3 - 6/2026</div>
+            </div>
+            <div class="step-line" [class.done]="project.status === 'Nghiệm thu' || project.status === 'Hoàn thành'"></div>
+            <div class="step-item" [class.active]="project.status === 'Nghiệm thu'" [class.done]="project.status === 'Hoàn thành'">
+              <div class="step-circle">4</div>
+              <div class="step-title">Nghiệm thu</div>
+              <div class="step-time">Q2/2026</div>
+            </div>
+            <div class="step-line" [class.done]="project.status === 'Hoàn thành'"></div>
+            <div class="step-item" [class.done]="project.status === 'Hoàn thành'">
+              <div class="step-circle">5</div>
+              <div class="step-title">Quyết toán / Xong</div>
+              <div class="step-time">Hoàn tất</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-card flex-1">
+        <h3 class="card-title"><i class="bi bi-pie-chart-fill"></i> Phân Bổ Tài Sản Theo Lớp Dữ Liệu</h3>
+        <div class="layer-distribution-list">
+          <div *ngFor="let layer of projectService.layers()" class="layer-dist-item">
+            <div class="layer-icon-badge" [style.background-color]="layer.color">
+              <i [class]="'bi ' + layer.icon"></i>
+            </div>
+            <div class="layer-dist-info">
+              <div class="name">{{ layer.name }}</div>
+              <div class="desc">{{ layer.description }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="quick-nav-actions mt-4">
+          <button class="btn btn-outline-primary w-100 mb-2" (click)="setActiveTab('assets')">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Xem & Gán thêm tài sản vào dự án</span>
+          </button>
+          <button class="btn btn-outline-primary w-100" (click)="setActiveTab('reports')">
+            <i class="bi bi-clipboard2-data"></i>
+            <span>Xem hồ sơ Nghiệm thu thanh toán</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2: QUẢN LÝ HỒ SƠ DỰ ÁN (DOCUMENT MANAGEMENT) -->
+  <div *ngIf="activeTab === 'docs'" class="tab-content-panel">
+    <div class="app-card">
+      <div class="doc-header">
+        <div>
+          <h3 class="card-title"><i class="bi bi-files"></i> Quản Lý Hồ Sơ Dự Án</h3>
+          <p class="card-subtitle">Hồ sơ được phân loại thành 3 nhóm rõ ràng: Quyết định, Kế hoạch vốn và Giấy tờ liên quan</p>
+        </div>
+        <button class="btn btn-primary" (click)="openUploadModal()">
+          <i class="bi bi-cloud-arrow-up-fill"></i>
+          <span>Tải Lên Hồ Sơ Mới</span>
+        </button>
+      </div>
+
+      <!-- 3 Sub-tabs theo nghiệp vụ -->
+      <div class="sub-tabs-bar">
+        <button
+          class="sub-tab-btn"
+          [class.active]="activeDocCategory === 'DECISION'"
+          (click)="activeDocCategory = 'DECISION'"
+        >
+          <i class="bi bi-journal-bookmark-fill"></i>
+          <span>1. Quyết định (Phê duyệt / Chỉ định thầu)</span>
+          <span class="sub-tab-count">({{ projectService.getDocuments(projectId, 'DECISION').length }})</span>
+        </button>
+
+        <button
+          class="sub-tab-btn"
+          [class.active]="activeDocCategory === 'CAPITAL_PLAN'"
+          (click)="activeDocCategory = 'CAPITAL_PLAN'"
+        >
+          <i class="bi bi-cash-stack"></i>
+          <span>2. Kế hoạch vốn (Phân bổ / Bảo lãnh)</span>
+          <span class="sub-tab-count">({{ projectService.getDocuments(projectId, 'CAPITAL_PLAN').length }})</span>
+        </button>
+
+        <button
+          class="sub-tab-btn"
+          [class.active]="activeDocCategory === 'RELATED_DOC'"
+          (click)="activeDocCategory = 'RELATED_DOC'"
+        >
+          <i class="bi bi-file-earmark-text-fill"></i>
+          <span>3. Giấy tờ liên quan (Khảo sát / Bản vẽ)</span>
+          <span class="sub-tab-count">({{ projectService.getDocuments(projectId, 'RELATED_DOC').length }})</span>
+        </button>
+      </div>
+
+      <!-- Document Data Table -->
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 40px;">#</th>
+              <th>Tên Hồ Sơ / Tài Liệu</th>
+              <th style="width: 130px;">Tên File & Loại</th>
+              <th style="width: 100px;">Dung Lượng</th>
+              <th style="width: 120px;">Ngày Tải</th>
+              <th style="width: 180px;">Người Tải</th>
+              <th>Ghi Chú</th>
+              <th style="width: 150px; text-align: center;">Thao Tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let doc of filteredDocuments; let idx = index">
+              <td>{{ idx + 1 }}</td>
+              <td>
+                <div class="doc-name-cell">
+                  <i class="bi bi-file-earmark-pdf-fill doc-icon" *ngIf="doc.fileType === 'PDF'"></i>
+                  <i class="bi bi-file-earmark-excel-fill doc-icon text-success" *ngIf="doc.fileType === 'EXCEL'"></i>
+                  <i class="bi bi-file-earmark-code-fill doc-icon text-indigo" *ngIf="doc.fileType === 'CAD'"></i>
+                  <span class="doc-title">{{ doc.name }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="file-code">{{ doc.fileName }}</span>
+              </td>
+              <td>{{ doc.fileSize }}</td>
+              <td>{{ doc.uploadDate | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <span class="uploader-name">{{ doc.uploadedBy }}</span>
+              </td>
+              <td>
+                <span class="doc-notes">{{ doc.notes || '—' }}</span>
+              </td>
+              <td style="text-align: center;">
+                <div class="doc-actions">
+                  <button class="btn btn-sm btn-ghost" title="Xem trực tiếp" (click)="previewDoc(doc)">
+                    <i class="bi bi-eye"></i>
+                  </button>
+                  <button class="btn btn-sm btn-ghost" title="Tải về máy" (click)="downloadDoc(doc)">
+                    <i class="bi bi-download"></i>
+                  </button>
+                  <button class="btn btn-sm btn-ghost text-danger" title="Xóa tài liệu" (click)="deleteDoc(doc)">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="filteredDocuments.length === 0">
+              <td colspan="8" class="empty-state">
+                <i class="bi bi-folder-x"></i>
+                <p>Chưa có tài liệu nào thuộc nhóm này</p>
+                <button class="btn btn-sm btn-primary" (click)="openUploadModal(activeDocCategory)">Tải lên file đầu tiên</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 3: QUẢN LÝ TÀI SẢN (ASSET MAPPING) -->
+  <div *ngIf="activeTab === 'assets'" class="tab-content-panel">
+    <div class="assets-top-card app-card mb-3">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="card-title"><i class="bi bi-pin-map-fill"></i> Quản Lý Tài Sản Đã Gán Vào Dự Án</h3>
+          <p class="card-subtitle">Ánh xạ không gian (Map) các đối tượng từ kho dữ liệu tổng. Cập nhật trạng thái bảo trì độc lập cho từng đối tượng.</p>
+        </div>
+        <button class="btn btn-primary" (click)="openAddAssetModal()">
+          <i class="bi bi-plus-circle-fill"></i>
+          <span>Thêm Tài Sản Vào Dự Án (Map từ Master)</span>
+        </button>
+      </div>
+
+      <!-- Filters & Stats Bar -->
+      <div class="asset-filter-bar">
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Tìm theo mã tài sản, tên cột đèn, cây xanh, vị trí..."
+            [(ngModel)]="assetSearchKeyword"
+          />
+        </div>
+
+        <div class="filter-item">
+          <label>Lớp dữ liệu:</label>
+          <select class="form-select" [(ngModel)]="assetFilterLayer">
+            <option value="ALL">Tất cả lớp dữ liệu</option>
+            <option *ngFor="let layer of projectService.layers()" [value]="layer.id">{{ layer.name }}</option>
+          </select>
+        </div>
+
+        <div class="filter-item">
+          <label>Trạng thái bảo trì:</label>
+          <select class="form-select" [(ngModel)]="assetFilterStatus">
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="PENDING">Chờ xử lý</option>
+            <option value="IN_PROGRESS">Đang sửa</option>
+            <option value="COMPLETED">Đã xong</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Layout: GIS Mini Map + Data Table with INLINE EDITING -->
+    <div class="asset-content-split">
+      <!-- Mini Map preview -->
+      <div class="app-card map-side-card">
+        <div class="map-card-header">
+          <span class="title"><i class="bi bi-map"></i> Bản đồ GIS Tài sản Dự án</span>
+          <span class="badge badge-primary">{{ projectAssets.length }} điểm</span>
+        </div>
+        <div #assetMiniMapContainer class="mini-map-box"></div>
+        <div class="map-legend-row">
+          <span class="legend-item"><span class="dot lighting"></span> Chiếu sáng</span>
+          <span class="legend-item"><span class="dot greenery"></span> Cây xanh</span>
+          <span class="legend-item"><span class="dot drainage"></span> Thoát nước</span>
+          <span class="legend-item"><span class="dot roadway"></span> Đường bộ</span>
+        </div>
+      </div>
+
+      <!-- Asset Data Table with INLINE EDITING STATUS -->
+      <div class="app-card table-side-card">
+        <div class="custom-table-container">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;">Mã TS</th>
+                <th>Tên Tài Sản & Vị Trí</th>
+                <th style="width: 150px;">Lớp Dữ Liệu</th>
+                <th style="width: 160px;">Trạng Thái Bảo Trì (Inline)</th>
+                <th style="width: 150px;">Công Việc Phân Công</th>
+                <th style="width: 60px; text-align: center;">Gỡ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let asset of projectAssets">
+                <td>
+                  <span class="asset-code-tag">{{ asset.code }}</span>
+                </td>
+                <td>
+                  <div class="asset-title-block">
+                    <span class="asset-name">{{ asset.name }}</span>
+                    <span class="asset-addr"><i class="bi bi-geo-alt"></i> {{ asset.address }}</span>
+                  </div>
+                </td>
+                <td>
+                  <span class="badge" [ngClass]="getLayerBadgeClass(asset.layerId)">
+                    {{ asset.layerName }}
+                  </span>
+                </td>
+                <td>
+                  <!-- INLINE EDITING DROPDOWN FOR ASSET STATUS -->
+                  <div class="inline-status-select-wrap">
+                    <select
+                      class="form-select form-select-sm inline-select"
+                      [ngClass]="'status-' + asset.status.toLowerCase()"
+                      [ngModel]="asset.status"
+                      (ngModelChange)="onInlineAssetStatusChange(asset, $event)"
+                    >
+                      <option value="PENDING">Chờ xử lý</option>
+                      <option value="IN_PROGRESS">Đang sửa</option>
+                      <option value="COMPLETED">Đã xong</option>
+                    </select>
+                  </div>
+                </td>
+                <td>
+                  <span class="task-assigned-tag" *ngIf="asset.assignedTaskTitle">
+                    <i class="bi bi-check2-circle text-success"></i> {{ asset.assignedTaskTitle }}
+                  </span>
+                  <span class="text-muted" *ngIf="!asset.assignedTaskTitle">Chưa giao task</span>
+                </td>
+                <td style="text-align: center;">
+                  <button class="btn btn-sm btn-ghost text-danger" title="Gỡ khỏi dự án" (click)="removeAsset(asset)">
+                    <i class="bi bi-x-circle"></i>
+                  </button>
+                </td>
+              </tr>
+
+              <tr *ngIf="projectAssets.length === 0">
+                <td colspan="6" class="empty-state">
+                  <i class="bi bi-geo"></i>
+                  <p>Dự án chưa có tài sản nào được gán từ Master Map</p>
+                  <button class="btn btn-primary btn-sm" (click)="openAddAssetModal()">Mở màn hình gán tài sản</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: QUẢN LÝ CÔNG VIỆC (TASK MANAGEMENT) -->
+  <div *ngIf="activeTab === 'tasks'" class="tab-content-panel">
+    <div class="app-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="card-title"><i class="bi bi-card-checklist"></i> Quản Lý Công Việc & Phân Công Thi Công</h3>
+          <p class="card-subtitle">Chẻ nhỏ dự án thành các đầu việc cụ thể, đính kèm danh sách tài sản định hướng tọa độ hiện trường.</p>
+        </div>
+        <div class="header-btns">
+          <button class="btn btn-primary" (click)="openCreateTaskModal()">
+            <i class="bi bi-plus-lg"></i>
+            <span>Tạo Công Việc Mới (Giao Việc)</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Task Table with INLINE STATUS DROPDOWN -->
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 100px;">Mã CV</th>
+              <th>Tiêu Đề Công Việc & Mô Tả</th>
+              <th style="width: 160px;">Đội / Tổ Phụ Trách</th>
+              <th style="width: 120px;">Số Tài Sản</th>
+              <th style="width: 150px;">Tiến Độ</th>
+              <th style="width: 160px;">Trạng Thái (Inline)</th>
+              <th style="width: 110px;">Hạn Chót</th>
+              <th style="width: 120px; text-align: center;">App Thợ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of projectTasks">
+              <td>
+                <span class="task-code-pill">{{ task.code }}</span>
+              </td>
+              <td>
+                <div class="task-main-cell">
+                  <div class="task-title-line">
+                    <span class="title">{{ task.title }}</span>
+                    <span class="badge" [class.badge-danger]="task.priority === 'URGENT'" [class.badge-warning]="task.priority === 'HIGH'" [class.badge-secondary]="task.priority === 'MEDIUM' || task.priority === 'LOW'">
+                      {{ task.priority }}
+                    </span>
+                  </div>
+                  <div class="task-desc">{{ task.description }}</div>
+                </div>
+              </td>
+              <td>
+                <div class="team-cell">
+                  <i class="bi bi-people-fill text-primary"></i>
+                  <span>{{ task.assignedTeam }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge badge-primary">{{ task.assetIds.length }} tài sản</span>
+                <div class="text-muted fs-xs" *ngIf="task.completedAssetIds.length > 0">
+                  ({{ task.completedAssetIds.length }} đã xong)
+                </div>
+              </td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" [style.width.%]="task.progress"></div>
+                  </div>
+                  <span class="percent-text">{{ task.progress }}%</span>
+                </div>
+              </td>
+              <td>
+                <!-- INLINE STATUS DROPDOWN FOR TASKS -->
+                <select
+                  class="form-select form-select-sm inline-select"
+                  [ngClass]="'status-' + task.status.toLowerCase()"
+                  [ngModel]="task.status"
+                  (ngModelChange)="onInlineTaskStatusChange(task, $event)"
+                >
+                  <option value="NOT_STARTED">Chưa bắt đầu</option>
+                  <option value="IN_PROGRESS">Đang thực hiện</option>
+                  <option value="PAUSED">Tạm dừng</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                </select>
+              </td>
+              <td>
+                <span class="date-text">{{ task.deadline | date:'dd/MM/yyyy' }}</span>
+              </td>
+              <td style="text-align: center;">
+                <button
+                  class="btn btn-sm btn-outline-primary"
+                  title="Mở màn hình thợ hiện trường cho task này"
+                  (click)="openMobileContractorForTask(task)"
+                >
+                  <i class="bi bi-phone"></i>
+                  <span>Mở App</span>
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="projectTasks.length === 0">
+              <td colspan="8" class="empty-state">
+                <i class="bi bi-clipboard-x"></i>
+                <p>Chưa có công việc nào được phân công trong dự án này</p>
+                <button class="btn btn-sm btn-primary" (click)="openCreateTaskModal()">Tạo công việc đầu tiên</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 5: BÁO CÁO & THANH TOÁN (REPORTING & PAYMENT) -->
+  <div *ngIf="activeTab === 'reports'" class="tab-content-panel">
+    <div class="app-card mb-3">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="card-title"><i class="bi bi-cash-stack"></i> Tổng Hợp Khối Lượng & Nghiệm Thu Thanh Toán</h3>
+          <p class="card-subtitle">Luồng giao tiếp 2 chiều: Nhà thầu báo cáo đòi tiền ➔ Cán bộ vận hành kiểm tra ➔ Cán bộ ban duyệt thanh toán.</p>
+        </div>
+        <div class="header-btns">
+          <!-- Section 5: Auto-fill report generation -->
+          <button class="btn btn-success" (click)="generateAutoReport()">
+            <i class="bi bi-magic"></i>
+            <span>Tạo Báo Cáo Nghiệm Thu Tự Động (Auto-fill)</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="app-card">
+      <h4 class="sub-title mb-3">Danh Sách Các Đợt Báo Cáo Nghiệm Thu & Đề Nghị Thanh Toán</h4>
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 120px;">Mã Báo Cáo</th>
+              <th>Tiêu Đề Đợt Nghiệm Thu</th>
+              <th style="width: 160px;">Đơn Vị Đề Nghị</th>
+              <th style="width: 100px;">Khối Lượng</th>
+              <th style="width: 150px;">Số Tiền Đề Nghị</th>
+              <th style="width: 150px;">Trạng Thái Duyệt</th>
+              <th style="width: 110px;">Ngày Tạo</th>
+              <th style="width: 180px; text-align: center;">Màn Hình Nghiệm Thu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rep of projectReports">
+              <td>
+                <span class="report-code-badge">{{ rep.code }}</span>
+              </td>
+              <td>
+                <div class="font-semibold">{{ rep.periodTitle }}</div>
+                <div class="fs-xs text-muted">Bao gồm {{ rep.totalCompletedTasks }} Task hoàn thành & {{ rep.totalCompletedAssets }} tài sản</div>
+              </td>
+              <td>{{ rep.contractor }}</td>
+              <td>
+                <span class="badge badge-primary">{{ rep.totalCompletedAssets }} tài sản</span>
+              </td>
+              <td>
+                <div class="budget-text text-danger">{{ formatMoney(rep.amountRequested) }} đ</div>
+                <div class="fs-xs text-success" *ngIf="rep.amountApproved">
+                  Đã duyệt: {{ formatMoney(rep.amountApproved) }} đ
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-warning]="rep.status === 'PENDING_INSPECTION'"
+                  [class.badge-success]="rep.status === 'APPROVED' || rep.status === 'PAID'"
+                  [class.badge-danger]="rep.status === 'REJECTED'"
+                >
+                  <i class="bi bi-clock-history" *ngIf="rep.status === 'PENDING_INSPECTION'"></i>
+                  <i class="bi bi-check-circle" *ngIf="rep.status === 'APPROVED'"></i>
+                  <i class="bi bi-cash" *ngIf="rep.status === 'PAID'"></i>
+                  <i class="bi bi-x-circle" *ngIf="rep.status === 'REJECTED'"></i>
+                  {{ rep.status === 'PENDING_INSPECTION' ? 'Chờ kiểm tra' : (rep.status === 'APPROVED' ? 'Đã duyệt' : (rep.status === 'PAID' ? 'Đã thanh toán' : 'Từ chối')) }}
+                </span>
+              </td>
+              <td>{{ rep.createdDate | date:'dd/MM/yyyy' }}</td>
+              <td style="text-align: center;">
+                <div class="btn-group-sm">
+                  <button
+                    class="btn btn-sm btn-primary"
+                    (click)="openSplitViewInspection(rep)"
+                    title="Mở màn hình nghiệm thu Split-view đối chiếu ảnh"
+                  >
+                    <i class="bi bi-layout-split"></i>
+                    <span>Nghiệm thu Split-view</span>
+                  </button>
+                  <button
+                    *ngIf="rep.status === 'APPROVED'"
+                    class="btn btn-sm btn-success"
+                    (click)="markPaid(rep)"
+                    title="Xác nhận giải ngân thanh toán"
+                  >
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Thanh toán</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="projectReports.length === 0">
+              <td colspan="8" class="empty-state">
+                <i class="bi bi-receipt"></i>
+                <p>Chưa có đợt báo cáo nghiệm thu nào</p>
+                <button class="btn btn-sm btn-success" (click)="generateAutoReport()">Tạo báo cáo tự động từ các task đã xong</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- MODAL: TẢI LÊN HỒ SƠ DỰ ÁN (TAB 2) -->
+  <div class="modal-backdrop" *ngIf="isUploadModalOpen" (click)="closeUploadModal()">
+    <div class="modal-content modal-md" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-upload text-primary"></i> Tải Lên Hồ Sơ Dự Án</h3>
+        <button class="close-btn" (click)="closeUploadModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="submitUploadDocument()">
+          <div class="form-group mb-3">
+            <label class="form-label required">Nhóm hồ sơ tài liệu (Theo quy định):</label>
+            <select class="form-select" [(ngModel)]="newDoc.category" name="category" required>
+              <option value="DECISION">1. Quyết định (Phê duyệt dự án, chỉ định thầu...)</option>
+              <option value="CAPITAL_PLAN">2. Kế hoạch vốn (Phân bổ ngân sách, bảo lãnh...)</option>
+              <option value="RELATED_DOC">3. Giấy tờ liên quan (Biên bản khảo sát, bản vẽ...)</option>
+            </select>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label required">Tên văn bản / Hồ sơ:</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="VD: Quyết định số 1284/QĐ-UBND phê duyệt thiết kế"
+              [(ngModel)]="newDoc.name"
+              name="name"
+              required
+            />
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label required">Chọn tập tin đính kèm:</label>
+            <input type="file" class="form-control" (change)="onFileSelected($event)" required />
+            <div class="fs-xs text-muted mt-1" *ngIf="newDoc.fileName">
+              Đã chọn file: <b>{{ newDoc.fileName }}</b>
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">Ghi chú trích yếu:</label>
+            <textarea
+              class="form-control"
+              rows="3"
+              placeholder="Nhập nội dung tóm tắt, người ký hoặc cơ quan phát hành..."
+              [(ngModel)]="newDoc.notes"
+              name="notes"
+            ></textarea>
+          </div>
+
+          <div class="modal-footer px-0 pb-0">
+            <button type="button" class="btn btn-secondary" (click)="closeUploadModal()">Hủy</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!newDoc.name">
+              <i class="bi bi-check-lg"></i>
+              <span>Lưu & Tải lên</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: XEM TRỰC TIẾP HỒ SƠ (TAB 2 PREVIEW) -->
+  <div class="modal-backdrop" *ngIf="isPreviewDocModalOpen && selectedPreviewDoc" (click)="closePreviewDoc()">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-file-earmark-text text-primary"></i> Xem Trực Tiếp: {{ selectedPreviewDoc.name }}</h3>
+        <button class="close-btn" (click)="closePreviewDoc()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="doc-preview-container">
+          <div class="doc-preview-meta">
+            <span><strong>Tập tin:</strong> {{ selectedPreviewDoc.fileName }}</span>
+            <span><strong>Dung lượng:</strong> {{ selectedPreviewDoc.fileSize }}</span>
+            <span><strong>Ngày tải:</strong> {{ selectedPreviewDoc.uploadDate }}</span>
+            <span><strong>Người tải:</strong> {{ selectedPreviewDoc.uploadedBy }}</span>
+          </div>
+          <div class="doc-preview-mock-sheet">
+            <div class="mock-header text-center">
+              <h4>CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM</h4>
+              <p>Độc lập - Tự do - Hạnh phúc</p>
+              <div class="divider-short"></div>
+              <h3 class="mt-4">{{ selectedPreviewDoc.name }}</h3>
+              <p class="text-muted">Dự án: {{ project.name }}</p>
+            </div>
+            <div class="mock-body mt-4">
+              <p><strong>Nội dung trích yếu:</strong> {{ selectedPreviewDoc.notes || 'Hồ sơ pháp lý đầy đủ theo quy định của Luật Xây dựng và Quy chuẩn kỹ thuật đô thị hiện hành.' }}</p>
+              <p class="mt-3">Văn bản này đã được số hóa và lưu trữ tại cơ sở dữ liệu GIS Hạ tầng Đô thị Thành phố.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closePreviewDoc()">Đóng</button>
+        <button class="btn btn-primary" (click)="downloadDoc(selectedPreviewDoc)"><i class="bi bi-download"></i> Tải Về</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL THÊM TÀI SẢN VÀO DỰ ÁN (TAB 3: CẬP NHẬT QUAN TRỌNG VỚI 3 THAO TÁC + DROPDOWN LAYER BẮT BUỘC) -->
+  <div class="modal-backdrop" *ngIf="isAddAssetModalOpen" (click)="closeAddAssetModal()">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-layers-half text-primary"></i> Thêm Tài Sản Không Gian Vào Dự Án Duy Tu (Master Map)</h3>
+        <button class="close-btn" (click)="closeAddAssetModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <!-- BƯỚC BẮT BUỘC: CHỌN LỚP DỮ LIỆU TRƯỚC -->
+        <div class="mandatory-layer-box">
+          <div class="box-badge">BƯỚC BẮT BUỘC</div>
+          <div class="form-group mb-0">
+            <label class="form-label font-bold text-primary">
+              <i class="bi bi-filter-circle"></i> BẮT BUỘC PHẢI CHỌN LỚP DỮ LIỆU (LAYER) TRƯỚC:
+            </label>
+            <select
+              class="form-select layer-highlight-select"
+              [(ngModel)]="modalSelectedLayerId"
+              (ngModelChange)="onModalLayerChange()"
+            >
+              <option *ngFor="let layer of projectService.layers()" [value]="layer.id">
+                {{ layer.name }} (Mã: {{ layer.code }} - Tổng: {{ layer.totalCount }} tài sản)
+              </option>
+            </select>
+            <p class="layer-tip">
+              * Việc chọn lớp dữ liệu giúp bản đồ không bị rối, lọc chính xác loại đối tượng trước khi chọn theo tuyến, vẽ vùng hoặc tick chọn.
+            </p>
+          </div>
+        </div>
+
+        <!-- 3 THAO TÁC CHỌN TÀI SẢN -->
+        <div class="selection-methods-bar">
+          <button
+            class="method-btn"
+            [class.active]="modalSelectionMode === 'CHECKLIST'"
+            (click)="setModalSelectionMode('CHECKLIST')"
+          >
+            <i class="bi bi-check2-square"></i>
+            <span>1. Tick chọn từ danh sách & bản đồ</span>
+          </button>
+
+          <button
+            class="method-btn"
+            [class.active]="modalSelectionMode === 'ROUTE'"
+            (click)="setModalSelectionMode('ROUTE')"
+          >
+            <i class="bi bi-signpost-2"></i>
+            <span>2. Chọn theo tuyến đường</span>
+          </button>
+
+          <button
+            class="method-btn"
+            [class.active]="modalSelectionMode === 'POLYGON'"
+            (click)="setModalSelectionMode('POLYGON')"
+          >
+            <i class="bi bi-bounding-box"></i>
+            <span>3. Vẽ vùng khoanh trên bản đồ (Polygon)</span>
+          </button>
+        </div>
+
+        <!-- Bảng điều khiển phụ theo từng thao tác -->
+        <div class="method-sub-panel" *ngIf="modalSelectionMode === 'ROUTE'">
+          <div class="d-flex align-items-center gap-3">
+            <label class="form-label mb-0">Chọn tuyến đường:</label>
+            <select
+              class="form-select flex-1"
+              [(ngModel)]="modalSelectedRoute"
+              (ngModelChange)="applyRouteSelection()"
+            >
+              <option value="Tất cả tuyến đường">Tất cả tuyến đường</option>
+              <option value="Nguyễn Huệ">Tuyến đường Nguyễn Huệ (Phố đi bộ)</option>
+              <option value="Lê Lợi">Tuyến đường Lê Lợi</option>
+              <option value="Tôn Đức Thắng">Tuyến đường Tôn Đức Thắng</option>
+              <option value="Nam Kỳ Khởi Nghĩa">Tuyến đường Nam Kỳ Khởi Nghĩa</option>
+            </select>
+            <button class="btn btn-sm btn-primary" (click)="applyRouteSelection()">Áp dụng chọn cả tuyến</button>
+          </div>
+        </div>
+
+        <div class="method-sub-panel" *ngIf="modalSelectionMode === 'POLYGON'">
+          <div class="d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-cursor text-primary"></i> Bản đồ đã kích hoạt chế độ khoanh vùng khu vực trung tâm Quận 1.</span>
+            <button class="btn btn-sm btn-primary" (click)="drawSimulatedPolygonArea()">
+              <i class="bi bi-pencil"></i> Vẽ lại vùng khoanh
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Split: Bản đồ GIS bên trái, Danh sách Checklist bên phải -->
+        <div class="modal-map-split">
+          <div class="modal-map-wrap">
+            <div #modalMapContainer class="modal-interactive-map"></div>
+            <div class="map-hint">
+              <i class="bi bi-info-circle"></i> Nhấp vào marker trên bản đồ để chọn hoặc bỏ chọn tài sản
+            </div>
+          </div>
+
+          <div class="modal-list-wrap">
+            <div class="list-header">
+              <span>Danh sách tài sản ({{ getModalLayerAssets().length }})</span>
+              <div class="list-actions">
+                <a (click)="selectAllModalAssets()">Chọn hết</a> |
+                <a (click)="deselectAllModalAssets()">Bỏ chọn</a>
+              </div>
+            </div>
+
+            <div class="modal-assets-scroll">
+              <div
+                *ngFor="let item of getModalLayerAssets()"
+                class="asset-select-card"
+                [class.selected]="modalSelectedAssetIds.has(item.id)"
+                [class.already-in]="isAssetAlreadyInProject(item.id)"
+                (click)="toggleModalAsset(item.id)"
+              >
+                <div class="checkbox-area">
+                  <input
+                    type="checkbox"
+                    [checked]="modalSelectedAssetIds.has(item.id)"
+                    (click)="$event.stopPropagation()"
+                    (change)="toggleModalAsset(item.id)"
+                  />
+                </div>
+                <div class="asset-info-area">
+                  <div class="code-line">
+                    <span class="code">{{ item.code }}</span>
+                    <span class="badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                    <span class="in-proj-badge" *ngIf="isAssetAlreadyInProject(item.id)">Đã có trong DA</span>
+                  </div>
+                  <div class="name">{{ item.name }}</div>
+                  <div class="address"><i class="bi bi-geo-alt"></i> {{ item.address }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <div class="footer-selected-counter">
+          Đã chọn: <strong class="text-primary">{{ modalSelectedAssetIds.size }}</strong> tài sản từ kho tổng
+        </div>
+        <button class="btn btn-secondary" (click)="closeAddAssetModal()">Hủy</button>
+        <button
+          class="btn btn-primary"
+          [disabled]="modalSelectedAssetIds.size === 0"
+          (click)="submitMapAssetsToProject()"
+        >
+          <i class="bi bi-check-circle-fill"></i>
+          <span>Xác Nhận Gán Vào Dự Án ({{ modalSelectedAssetIds.size }})</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TẠO CÔNG VIỆC MỚI (TAB 4: CẬP NHẬT QUAN TRỌNG VỚI NÚT CHỌN TÀI SẢN & BỘ LỌC LAYER) -->
+  <div class="modal-backdrop" *ngIf="isCreateTaskModalOpen" (click)="closeCreateTaskModal()">
+    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-clipboard-plus text-primary"></i> Phân Công Đầu Việc Mới (Giao Task Nhà Thầu)</h3>
+        <button class="close-btn" (click)="closeCreateTaskModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <form (ngSubmit)="submitCreateTask()">
+          <div class="form-group mb-3">
+            <label class="form-label required">Tiêu đề công việc:</label>
+            <input
+              type="text"
+              class="form-control"
+              placeholder="VD: Thay thế bóng đèn LED chiếu sáng 150W dải phân cách"
+              [(ngModel)]="newTask.title"
+              name="title"
+              required
+            />
+          </div>
+
+          <div class="form-row mb-3">
+            <div class="form-group flex-1">
+              <label class="form-label required">Đội ngũ / Tổ phụ trách:</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="VD: Tổ Kỹ thuật Điện Chiếu Sáng 1"
+                [(ngModel)]="newTask.assignedTeam"
+                name="assignedTeam"
+                required
+              />
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label required">Mức độ ưu tiên:</label>
+              <select class="form-select" [(ngModel)]="newTask.priority" name="priority">
+                <option value="LOW">Thấp (Low)</option>
+                <option value="MEDIUM">Bình thường (Medium)</option>
+                <option value="HIGH">Cao (High)</option>
+                <option value="URGENT">Khẩn cấp (Urgent)</option>
+              </select>
+            </div>
+            <div class="form-group flex-1">
+              <label class="form-label required">Hạn hoàn thành:</label>
+              <input
+                type="date"
+                class="form-control"
+                [(ngModel)]="newTask.deadline"
+                name="deadline"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="form-group mb-3">
+            <label class="form-label">Mô tả chi tiết yêu cầu kỹ thuật:</label>
+            <textarea
+              class="form-control"
+              rows="2"
+              placeholder="Nhập ghi chú hướng dẫn thợ, quy trình an toàn lao động..."
+              [(ngModel)]="newTask.description"
+              name="description"
+            ></textarea>
+          </div>
+
+          <!-- PHẦN CẬP NHẬT QUAN TRỌNG: NÚT CHỌN TÀI SẢN ĐÍNH KÈM VỚI BỘ LỌC LỚP DỮ LIỆU -->
+          <div class="task-asset-picker-card">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <div>
+                <label class="form-label font-bold text-primary mb-0">
+                  <i class="bi bi-geo-alt"></i> TÀI SẢN ĐÍNH KÈM (ĐỊNH HƯỚNG TỌA ĐỘ HIỆN TRƯỜNG):
+                </label>
+                <p class="fs-xs text-muted mb-0">
+                  Task bắt buộc đính kèm danh sách tài sản cụ thể trong dự án để thợ mở định vị trên Mobile App
+                </p>
+              </div>
+              <div class="d-flex align-items-center gap-2">
+                <!-- BỘ LỌC THEO LỚP DỮ LIỆU TRONG FORM TẠO TASK -->
+                <span class="fs-xs font-semibold">Lọc theo Layer:</span>
+                <select
+                  class="form-select form-select-sm"
+                  style="width: 170px;"
+                  [(ngModel)]="newTask.targetLayerId"
+                  name="targetLayerId"
+                >
+                  <option value="ALL">Tất cả lớp dữ liệu</option>
+                  <option *ngFor="let layer of projectService.layers()" [value]="layer.id">
+                    {{ layer.name }}
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Danh sách tài sản đã nằm trong dự án để tick chọn -->
+            <div class="task-assets-checklist">
+              <div
+                *ngFor="let a of availableProjectAssetsForTask"
+                class="task-asset-check-item"
+                [class.checked]="newTask.assetIds.includes(a.id)"
+                (click)="toggleTaskAssetSelection(a.id)"
+              >
+                <input
+                  type="checkbox"
+                  [checked]="newTask.assetIds.includes(a.id)"
+                  (click)="$event.stopPropagation()"
+                  (change)="toggleTaskAssetSelection(a.id)"
+                />
+                <div class="info">
+                  <div class="line1">
+                    <span class="code">{{ a.code }}</span>
+                    <span class="badge" [ngClass]="getLayerBadgeClass(a.layerId)">{{ a.layerName }}</span>
+                    <span class="name">{{ a.name }}</span>
+                  </div>
+                  <div class="line2 text-muted fs-xs">
+                    <i class="bi bi-geo-alt"></i> {{ a.address }} (Tọa độ: {{ a.lat }}, {{ a.lng }})
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="availableProjectAssetsForTask.length === 0" class="p-3 text-center text-muted">
+                Không tìm thấy tài sản nào thuộc lớp dữ liệu này trong dự án.
+              </div>
+            </div>
+
+            <div class="picker-footer mt-2 d-flex justify-content-between fs-xs">
+              <span>Đã chọn đính kèm: <strong>{{ newTask.assetIds.length }}</strong> tài sản</span>
+              <span class="text-primary">* Thợ sẽ nhận được danh sách tọa độ này trên điện thoại</span>
+            </div>
+          </div>
+
+          <div class="modal-footer px-0 pb-0 mt-3">
+            <button type="button" class="btn btn-secondary" (click)="closeCreateTaskModal()">Hủy</button>
+            <button type="submit" class="btn btn-primary" [disabled]="!newTask.title">
+              <i class="bi bi-send-check"></i>
+              <span>Giao Việc Cho Đội Thi Công</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: MÀN HÌNH NGHIỆM THU CHO CÁN BỘ - THIẾT KẾ SPLIT-VIEW (TAB 5) -->
+  <div class="modal-backdrop" *ngIf="isSplitViewModalOpen && selectedReport" (click)="closeSplitViewInspection()">
+    <div class="modal-content modal-lg split-view-modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div class="header-left-title">
+          <h3><i class="bi bi-layout-split text-primary"></i> Màn Hình Nghiệm Thu Khối Lượng (Split-View Đối Chiếu)</h3>
+          <span class="sub-report-code">{{ selectedReport.code }} • {{ selectedReport.periodTitle }}</span>
+        </div>
+        <button class="close-btn" (click)="closeSplitViewInspection()"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <!-- THIẾT KẾ SPLIT-VIEW -->
+      <div class="split-view-body">
+        <!-- NỬA BÊN TRÁI: DANH SÁCH TÀI SẢN BÁO CÁO HOÀN THÀNH -->
+        <div class="split-left-pane">
+          <div class="pane-header">
+            <span class="pane-title">1. Danh Sách Tài Sản Hoàn Thành ({{ selectedReport.items.length }})</span>
+            <span class="fs-xs text-muted">Bấm vào từng tài sản để xem ảnh minh chứng</span>
+          </div>
+
+          <div class="split-items-list">
+            <div
+              *ngFor="let item of selectedReport.items"
+              class="split-asset-item"
+              [class.active]="activeInspectionItem?.assetId === item.assetId"
+              (click)="selectInspectionItem(item)"
+            >
+              <div class="item-top">
+                <span class="code">{{ item.assetCode }}</span>
+                <span class="badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                <span class="status-indicator" [class.approved]="item.inspectorApproved">
+                  {{ item.inspectorApproved ? '✓ Đạt' : 'Chờ duyệt' }}
+                </span>
+              </div>
+              <div class="item-name">{{ item.assetName }}</div>
+              <div class="item-task fs-xs text-muted">Task: {{ item.taskTitle }}</div>
+              <div class="item-cost-row">
+                <span class="cost">{{ formatMoney(item.cost) }} đ</span>
+                <span class="date">{{ item.completedDate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="split-summary-bar">
+            <div>Tổng đề nghị: <strong class="text-danger">{{ formatMoney(selectedReport.amountRequested) }} đ</strong></div>
+            <div>Nhà thầu: <strong>{{ selectedReport.contractor }}</strong></div>
+          </div>
+        </div>
+
+        <!-- NỬA BÊN PHẢI: ẢNH CHỤP MINH CHỨNG TƯƠNG ỨNG & ĐỐI CHIẾU GPS -->
+        <div class="split-right-pane" *ngIf="activeInspectionItem">
+          <div class="pane-header">
+            <span class="pane-title">2. Ảnh Chụp Hiện Trường Minh Chứng & Dữ Liệu GPS</span>
+            <span class="badge" [class.badge-success]="activeInspectionItem.inspectorApproved" [class.badge-warning]="!activeInspectionItem.inspectorApproved">
+              {{ activeInspectionItem.inspectorApproved ? 'Đã kiểm tra đạt' : 'Cần cán bộ kiểm tra' }}
+            </span>
+          </div>
+
+          <div class="photo-inspection-card">
+            <div class="photo-preview-wrap">
+              <img [src]="activeInspectionItem.photoUrl" alt="Ảnh hiện trường" class="inspection-img" />
+              <div class="photo-watermark">
+                <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
+                <div><i class="bi bi-clock-fill"></i> Thời gian: {{ activeInspectionItem.completedDate }} 15:45:20</div>
+                <div><i class="bi bi-tag-fill"></i> Mã đối tượng: {{ activeInspectionItem.assetCode }}</div>
+              </div>
+            </div>
+
+            <div class="photo-meta-details mt-3">
+              <div class="meta-row">
+                <span class="label">Tên tài sản:</span>
+                <span class="val font-semibold">{{ activeInspectionItem.assetName }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="label">Hạng mục công việc:</span>
+                <span class="val">{{ activeInspectionItem.taskTitle }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="label">Đơn giá nghiệm thu:</span>
+                <span class="val text-danger font-bold">{{ formatMoney(activeInspectionItem.cost) }} VNĐ</span>
+              </div>
+              <div class="meta-row">
+                <span class="label">Ghi chú cán bộ kiểm tra:</span>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  placeholder="Nhập nhận xét hiện trường..."
+                  [(ngModel)]="activeInspectionItem.inspectorNotes"
+                />
+              </div>
+
+              <!-- Thao tác duyệt từng mục -->
+              <div class="item-approval-actions mt-3">
+                <button
+                  class="btn btn-sm"
+                  [class.btn-success]="activeInspectionItem.inspectorApproved"
+                  [class.btn-secondary]="!activeInspectionItem.inspectorApproved"
+                  (click)="toggleItemApproval(activeInspectionItem, true)"
+                >
+                  <i class="bi bi-check-circle"></i>
+                  <span>Xác Nhận Đạt Tiêu Chuẩn</span>
+                </button>
+                <button
+                  class="btn btn-sm btn-outline-danger"
+                  (click)="toggleItemApproval(activeInspectionItem, false)"
+                >
+                  <i class="bi bi-x-circle"></i>
+                  <span>Yêu Cầu Làm Lại</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Footer với Nút Phê Duyệt / Từ Chối Rõ Ràng -->
+      <div class="modal-footer split-footer">
+        <button class="btn btn-danger" (click)="openRejectModal()">
+          <i class="bi bi-x-octagon-fill"></i>
+          <span>Từ Chối Hồ Sơ</span>
+        </button>
+        <button class="btn btn-secondary" (click)="closeSplitViewInspection()">Đóng</button>
+        <button class="btn btn-success btn-lg" (click)="approveEntireReport()">
+          <i class="bi bi-check-circle-fill"></i>
+          <span>Phê Duyệt Nghiệm Thu & Đề Nghị Thanh Toán</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NHẬP LÝ DO TỪ CHỐI BÁO CÁO -->
+  <div class="modal-backdrop" *ngIf="isRejectModalOpen" (click)="closeRejectModal()">
+    <div class="modal-content modal-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="text-danger"><i class="bi bi-exclamation-triangle"></i> Từ Chối Hồ Sơ Thanh Toán</h3>
+        <button class="close-btn" (click)="closeRejectModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+      <div class="modal-body">
+        <label class="form-label required">Lý do từ chối (yêu cầu nhà thầu khắc phục):</label>
+        <textarea
+          class="form-control"
+          rows="4"
+          placeholder="VD: Cột đèn CS-NH-04 chưa hoàn tất sơn phản quang, thiếu ảnh kiểm tra tiếp địa..."
+          [(ngModel)]="rejectionReason"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeRejectModal()">Hủy</button>
+        <button class="btn btn-danger" [disabled]="!rejectionReason" (click)="confirmRejectReport()">
+          Xác nhận từ chối
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
