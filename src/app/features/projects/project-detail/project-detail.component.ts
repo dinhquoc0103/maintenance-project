@@ -12,9 +12,13 @@ import {
   Asset,
   LayerId,
   AssetMaintenanceStatus,
+  AssetCondition,
+  ASSET_CONDITION_CONFIG,
   MaintenanceTask,
   TaskStatus,
+  TASK_STATUS_CONFIG,
   TaskPriority,
+  TaskAssetItem,
   ReportPayment,
   ReportItem
 } from '../../../core/models/maintenance.model';
@@ -60,6 +64,8 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
   assetSearchKeyword = '';
   assetFilterLayer: string = 'ALL';
   assetFilterStatus: string = 'ALL';
+  assetCurrentPage = 1;
+  assetPageSize = 5;
 
   // Leaflet map instances
   private assetTabMap?: L.Map;
@@ -70,11 +76,15 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
   // --- TAB 4: TASK MANAGEMENT STATE ---
   isCreateTaskModalOpen = false;
   isTaskAssetPickerOpen = false;
+  isTaskAssetsModalOpen = false;
+  selectedTaskForAssets: MaintenanceTask | null = null;
   taskFilterLayer = 'ALL';
   taskFilterStatus = 'ALL';
+  expandedTaskId: string | null = null;
   newTask: {
     title: string;
     description: string;
+    contractor: string;
     assignedTeam: string;
     priority: TaskPriority;
     deadline: string;
@@ -83,6 +93,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
   } = {
     title: '',
     description: '',
+    contractor: 'Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn',
     assignedTeam: 'Tổ Kỹ thuật Hiện trường 1',
     priority: 'MEDIUM',
     deadline: '2026-05-15',
@@ -219,34 +230,108 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     }
   }
 
-  // --- TAB 3: ASSET MAPPING METHODS ---
+  // --- TAB 3: ASSET MASTER DATA / CATALOG METHODS ---
   get projectAssets(): Asset[] {
     let list = this.projectService.getProjectAssets(this.projectId);
     if (this.assetFilterLayer !== 'ALL') {
       list = list.filter(a => a.layerId === this.assetFilterLayer);
     }
-    if (this.assetFilterStatus !== 'ALL') {
-      list = list.filter(a => a.status === this.assetFilterStatus);
-    }
     if (this.assetSearchKeyword.trim()) {
       const q = this.assetSearchKeyword.toLowerCase().trim();
-      list = list.filter(a => a.name.toLowerCase().includes(q) || a.code.toLowerCase().includes(q) || a.address.toLowerCase().includes(q));
+      list = list.filter(a =>
+        a.name.toLowerCase().includes(q) ||
+        a.code.toLowerCase().includes(q) ||
+        a.address.toLowerCase().includes(q) ||
+        (a.specs && a.specs.toLowerCase().includes(q)) ||
+        (a.route && a.route.toLowerCase().includes(q)) ||
+        (a.chainage && a.chainage.toLowerCase().includes(q)) ||
+        (a.category && a.category.toLowerCase().includes(q))
+      );
     }
     return list;
   }
 
-  // Inline editing of Asset maintenance status
-  onInlineAssetStatusChange(asset: Asset, newStatus: AssetMaintenanceStatus) {
-    this.projectService.updateAssetStatus(asset.id, newStatus);
-    this.loadProject();
-    this.toastService.success(
-      'Cập nhật trực tiếp trạng thái',
-      `Tài sản ${asset.code} đã chuyển sang "${this.getAssetStatusLabel(newStatus)}"`
-    );
+  get totalAssetPages(): number {
+    return Math.max(1, Math.ceil(this.projectAssets.length / this.assetPageSize));
+  }
+
+  get paginatedProjectAssets(): Asset[] {
+    const total = this.totalAssetPages;
+    if (this.assetCurrentPage > total) {
+      this.assetCurrentPage = 1;
+    }
+    const start = (this.assetCurrentPage - 1) * this.assetPageSize;
+    return this.projectAssets.slice(start, start + this.assetPageSize);
+  }
+
+  get assetStartIdx(): number {
+    if (this.projectAssets.length === 0) return 0;
+    return (this.assetCurrentPage - 1) * this.assetPageSize + 1;
+  }
+
+  get assetEndIdx(): number {
+    return Math.min(this.assetCurrentPage * this.assetPageSize, this.projectAssets.length);
+  }
+
+  setAssetPage(page: number) {
+    if (page >= 1 && page <= this.totalAssetPages) {
+      this.assetCurrentPage = page;
+    }
+  }
+
+  onAssetPageSizeChange(newSize: any) {
+    this.assetPageSize = Number(newSize);
+    this.assetCurrentPage = 1;
+  }
+
+  get assetPaginationPages(): number[] {
+    const total = this.totalAssetPages;
+    const current = this.assetCurrentPage;
+    const pages: number[] = [];
+    for (let i = 1; i <= total; i++) {
+      if (i === 1 || i === total || (i >= current - 1 && i <= current + 1)) {
+        pages.push(i);
+      }
+    }
+    return pages;
+  }
+
+  // Tra cứu hiện trạng ghi nhận gần nhất từ các đợt làm việc
+  getAssetLatestCondition(assetId: string) {
+    return this.projectService.getAssetLatestCondition(assetId);
+  }
+
+  // Tra cứu danh sách các task có liên kết tới tài sản này
+  getTasksForAsset(assetId: string): MaintenanceTask[] {
+    return this.projectService.getTasksForAsset(assetId);
+  }
+
+  getAssetConditionLabel(condition: AssetCondition): string {
+    return this.projectService.getAssetConditionLabel(condition);
+  }
+
+  getConditionBadgeClass(condition: AssetCondition): string {
+    switch (condition) {
+      case 'GOOD': return 'bg-success text-white';
+      case 'NORMAL': return 'bg-info text-white';
+      case 'DAMAGED': return 'bg-danger text-white';
+      case 'NEEDS_REPLACEMENT': return 'bg-warning text-dark';
+      default: return 'bg-secondary text-white';
+    }
+  }
+
+  getConditionIcon(condition: AssetCondition): string {
+    switch (condition) {
+      case 'GOOD': return 'bi-check-circle-fill';
+      case 'NORMAL': return 'bi-info-circle-fill';
+      case 'DAMAGED': return 'bi-exclamation-triangle-fill';
+      case 'NEEDS_REPLACEMENT': return 'bi-arrow-repeat';
+      default: return 'bi-dot';
+    }
   }
 
   removeAsset(asset: Asset) {
-    if (confirm(`Gỡ bỏ tài sản ${asset.code} (${asset.name}) khỏi dự án này?`)) {
+    if (confirm(`Gỡ bỏ tài sản ${asset.code} (${asset.name}) khỏi danh mục dự án này?`)) {
       this.projectService.removeAssetFromProject(this.projectId, asset.id);
       this.loadProject();
       this.toastService.warning('Đã gỡ tài sản', `Tài sản ${asset.code} đã trở lại Master Map`);
@@ -295,11 +380,13 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
                        ast.layerId === 'GREENERY' ? '#10b981' :
                        ast.layerId === 'DRAINAGE' ? '#06b6d4' : '#8b5cf6';
 
+      const latestCond = this.getAssetLatestCondition(ast.id);
+
       const icon = L.divIcon({
         className: 'custom-leaflet-marker',
         html: `
           <div style="background-color: ${pinColor}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.35);">
-            ${ast.status === 'COMPLETED' ? '✓' : '●'}
+            ●
           </div>
         `,
         iconSize: [28, 28],
@@ -309,18 +396,21 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
       const marker = L.marker([ast.lat, ast.lng], { icon }).addTo(this.assetTabMap!);
       bounds.push([ast.lat, ast.lng]);
 
-      const statusBadge = ast.status === 'COMPLETED' ? '<span style="color: #059669; font-weight: 600;">Đã xong</span>' :
-                          ast.status === 'IN_PROGRESS' ? '<span style="color: #2563eb; font-weight: 600;">Đang sửa</span>' :
-                          '<span style="color: #d97706; font-weight: 600;">Chờ xử lý</span>';
+      const condBadge = latestCond
+        ? `<span class="badge ${this.getConditionBadgeClass(latestCond.condition)} p-1">${this.getAssetConditionLabel(latestCond.condition)}</span>`
+        : '<span class="text-muted fs-xs">Chưa có đợt kiểm tra</span>';
 
       marker.bindPopup(`
-        <div style="min-width: 180px; font-family: Inter, sans-serif;">
-          <div style="font-size: 11px; color: ${pinColor}; font-weight: 700; text-transform: uppercase;">${ast.layerName}</div>
+        <div style="min-width: 220px; font-family: Inter, sans-serif;">
+          <div style="font-size: 11px; color: ${pinColor}; font-weight: 700; text-transform: uppercase;">${ast.layerName} • ${ast.category || 'Tài sản đô thị'}</div>
           <div style="font-weight: 600; font-size: 13px; margin: 3px 0;">${ast.name}</div>
-          <div style="font-size: 11.5px; color: #64748b;">Mã: <b>${ast.code}</b></div>
-          <div style="font-size: 11.5px; color: #64748b;">Đ/c: ${ast.address}</div>
-          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 12px;">
-            Trạng thái: ${statusBadge}
+          <div style="font-size: 11.5px; color: #475569;">Mã TS: <b>${ast.code}</b></div>
+          <div style="font-size: 11.5px; color: #64748b;">Tuyến & Lý trình: <b>${ast.route}</b> (${ast.chainage || 'Đang cập nhật'})</div>
+          <div style="font-size: 11.5px; color: #64748b;">Thông số KT: <i>${ast.specs || 'Theo hồ sơ thiết kế'}</i></div>
+          <div style="font-size: 11.5px; color: #64748b;">Đơn vị QL: ${ast.managementUnit || 'Ban QLDA'}</div>
+          <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #e2e8f0; font-size: 12px; display: flex; justify-content: space-between; align-items: center;">
+            <span>Hiện trạng ghi nhận:</span>
+            ${condBadge}
           </div>
         </div>
       `);
@@ -558,7 +648,8 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     this.newTask = {
       title: '',
       description: '',
-      assignedTeam: 'Tổ Kỹ thuật Hiện trường 1',
+      contractor: this.project?.contractor || 'Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn',
+      assignedTeam: this.project?.contractor || 'Tổ Kỹ thuật Hiện trường 1',
       priority: 'MEDIUM',
       deadline: '2026-05-15',
       targetLayerId: 'ALL',
@@ -593,12 +684,13 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
   submitCreateTask() {
     if (!this.newTask.title) return;
 
+    const contractorName = this.newTask.contractor || this.project?.contractor || 'Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn';
     const task = this.projectService.createTask({
       projectId: this.projectId,
       title: this.newTask.title,
       description: this.newTask.description,
-      contractor: this.project?.contractor || 'Đơn vị thi công',
-      assignedTeam: this.newTask.assignedTeam,
+      contractor: contractorName,
+      assignedTeam: this.newTask.assignedTeam || contractorName,
       targetLayerId: this.newTask.targetLayerId,
       priority: this.newTask.priority,
       deadline: this.newTask.deadline,
@@ -607,9 +699,56 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
 
     this.toastService.success(
       'Tạo công việc thành công',
-      `Công việc ${task.code} đã được giao cho ${task.assignedTeam} kèm ${task.assetIds.length} tọa độ tài sản`
+      `Công việc ${task.code} đã được giao cho ${task.contractor} kèm ${task.assetIds.length} tọa độ tài sản`
     );
     this.closeCreateTaskModal();
+  }
+
+  openTaskAssetsModal(task: MaintenanceTask) {
+    this.selectedTaskForAssets = task;
+    this.isTaskAssetsModalOpen = true;
+  }
+
+  closeTaskAssetsModal() {
+    this.isTaskAssetsModalOpen = false;
+    this.selectedTaskForAssets = null;
+  }
+
+  toggleExpandTask(taskId: string) {
+    const task = this.projectService.getTaskById(taskId);
+    if (task) {
+      this.openTaskAssetsModal(task);
+    }
+  }
+
+  onTaskAssetConditionChange(task: MaintenanceTask, assetItem: TaskAssetItem, newCondition: AssetCondition) {
+    this.projectService.updateTaskAssetCondition(task.id, assetItem.assetId, newCondition, assetItem.notes);
+    const updated = this.projectService.getTaskById(task.id);
+    if (updated && this.selectedTaskForAssets?.id === task.id) {
+      this.selectedTaskForAssets = updated;
+    }
+    this.toastService.success(
+      'Cập nhật hiện trạng tài sản',
+      `Tài sản ${assetItem.assetCode} (${assetItem.assetName}) trong công việc "${task.title}" đã chuyển sang: "${this.getAssetConditionLabel(newCondition)}"`
+    );
+  }
+
+  onToggleTaskAssetComplete(task: MaintenanceTask, assetItem: TaskAssetItem) {
+    const nextCompleted = !assetItem.isCompleted;
+    this.projectService.setTaskAssetCompletion(task.id, assetItem.assetId, nextCompleted);
+    this.loadProject();
+    const updated = this.projectService.getTaskById(task.id);
+    if (updated && this.selectedTaskForAssets?.id === task.id) {
+      this.selectedTaskForAssets = updated;
+    }
+    this.toastService.success(
+      'Cập nhật tiến độ tài sản',
+      `Tài sản ${assetItem.assetCode} đã đánh dấu: "${nextCompleted ? 'Đã hoàn thành' : 'Chưa xong'}" trong công việc ${task.code}`
+    );
+  }
+
+  onTaskAssetNotesChange(task: MaintenanceTask, assetItem: TaskAssetItem) {
+    this.projectService.updateTaskAssetCondition(task.id, assetItem.assetId, assetItem.condition, assetItem.notes);
   }
 
   openMobileContractorForTask(task: MaintenanceTask) {

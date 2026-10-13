@@ -5,7 +5,7 @@ import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { ProjectService } from '../../core/services/project.service';
 import { ToastService } from '../../core/services/toast.service';
-import { MaintenanceTask, Asset } from '../../core/models/maintenance.model';
+import { MaintenanceTask, Asset, AssetCondition, ASSET_CONDITION_CONFIG } from '../../core/models/maintenance.model';
 
 @Component({
   selector: 'app-mobile-contractor',
@@ -145,6 +145,14 @@ import { MaintenanceTask, Asset } from '../../core/models/maintenance.model';
                 <div class="address"><i class="bi bi-geo"></i> {{ ast.address }}</div>
                 <div class="coords fs-xxs text-muted">GPS: {{ ast.lat }}, {{ ast.lng }}</div>
 
+                <!-- Condition recorded for this asset in this task -->
+                <div class="condition-row mt-1 d-flex align-items-center gap-1" *ngIf="getTaskAssetItem(ast.id) as ta">
+                  <span class="fs-xxs text-muted">Hiện trạng:</span>
+                  <span class="badge" [ngClass]="getConditionBadgeClass(ta.condition)">
+                    {{ getConditionLabel(ta.condition) }}
+                  </span>
+                </div>
+
                 <!-- Proof photo thumbnail if taken -->
                 <div class="proof-photo-thumbnail" *ngIf="getAssetPhoto(ast.id)">
                   <img [src]="getAssetPhoto(ast.id)?.url" alt="Minh chứng" />
@@ -210,6 +218,18 @@ import { MaintenanceTask, Asset } from '../../core/models/maintenance.model';
                   <span>{{ sample.name }}</span>
                 </button>
               </div>
+            </div>
+
+            <!-- Đánh giá hiện trạng tài sản sau xử lý (Lưu vết theo task) -->
+            <div class="form-group mt-3">
+              <label class="form-label fs-xs font-semibold">Đánh giá hiện trạng sau xử lý (*):</label>
+              <select class="form-select form-select-sm" [(ngModel)]="evaluatedCondition">
+                <option value="GOOD">🟢 Hoạt động tốt</option>
+                <option value="NORMAL">🔵 Bình thường</option>
+                <option value="DAMAGED">🔴 Hư hỏng</option>
+                <option value="NEEDS_REPLACEMENT">🟠 Cần thay thế</option>
+              </select>
+              <div class="text-muted fs-xxs mt-1">Lưu vết hiện trạng kỹ thuật theo lần thi công này • Giữ Catalog tĩnh</div>
             </div>
 
             <div class="form-group mt-3">
@@ -578,6 +598,7 @@ export class MobileContractorComponent implements OnInit, OnDestroy, AfterViewIn
   activeCameraAsset: Asset | null = null;
   capturedPhotoUrl = 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
   photoNote = 'Đã hoàn tất thay thế và kiểm tra an toàn';
+  evaluatedCondition: AssetCondition = 'GOOD';
   currentTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
   samplePhotos = [
@@ -702,6 +723,8 @@ export class MobileContractorComponent implements OnInit, OnDestroy, AfterViewIn
 
   openCameraModal(asset: Asset) {
     this.activeCameraAsset = asset;
+    const ta = this.getTaskAssetItem(asset.id);
+    this.evaluatedCondition = ta?.condition || 'GOOD';
     this.currentTimestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     this.isCameraModalOpen = true;
   }
@@ -718,14 +741,15 @@ export class MobileContractorComponent implements OnInit, OnDestroy, AfterViewIn
       this.currentTask.id,
       this.activeCameraAsset.id,
       this.capturedPhotoUrl,
-      this.photoNote
+      this.photoNote,
+      this.evaluatedCondition
     );
 
     this.loadTask();
     this.updateMapHighlights();
     this.toastService.success(
-      'Ghi nhận ảnh hiện trường',
-      `Đã lưu ảnh và định vị GPS cho tài sản ${this.activeCameraAsset.code}`
+      'Ghi nhận ảnh & hiện trạng',
+      `Đã lưu ảnh và đánh giá hiện trạng cho tài sản ${this.activeCameraAsset.code}`
     );
     this.closeCameraModal();
   }
@@ -733,13 +757,16 @@ export class MobileContractorComponent implements OnInit, OnDestroy, AfterViewIn
   markAssetCompleted(asset: Asset) {
     if (!this.currentTask) return;
 
+    const ta = this.getTaskAssetItem(asset.id);
+    const cond = ta?.condition || 'GOOD';
     const photo = this.getAssetPhoto(asset.id)?.url || 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
 
     this.projectService.completeAssetInTask(
       this.currentTask.id,
       asset.id,
       photo,
-      'Hoàn thành thi công tại thực địa'
+      'Hoàn thành thi công tại thực địa',
+      cond
     );
 
     this.loadTask();
@@ -749,4 +776,19 @@ export class MobileContractorComponent implements OnInit, OnDestroy, AfterViewIn
       `Tài sản ${asset.code} đã cập nhật Đã xong và đồng bộ lên báo cáo thanh toán`
     );
   }
+
+  getTaskAssetItem(assetId: string) {
+    return this.currentTask?.taskAssets?.find(ta => ta.assetId === assetId);
+  }
+
+  getConditionLabel(cond?: AssetCondition): string {
+    if (!cond) return 'Chưa đánh giá';
+    return ASSET_CONDITION_CONFIG[cond]?.label || cond;
+  }
+
+  getConditionBadgeClass(cond?: AssetCondition): string {
+    if (!cond) return 'badge-secondary';
+    return ASSET_CONDITION_CONFIG[cond]?.badgeClass || 'badge-secondary';
+  }
 }
+

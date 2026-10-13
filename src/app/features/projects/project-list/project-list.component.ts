@@ -142,7 +142,7 @@ import { MaintenanceType, ProjectStatus, Project } from '../../../core/models/ma
               <th style="width: 120px;">Mã DA</th>
               <th>Tên Dự Án & Tuyến Đường</th>
               <th style="width: 140px;">Loại Bảo Trì</th>
-              <th style="width: 170px;">Tiến Độ Khối Lượng</th>
+              <!-- <th style="width: 170px;">Tiến Độ Khối Lượng</th> -->
               <th style="width: 140px;">Trạng Thái</th>
               <th style="width: 150px;">Dự Toán (VNĐ)</th>
               <th style="width: 140px;">Thời Gian</th>
@@ -172,6 +172,7 @@ import { MaintenanceType, ProjectStatus, Project } from '../../../core/models/ma
                   {{ p.type }}
                 </span>
               </td>
+              <!-- Cột Tiến độ khối lượng (Tạm ẩn theo yêu cầu)
               <td>
                 <div class="progress-cell">
                   <div class="progress-bar-bg">
@@ -187,6 +188,7 @@ import { MaintenanceType, ProjectStatus, Project } from '../../../core/models/ma
                   </div>
                 </div>
               </td>
+              -->
               <td>
                 <span class="badge" [ngClass]="getStatusBadgeClass(p.status)">
                   <i class="bi bi-dot"></i> {{ p.status }}
@@ -215,7 +217,7 @@ import { MaintenanceType, ProjectStatus, Project } from '../../../core/models/ma
             </tr>
 
             <tr *ngIf="filteredProjects().length === 0">
-              <td colspan="8" class="empty-state">
+              <td colspan="7" class="empty-state">
                 <i class="bi bi-inbox"></i>
                 <p>Không tìm thấy dự án nào phù hợp với bộ lọc</p>
                 <button class="btn btn-sm btn-secondary" (click)="resetFilters()">Xóa bộ lọc</button>
@@ -266,18 +268,6 @@ import { MaintenanceType, ProjectStatus, Project } from '../../../core/models/ma
                     <option value="Đang thi công">Đang thi công</option>
                   </select>
                 </div>
-              </div>
-
-              <div class="form-group mb-3">
-                <label class="form-label required">Tuyến đường / Khu vực thực hiện:</label>
-                <input
-                  type="text"
-                  class="form-control"
-                  placeholder="VD: Tuyến đường Hàm Nghi - Pasteur (Quận 1)"
-                  [(ngModel)]="newProject.routeName"
-                  name="routeName"
-                  required
-                />
               </div>
 
               <div class="form-row mb-3">

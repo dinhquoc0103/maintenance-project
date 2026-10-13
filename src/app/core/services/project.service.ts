@@ -7,8 +7,12 @@ import {
   Asset,
   LayerId,
   AssetMaintenanceStatus,
+  AssetCondition,
+  ASSET_CONDITION_CONFIG,
   MaintenanceTask,
   TaskStatus,
+  TASK_STATUS_CONFIG,
+  TaskAssetItem,
   ReportPayment,
   ReportItem,
   PaymentStatus,
@@ -216,7 +220,7 @@ export class ProjectService {
 
   documents = signal<ProjectDocument[]>(this.documentsData);
 
-  // Master Map Assets (All urban assets)
+  // Master Map Assets (Static Asset Catalog / Master Data)
   private masterAssetsData: Asset[] = [
     // LIGHTING on Nguyễn Huệ
     {
@@ -225,17 +229,17 @@ export class ProjectService {
       name: 'Cột đèn cao áp số 01 - Trụ hoa sen 4 bóng LED 150W',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn cao áp hoa sen cảnh quan',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+050 (Phải tuyến)',
       lat: 10.77584,
       lng: 106.70281,
       address: 'Số 02 Nguyễn Huệ, P. Bến Nghé, Q.1',
-      status: 'COMPLETED',
+      specs: 'Trụ thép nhúng kẽm 9m, 4 cần đèn LED Philips 150W/220V IP66, đế gang đúc D350',
+      commissioningDate: '2022-04-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-1',
-      assignedTaskTitle: 'Thay thế đèn LED & bảo dưỡng tủ điện tuyến Nguyễn Huệ',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80',
-      notes: 'Đã thay chóa đèn LED 150W tiết kiệm điện, kiểm tra dây tiếp địa an toàn'
+      notes: 'Hồ sơ hoàn công số 12/BXD-2022. Đạt chuẩn chiếu sáng TCVN 259:2001'
     },
     {
       id: 'ast-02',
@@ -243,17 +247,17 @@ export class ProjectService {
       name: 'Cột đèn cao áp số 02 - Trụ đôi cảnh quan đi bộ',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn đôi cảnh quan',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+120 (Trái tuyến)',
       lat: 10.77526,
       lng: 106.70329,
       address: 'Số 22 Nguyễn Huệ, P. Bến Nghé, Q.1',
-      status: 'COMPLETED',
+      specs: 'Trụ thép mạ kẽm mỹ thuật 6m, 2 bóng LED 80W tiết kiệm điện, chống chói',
+      commissioningDate: '2022-04-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-1',
-      assignedTaskTitle: 'Thay thế đèn LED & bảo dưỡng tủ điện tuyến Nguyễn Huệ',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80',
-      notes: 'Đã căn chỉnh góc rọi đèn và sơn lại chân đế cột'
+      notes: 'Hồ sơ hoàn công số 12/BXD-2022. Khu vực phố đi bộ đi dạo ban đêm'
     },
     {
       id: 'ast-03',
@@ -261,15 +265,17 @@ export class ProjectService {
       name: 'Tủ điều khiển chiếu sáng trung tâm T01-NH',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Tủ điều khiển chiếu sáng thông minh',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+180 (Giao lộ)',
       lat: 10.77478,
       lng: 106.70375,
       address: 'Giao lộ Nguyễn Huệ - Ngô Đức Kế',
-      status: 'IN_PROGRESS',
+      specs: 'Vỏ tủ composite ngoài trời 2 lớp IP65, aptomat tổng 3P-100A Schneider, đồng hồ công tơ điện tử, bộ điều khiển IoT hẹn giờ tự động',
+      commissioningDate: '2021-11-20',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-1',
-      assignedTaskTitle: 'Thay thế đèn LED & bảo dưỡng tủ điện tuyến Nguyễn Huệ',
-      notes: 'Đang đấu nối thêm bộ điều khiển hẹn giờ thông minh IoT'
+      notes: 'Tủ cấp nguồn phân nhánh cho 24 cột đèn trục đi bộ Nguyễn Huệ'
     },
     {
       id: 'ast-04',
@@ -277,14 +283,17 @@ export class ProjectService {
       name: 'Đèn hắt cây bồn hoa dải phân cách số 04',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Đèn hắt cây cảnh quan sân vườn',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+240 (Dải phân cách)',
       lat: 10.77415,
       lng: 106.70425,
       address: 'Số 68 Nguyễn Huệ, P. Bến Nghé, Q.1',
-      status: 'PENDING',
+      specs: 'Đèn âm đất inox 304, kính cường lực 10mm chịu tải 2T, LED COB 36W vàng ấm 3000K, cấp bảo vệ chống ngập nước IP68',
+      commissioningDate: '2022-04-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-1',
-      notes: 'Chờ xử lý bóng cháy chập ẩm nước'
+      notes: 'Đấu nối từ lộ cáp ngầm bồn hoa số 2'
     },
 
     // GREENERY on Lê Lợi & Nguyễn Huệ
@@ -294,17 +303,17 @@ export class ProjectService {
       name: 'Cây Dầu rái cổ thụ số 12 (Đường kính thân 80cm)',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây bóng mát loại 3 (Cổ thụ bảo tồn)',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+080 (Vỉa hè bắc)',
       lat: 10.77382,
       lng: 106.70115,
       address: 'Số 15 Lê Lợi, P. Bến Nghé, Q.1',
-      status: 'COMPLETED',
+      specs: 'Loài Dipterocarpus alatus, D=80cm, chiều cao vút ngọn H=18m, bán kính tán lá 14m, tuổi thọ ước tính >65 năm',
+      commissioningDate: '2015-01-01',
+      managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-2',
-      assignedTaskTitle: 'Cắt tỉa hạ cành tán cây nguy hiểm trục Lê Lợi',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=500&q=80',
-      notes: 'Đã tỉa 4 cành khô mục vươn ra lòng đường nguy hiểm'
+      notes: 'Cây có gắn mã QR và chip theo dõi sinh trưởng đô thị'
     },
     {
       id: 'ast-06',
@@ -312,15 +321,17 @@ export class ProjectService {
       name: 'Cây Bằng lăng tím số 18',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây bóng mát loại 2 (Cây hoa đô thị)',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+150 (Vỉa hè nam)',
       lat: 10.77321,
       lng: 106.69985,
       address: 'Số 45 Lê Lợi, P. Bến Thành, Q.1',
-      status: 'IN_PROGRESS',
+      specs: 'Loài Lagerstroemia speciosa, D=35cm, chiều cao H=8m, tán hoa mùa hè màu tím',
+      commissioningDate: '2023-03-10',
+      managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-2',
-      assignedTaskTitle: 'Cắt tỉa hạ cành tán cây nguy hiểm trục Lê Lợi',
-      notes: 'Đang chống cọc sắt cố định gốc nghiêng 15 độ'
+      notes: 'Trồng bổ sung sau khi tái lập mặt bằng tuyến Metro số 1'
     },
     {
       id: 'ast-07',
@@ -328,16 +339,17 @@ export class ProjectService {
       name: 'Bồn hoa dải phân cách trung tâm đoạn số 3',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Bồn hoa cảnh quan & Thảm cỏ',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+200 (Dải trung tâm)',
       lat: 10.77450,
       lng: 106.70390,
       address: 'Phố đi bộ Nguyễn Huệ đoạn Mạc Thị Bưởi',
-      status: 'COMPLETED',
+      specs: 'Bồn xây gạch ốp đá granite, diện tích 45m2, tầng cao dừa cạn + chuỗi ngọc + thảm cỏ lá gừng, hệ thống tưới phun tự động',
+      commissioningDate: '2022-04-30',
+      managementUnit: 'Ban QLDA Đầu tư Xây dựng Khu vực Quận 1',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-2',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=500&q=80',
-      notes: 'Đã trồng bổ sung 250 cây hoa dừa cạn và tỉa cỏ chuốt'
+      notes: 'Được chăm sóc tưới tự động 2 lần/ngày'
     },
     {
       id: 'ast-08',
@@ -345,13 +357,17 @@ export class ProjectService {
       name: 'Hàng cây Sao đen số 05-09 dải vỉa hè phía Nam',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây bóng mát loại 2',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+260 (Vỉa hè nam)',
       lat: 10.77280,
       lng: 106.69890,
       address: 'Gần ga Metro Bến Thành, Lê Lợi',
-      status: 'PENDING',
+      specs: 'Cụm 5 cây Hopea odorata, D trung bình 40cm, chiều cao H=12m, khoảng cách trồng 6m/cây',
+      commissioningDate: '2023-01-15',
+      managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
       assignedProjectId: 'p-1',
-      notes: 'Chờ xe cẩu chuyên dụng tiếp cận cắt ngọn'
+      notes: 'Hồ sơ bàn giao cảnh quan tuyến Metro số 1'
     },
 
     // LIGHTING on Lê Lợi
@@ -361,17 +377,17 @@ export class ProjectService {
       name: 'Trụ đèn chiếu sáng đa hướng ngã tư Pasteur - Lê Lợi',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn giao lộ đa hướng',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+110 (Giao lộ)',
       lat: 10.77350,
       lng: 106.70050,
       address: 'Giao lộ Lê Lợi - Pasteur, Q.1',
-      status: 'COMPLETED',
+      specs: 'Trụ giàn thép mạ kẽm 11m, 6 bóng LED pha 200W/220V góc chiếu 60 độ, chịu gió bão cấp 12',
+      commissioningDate: '2022-12-25',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-3',
-      assignedTaskTitle: 'Sơn phủ bảo vệ chân cột & kiểm tra hộp đầu cáp',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80',
-      notes: 'Sơn 2 lớp expoxy chống rỉ sét và dán decal phản quang'
+      notes: 'Chiếu sáng chính cho cụm nút giao ngã tư đông phương tiện'
     },
     {
       id: 'ast-10',
@@ -379,17 +395,17 @@ export class ProjectService {
       name: 'Cột đèn cao áp số 08 vỉa hè chợ Bến Thành',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Cột đèn cao áp đơn',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+320 (Vỉa hè bắc)',
       lat: 10.77240,
       lng: 106.69820,
       address: 'Số 136 Lê Lợi, P. Bến Thành, Q.1',
-      status: 'COMPLETED',
+      specs: 'Trụ côn tròn thép mạ kẽm 8m, cần đơn vươn 1.5m, đèn LED 120W Philips CityCharm',
+      commissioningDate: '2023-02-18',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-3',
-      assignedTaskTitle: 'Sơn phủ bảo vệ chân cột & kiểm tra hộp đầu cáp',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80',
-      notes: 'Đã thay đệm gioăng chống nước hộp đấu nối chân cột'
+      notes: 'Vị trí giáp cửa Đông chợ Bến Thành'
     },
     {
       id: 'ast-11',
@@ -397,17 +413,17 @@ export class ProjectService {
       name: 'Cột đèn hoa sen trước tòa nhà UBND Thành phố',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn nghệ thuật kiến trúc',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+010 (Khu vực tượng đài)',
       lat: 10.77660,
       lng: 106.70180,
       address: 'Số 86 Lê Thánh Tôn - Nguyễn Huệ',
-      status: 'COMPLETED',
+      specs: 'Trụ hoa sen đúc hợp kim nhôm mỹ nghệ 10m, 5 bông hoa LED đổi màu RGB kết hợp chiếu sáng công cộng 150W',
+      commissioningDate: '2021-04-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-1',
-      assignedTaskId: 't-3',
-      assignedTaskTitle: 'Sơn phủ bảo vệ chân cột & kiểm tra hộp đầu cáp',
-      beforePhotoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
-      completedPhotoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=500&q=80',
-      notes: 'Bảo dưỡng hoàn tất, ánh sáng đạt tiêu chuẩn 100 Lux'
+      notes: 'Công trình biểu tượng kiến trúc chiếu sáng cảnh quan thành phố'
     },
     {
       id: 'ast-12',
@@ -415,13 +431,17 @@ export class ProjectService {
       name: 'Cây Sứ đại hoa trắng bồn cảnh tượng đài Bác Hồ',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây cảnh quan di tích',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+025 (Công viên)',
       lat: 10.77620,
       lng: 106.70220,
       address: 'Công viên Tượng đài Bác, Nguyễn Huệ',
-      status: 'IN_PROGRESS',
+      specs: 'Plumeria alba thế cổ điển, D=25cm, cao H=4.5m, hoa trắng nhụy vàng thơm',
+      commissioningDate: '2020-05-19',
+      managementUnit: 'Ban Quản lý Công viên Tượng đài Bác Hồ',
       assignedProjectId: 'p-1',
-      notes: 'Đang bón phân hữu cơ vi sinh và tỉa tán tạo thế'
+      notes: 'Khu vực tâm linh trang trọng'
     },
 
     // DRAINAGE & ROADWAY on Nam Kỳ Khởi Nghĩa & Hàm Nghi (Project 2 & Master pool)
@@ -431,13 +451,17 @@ export class ProjectService {
       name: 'Hố ga thu nước miệng hàm ếch số 14',
       layerId: 'DRAINAGE',
       layerName: 'Thoát nước & Hố ga',
+      category: 'Hố ga thu nước mặt đường hàm ếch',
       route: 'Tuyến Nam Kỳ Khởi Nghĩa',
+      chainage: 'Km0+340 (Mép đường)',
       lat: 10.77720,
       lng: 106.69910,
       address: 'Số 65 Nam Kỳ Khởi Nghĩa, P. Bến Thành',
-      status: 'COMPLETED',
+      specs: 'Hố bê tông đúc sẵn M300, nắp gang cầu D400 tải trọng 40 tấn, cửa thu nước hàm ếch mở rộng 80x30cm, lưới chắn rác inox',
+      commissioningDate: '2020-10-15',
+      managementUnit: 'Công ty TNHH MTV Thoát nước Đô thị TP.HCM',
       assignedProjectId: 'p-2',
-      notes: 'Nạo vét 1.2m3 bùn cát, thay nắp đan gang chịu tải D400'
+      notes: 'Đấu nối trực tiếp vào tuyến cống chính D1000 NKKN'
     },
     {
       id: 'ast-14',
@@ -445,13 +469,17 @@ export class ProjectService {
       name: 'Hố ga thu nước kết hợp van ngăn mùi số 18',
       layerId: 'DRAINAGE',
       layerName: 'Thoát nước & Hố ga',
+      category: 'Hố ga ngăn mùi công nghệ mới',
       route: 'Tuyến Nam Kỳ Khởi Nghĩa',
+      chainage: 'Km0+410 (Mép đường)',
       lat: 10.77650,
       lng: 106.69980,
       address: 'Số 85 Nam Kỳ Khởi Nghĩa',
-      status: 'IN_PROGRESS',
+      specs: 'Kích thước 1.2x1.2x1.8m, van ngăn mùi cao su tổng hợp EPDM đóng mở một chiều chống trào ngược',
+      commissioningDate: '2021-06-20',
+      managementUnit: 'Công ty TNHH MTV Thoát nước Đô thị TP.HCM',
       assignedProjectId: 'p-2',
-      notes: 'Đang thông cống ngầm đường kính D800 bằng xe hút áp lực cao'
+      notes: 'Công nghệ ngăn mùi tự động đạt chứng chỉ đô thị xanh'
     },
     {
       id: 'ast-15',
@@ -459,13 +487,17 @@ export class ProjectService {
       name: 'Cửa xả cống hộp Hàm Nghi ra rạch Bến Nghé',
       layerId: 'DRAINAGE',
       layerName: 'Thoát nước & Hố ga',
+      category: 'Cửa xả tiêu thoát nước chính',
       route: 'Tuyến Hàm Nghi',
+      chainage: 'Km0+850 (Điểm cuối)',
       lat: 10.76980,
       lng: 106.70610,
       address: 'Cuối đường Hàm Nghi - Bến Vân Đồn',
-      status: 'PENDING',
+      specs: 'Cửa xả đôi cống hộp 2x(2m x 2m), van lật tự động ngăn triều composite tải nặng, bờ kè bê tông cốt thép gia cố rọ đá',
+      commissioningDate: '2019-08-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       assignedProjectId: 'p-2',
-      notes: 'Cần sửa chữa van lật tự động chống triều cường'
+      notes: 'Trọng điểm kiểm soát ngập triều khu vực trung tâm quận 1'
     },
     {
       id: 'ast-16',
@@ -473,13 +505,17 @@ export class ProjectService {
       name: 'Mặt đường asphalt đoạn nút giao Hàm Nghi - Pasteur',
       layerId: 'ROADWAY',
       layerName: 'Mặt đường & Biển báo',
+      category: 'Mặt đường bê tông nhựa nóng (Asphalt)',
       route: 'Tuyến Hàm Nghi',
+      chainage: 'Km0+220 - Km0+280',
       lat: 10.77120,
       lng: 106.70310,
       address: 'Nút giao Hàm Nghi - Pasteur',
-      status: 'IN_PROGRESS',
+      specs: 'Bê tông nhựa chặt C12.5 dày 7cm trên lớp BTN C19 dày 8cm, mô đun đàn hồi yêu cầu Eyc >= 160 MPa',
+      commissioningDate: '2021-03-15',
+      managementUnit: 'Sở Giao thông Vận tải TP.HCM',
       assignedProjectId: 'p-2',
-      notes: 'Đang cào bóc mặt đường rạn nứt diện tích 45m2 và thảm nhựa nóng'
+      notes: 'Lưu lượng giao thông trung bình ngày đêm > 45.000 PCU'
     },
     {
       id: 'ast-17',
@@ -487,13 +523,17 @@ export class ProjectService {
       name: 'Vỉa hè lát đá granite trước Bảo tàng Tôn Đức Thắng',
       layerId: 'ROADWAY',
       layerName: 'Mặt đường & Biển báo',
+      category: 'Vỉa hè lát đá tự nhiên cao cấp',
       route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+140 (Phía bờ sông)',
       lat: 10.77850,
       lng: 106.70680,
       address: 'Số 05 Tôn Đức Thắng, P. Bến Nghé',
-      status: 'PENDING',
+      specs: 'Đá granite tự nhiên bề mặt băm nhám 30x60x5cm, lớp vữa lót M100 dày 5cm, bo vỉa đá xám nguyên khối 15x30cm',
+      commissioningDate: '2022-09-02',
+      managementUnit: 'Ban QLDA Đầu tư Xây dựng Công trình Giao thông',
       assignedProjectId: 'p-3',
-      notes: 'Bị sụt lún do xe tải dừng đỗ sai quy định'
+      notes: 'Đồng bộ kiến trúc cảnh quan công viên ven sông Sài Gòn'
     },
     {
       id: 'ast-18',
@@ -501,13 +541,17 @@ export class ProjectService {
       name: 'Biển báo giao thông phân làn xe ô tô giá long môn',
       layerId: 'ROADWAY',
       layerName: 'Mặt đường & Biển báo',
+      category: 'Giá long môn biển báo phân làn',
       route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+300 (Cầu Ba Son)',
       lat: 10.77710,
       lng: 106.70610,
       address: 'Đầu cầu Ba Son - Tôn Đức Thắng',
-      status: 'PENDING',
+      specs: 'Khung giàn thép ống phi 219 mạ kẽm nhúng nóng, biển báo tôn mạ kẽm dán màng phản quang 3M kim cương Series 4000',
+      commissioningDate: '2022-04-28',
+      managementUnit: 'Sở Giao thông Vận tải TP.HCM',
       assignedProjectId: 'p-3',
-      notes: 'Màng phản quang bị mờ sau thời gian dài sử dụng'
+      notes: 'Biển chỉ dẫn phân làn vào hầm chui và lên cầu Ba Son'
     },
 
     // UNASSIGNED ASSETS IN MASTER POOL (READY FOR TESTING ASSET MAPPING)
@@ -517,11 +561,15 @@ export class ProjectService {
       name: 'Cột đèn trang trí công viên Bến Bạch Đằng số 09',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn cảnh quan ven sông',
       route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+450 (Công viên)',
       lat: 10.77490,
       lng: 106.70690,
       address: 'Công viên Bạch Đằng, Tôn Đức Thắng',
-      status: 'PENDING',
+      specs: 'Trụ thép mỹ thuật 5m kiểu cổ điển, đèn LED 60W ánh sáng vàng 2700K',
+      commissioningDate: '2022-01-20',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -530,11 +578,15 @@ export class ProjectService {
       name: 'Cột đèn trang trí công viên Bến Bạch Đằng số 10',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Trụ đèn cảnh quan ven sông',
       route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+510 (Bến tàu)',
       lat: 10.77430,
       lng: 106.70710,
       address: 'Bến tàu thủy Bạch Đằng',
-      status: 'PENDING',
+      specs: 'Trụ thép sơn tĩnh điện xám sẫm, 2 chao đèn LED nón 75W, chân đế bắt bu lông neo mạ kẽm',
+      commissioningDate: '2022-01-20',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -543,11 +595,15 @@ export class ProjectService {
       name: 'Cây Bàng vuông Trường Sa trước Cột cờ Thủ Ngữ',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây lưu niệm lịch sử',
       route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+680 (Cột cờ Thủ Ngữ)',
       lat: 10.77250,
       lng: 106.70650,
       address: 'Công viên Cột cờ Thủ Ngữ, Tôn Đức Thắng',
-      status: 'PENDING',
+      specs: 'Barringtonia asiatica chuyển từ Trường Sa, D=20cm, cao H=5m, sinh trưởng tốt',
+      commissioningDate: '2021-02-03',
+      managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -556,11 +612,15 @@ export class ProjectService {
       name: 'Hàng hoa giấy leo giàn vòm số 02 đường Nguyễn Huệ',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Giàn leo hoa cảnh quan đô thị',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+310 (Vỉa hè đông)',
       lat: 10.77390,
       lng: 106.70450,
       address: 'Gần khách sạn Kim Đô, Nguyễn Huệ',
-      status: 'PENDING',
+      specs: 'Giàn thép uốn mỹ thuật cao 4m dài 15m, 12 gốc hoa giấy Bougainvillea spectabilis nhiều màu sắc',
+      commissioningDate: '2022-04-30',
+      managementUnit: 'Ban QLDA Đầu tư Xây dựng Khu vực Quận 1',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -569,11 +629,15 @@ export class ProjectService {
       name: 'Hố ga kỹ thuật điện - nước ngầm ngã tư Ngô Đức Kế',
       layerId: 'DRAINAGE',
       layerName: 'Thoát nước & Hố ga',
+      category: 'Hố ga hào kỹ thuật dùng chung',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+190 (Góc ngã tư)',
       lat: 10.77495,
       lng: 106.70360,
       address: 'Góc Nguyễn Huệ - Ngô Đức Kế',
-      status: 'PENDING',
+      specs: 'Hầm cáp bê tông M350 kích thước 2.0x1.5x2.2m, nắp gang đậy 4 cánh chịu lực 60T, hệ thống thoát nước đọng tự động',
+      commissioningDate: '2021-10-10',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Kỹ thuật TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -582,11 +646,15 @@ export class ProjectService {
       name: 'Gờ giảm tốc cao su đúc phản quang ngã ba Hải Triều',
       layerId: 'ROADWAY',
       layerName: 'Mặt đường & Biển báo',
+      category: 'Gờ giảm tốc an toàn giao thông',
       route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+390 (Lối rẽ)',
       lat: 10.77340,
       lng: 106.70480,
       address: 'Ngã ba Nguyễn Huệ - Hải Triều',
-      status: 'PENDING',
+      specs: 'Cao su chịu lực tổng hợp đúc khối màu vàng-đen, kích thước rộng 35cm x cao 5cm, có mắt phản quang ban đêm',
+      commissioningDate: '2022-05-15',
+      managementUnit: 'Sở Giao thông Vận tải TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -595,11 +663,15 @@ export class ProjectService {
       name: 'Đèn cảnh quan âm đất lối đi bộ ga Nhà Hát',
       layerId: 'LIGHTING',
       layerName: 'Chiếu sáng đô thị',
+      category: 'Đèn hắt viền lối đi ngầm',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+040 (Cửa ga Metro)',
       lat: 10.77430,
       lng: 106.70200,
       address: 'Cửa Nam Nhà Hát Thành Phố, Lê Lợi',
-      status: 'PENDING',
+      specs: 'Đèn LED thanh định hướng 18W/24V IP68, vỏ nhôm đúc tản nhiệt, mặt kính sapphire chống trầy xước',
+      commissioningDate: '2023-08-15',
+      managementUnit: 'Ban Quản lý Đường sắt Đô thị (MAUR)',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     },
     {
@@ -608,18 +680,22 @@ export class ProjectService {
       name: 'Cây Me tây cổ thụ số 32 trước Khách sạn Rex',
       layerId: 'GREENERY',
       layerName: 'Cây xanh & Công viên',
+      category: 'Cây bóng mát loại 3 (Cổ thụ đô thị)',
       route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+020 (Góc Lê Lợi - Nguyễn Huệ)',
       lat: 10.77480,
       lng: 106.70130,
       address: 'Góc Lê Lợi - Nguyễn Huệ',
-      status: 'PENDING',
+      specs: 'Samanea saman, D=95cm, chiều cao H=22m, độ xòe tán 18m, tuổi thọ trên 75 năm',
+      commissioningDate: '2015-01-01',
+      managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
       notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
     }
   ];
 
   masterAssets = signal<Asset[]>(this.masterAssetsData);
 
-  // Tasks Data
+  // Tasks Data: Quản lý công việc và lưu vết hiện trạng tài sản theo từng task
   private tasksData: MaintenanceTask[] = [
     {
       id: 't-1',
@@ -636,6 +712,52 @@ export class ProjectService {
       progress: 75,
       assetIds: ['ast-01', 'ast-02', 'ast-03', 'ast-04'],
       completedAssetIds: ['ast-01', 'ast-02'],
+      taskAssets: [
+        {
+          assetId: 'ast-01',
+          assetCode: 'CS-NH-01',
+          assetName: 'Cột đèn cao áp số 01 - Trụ hoa sen 4 bóng LED 150W',
+          layerId: 'LIGHTING',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-28',
+          notes: 'Đã thay chóa đèn LED 150W tiết kiệm điện, kiểm tra dây tiếp địa an toàn. Hoạt động tốt.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        },
+        {
+          assetId: 'ast-02',
+          assetCode: 'CS-NH-02',
+          assetName: 'Cột đèn cao áp số 02 - Trụ đôi cảnh quan đi bộ',
+          layerId: 'LIGHTING',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-29',
+          notes: 'Đã căn chỉnh góc rọi đèn và sơn lại chân đế cột. Hoạt động tốt.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        },
+        {
+          assetId: 'ast-03',
+          assetCode: 'CS-NH-03',
+          assetName: 'Tủ điều khiển chiếu sáng trung tâm T01-NH',
+          layerId: 'LIGHTING',
+          condition: 'NORMAL',
+          isCompleted: false,
+          notes: 'Đang đấu nối thêm bộ điều khiển hẹn giờ thông minh IoT',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=500&q=80'
+        },
+        {
+          assetId: 'ast-04',
+          assetCode: 'CS-NH-04',
+          assetName: 'Đèn hắt cây bồn hoa dải phân cách số 04',
+          layerId: 'LIGHTING',
+          condition: 'DAMAGED',
+          isCompleted: false,
+          notes: 'Chờ xử lý bóng cháy chập ẩm nước, cần thay bộ nguồn chống ngập IP68',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80'
+        }
+      ],
       fieldPhotos: [
         {
           id: 'pht-1',
@@ -677,6 +799,42 @@ export class ProjectService {
       progress: 60,
       assetIds: ['ast-05', 'ast-06', 'ast-07'],
       completedAssetIds: ['ast-05', 'ast-07'],
+      taskAssets: [
+        {
+          assetId: 'ast-05',
+          assetCode: 'CX-LL-01',
+          assetName: 'Cây Dầu rái cổ thụ số 12',
+          layerId: 'GREENERY',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-27',
+          notes: 'Đã tỉa 4 cành khô mục vươn ra lòng đường nguy hiểm. Cây phát triển an toàn.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80'
+        },
+        {
+          assetId: 'ast-06',
+          assetCode: 'CX-LL-02',
+          assetName: 'Cây Bằng lăng tím số 18',
+          layerId: 'GREENERY',
+          condition: 'NEEDS_REPLACEMENT',
+          isCompleted: false,
+          notes: 'Đang chống cọc sắt cố định gốc nghiêng 15 độ, thân rỗng mục cần xem xét thay thế trong quý 3',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=500&q=80'
+        },
+        {
+          assetId: 'ast-07',
+          assetCode: 'CX-NH-03',
+          assetName: 'Bồn hoa dải phân cách trung tâm đoạn số 3',
+          layerId: 'GREENERY',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-30',
+          notes: 'Đã trồng bổ sung 250 cây hoa dừa cạn và tỉa cỏ chuốt. Cảnh quan tươi tốt.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80'
+        }
+      ],
       fieldPhotos: [
         {
           id: 'pht-3',
@@ -718,6 +876,44 @@ export class ProjectService {
       progress: 100,
       assetIds: ['ast-09', 'ast-10', 'ast-11'],
       completedAssetIds: ['ast-09', 'ast-10', 'ast-11'],
+      taskAssets: [
+        {
+          assetId: 'ast-09',
+          assetCode: 'CS-LL-05',
+          assetName: 'Trụ đèn chiếu sáng đa hướng ngã tư Pasteur - Lê Lợi',
+          layerId: 'LIGHTING',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-22',
+          notes: 'Sơn 2 lớp epoxy chống rỉ sét và dán decal phản quang. Bề mặt đạt chuẩn.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        },
+        {
+          assetId: 'ast-10',
+          assetCode: 'CS-LL-06',
+          assetName: 'Cột đèn cao áp số 08 vỉa hè chợ Bến Thành',
+          layerId: 'LIGHTING',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-23',
+          notes: 'Đã thay đệm gioăng chống nước hộp đấu nối chân cột. Đạt an toàn điện.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        },
+        {
+          assetId: 'ast-11',
+          assetCode: 'CS-NH-07',
+          assetName: 'Cột đèn hoa sen trước tòa nhà UBND Thành phố',
+          layerId: 'LIGHTING',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-24',
+          notes: 'Bảo dưỡng hoàn tất, ánh sáng đạt tiêu chuẩn 100 Lux. Hoạt động rất tốt.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        }
+      ],
       fieldPhotos: [
         {
           id: 'pht-5',
@@ -974,19 +1170,37 @@ export class ProjectService {
         if (a.id === assetId && a.assignedProjectId === projectId) {
           return {
             ...a,
-            assignedProjectId: undefined,
-            assignedTaskId: undefined,
-            assignedTaskTitle: undefined,
-            status: 'PENDING'
+            assignedProjectId: undefined
           };
         }
         return a;
       })
     );
+
+    // Gỡ tài sản khỏi các công việc trong dự án này nếu có
+    this.tasks.update(tasks =>
+      tasks.map(t => {
+        if (t.projectId === projectId && t.assetIds.includes(assetId)) {
+          const updatedAssetIds = t.assetIds.filter(id => id !== assetId);
+          const updatedCompleted = t.completedAssetIds.filter(id => id !== assetId);
+          const updatedTaskAssets = (t.taskAssets || []).filter(ta => ta.assetId !== assetId);
+          const progress = updatedAssetIds.length > 0 ? Math.round((updatedCompleted.length / updatedAssetIds.length) * 100) : 0;
+          return {
+            ...t,
+            assetIds: updatedAssetIds,
+            completedAssetIds: updatedCompleted,
+            taskAssets: updatedTaskAssets,
+            progress
+          };
+        }
+        return t;
+      })
+    );
+
     this.recalculateProjectStats(projectId);
   }
 
-  // Inline editing asset status: PENDING | IN_PROGRESS | COMPLETED
+  // Legacy compatibility: cập nhật status nếu có luồng cũ gọi
   updateAssetStatus(assetId: string, status: AssetMaintenanceStatus) {
     let affectedProjectId: string | undefined;
     this.masterAssets.update(assets =>
@@ -995,8 +1209,7 @@ export class ProjectService {
           affectedProjectId = a.assignedProjectId;
           return {
             ...a,
-            status,
-            lastUpdated: new Date().toISOString()
+            status
           };
         }
         return a;
@@ -1006,6 +1219,38 @@ export class ProjectService {
     if (affectedProjectId) {
       this.recalculateProjectStats(affectedProjectId);
     }
+  }
+
+  // Tra cứu các công việc có thao tác trên một tài sản cụ thể
+  getTasksForAsset(assetId: string): MaintenanceTask[] {
+    return this.tasks().filter(t => t.assetIds.includes(assetId));
+  }
+
+  // Tra cứu hiện trạng ghi nhận gần nhất của một tài sản từ các task đã thực hiện
+  getAssetLatestCondition(assetId: string): { condition: AssetCondition; taskTitle: string; date?: string; notes?: string } | undefined {
+    const tasksWithAsset = this.getTasksForAsset(assetId);
+    for (const t of tasksWithAsset) {
+      const item = t.taskAssets?.find(a => a.assetId === assetId);
+      if (item) {
+        return {
+          condition: item.condition,
+          taskTitle: t.title,
+          date: item.completedDate || t.createdAt,
+          notes: item.notes
+        };
+      }
+    }
+    return undefined;
+  }
+
+  // Helper nhãn hiện trạng
+  getAssetConditionLabel(condition: AssetCondition): string {
+    return ASSET_CONDITION_CONFIG[condition]?.label || condition;
+  }
+
+  // Helper nhãn trạng thái công việc
+  getTaskStatusLabel(status: TaskStatus): string {
+    return TASK_STATUS_CONFIG[status]?.label || status;
   }
 
   // --- TASK MANAGEMENT METHODS ---
@@ -1020,6 +1265,23 @@ export class ProjectService {
   createTask(newTask: Partial<MaintenanceTask>): MaintenanceTask {
     const id = 't-' + (this.tasks().length + 1);
     const code = 'CV-2026-0' + (this.tasks().length + 1);
+    const assetIds = newTask.assetIds || [];
+    const masterAssetsList = this.masterAssets();
+
+    // Khởi tạo danh sách TaskAssetItem đính kèm trong task với hiện trạng ban đầu
+    const taskAssets: TaskAssetItem[] = assetIds.map(aid => {
+      const ast = masterAssetsList.find(a => a.id === aid);
+      return {
+        assetId: aid,
+        assetCode: ast?.code || aid,
+        assetName: ast?.name || 'Tài sản',
+        layerId: ast?.layerId,
+        condition: 'NORMAL',
+        isCompleted: false,
+        notes: 'Chưa thực hiện kiểm tra / thi công hiện trường'
+      };
+    });
+
     const task: MaintenanceTask = {
       id,
       projectId: newTask.projectId!,
@@ -1033,30 +1295,38 @@ export class ProjectService {
       priority: newTask.priority || 'MEDIUM',
       deadline: newTask.deadline || '2026-05-30',
       progress: 0,
-      assetIds: newTask.assetIds || [],
+      taskAssets,
+      assetIds,
       completedAssetIds: [],
       fieldPhotos: [],
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    // Update assets assignedTaskId
-    if (task.assetIds.length > 0) {
-      this.masterAssets.update(assets =>
-        assets.map(a => {
-          if (task.assetIds.includes(a.id)) {
-            return {
-              ...a,
-              assignedTaskId: task.id,
-              assignedTaskTitle: task.title
-            };
-          }
-          return a;
-        })
-      );
-    }
-
+    // LƯU Ý: Không gán trực tiếp assignedTaskId vào Asset Master Data catalog!
     this.tasks.update(tasks => [task, ...tasks]);
     return task;
+  }
+
+  // Cập nhật hiện trạng tài sản trực tiếp trong 1 Task cụ thể
+  updateTaskAssetCondition(taskId: string, assetId: string, condition: AssetCondition, notes?: string) {
+    this.tasks.update(tasks =>
+      tasks.map(t => {
+        if (t.id === taskId) {
+          const updatedTaskAssets = (t.taskAssets || []).map(ta => {
+            if (ta.assetId === assetId) {
+              return {
+                ...ta,
+                condition,
+                notes: notes !== undefined ? notes : ta.notes
+              };
+            }
+            return ta;
+          });
+          return { ...t, taskAssets: updatedTaskAssets };
+        }
+        return t;
+      })
+    );
   }
 
   // Inline update task status: NOT_STARTED | IN_PROGRESS | PAUSED | COMPLETED
@@ -1072,8 +1342,8 @@ export class ProjectService {
     );
   }
 
-  // Field Contractor: complete asset & attach photo
-  completeAssetInTask(taskId: string, assetId: string, photoUrl: string, note: string) {
+  // Field Contractor: hoàn thành tài sản trong task & đính kèm ảnh hiện trường & lưu hiện trạng đánh giá
+  completeAssetInTask(taskId: string, assetId: string, photoUrl: string, note: string, condition: AssetCondition = 'GOOD') {
     const task = this.tasks().find(t => t.id === taskId);
     const asset = this.masterAssets().find(a => a.id === assetId);
     if (!task || !asset) return;
@@ -1090,30 +1360,116 @@ export class ProjectService {
       uploadedBy: 'Thợ thi công hiện trường'
     };
 
-    // Update asset status
-    this.updateAssetStatus(assetId, 'COMPLETED');
-    this.masterAssets.update(assets =>
-      assets.map(a => a.id === assetId ? { ...a, completedPhotoUrl: photoUrl } : a)
-    );
-
-    // Update task
+    // Cập nhật trạng thái và hiện trạng tài sản trong Task
     this.tasks.update(tasks =>
       tasks.map(t => {
         if (t.id === taskId) {
           const updatedCompleted = Array.from(new Set([...t.completedAssetIds, assetId]));
           const progress = Math.round((updatedCompleted.length / (t.assetIds.length || 1)) * 100);
-          const status = progress === 100 ? 'COMPLETED' : 'IN_PROGRESS';
+          const status: TaskStatus = progress === 100 ? 'COMPLETED' : 'IN_PROGRESS';
+
+          const updatedTaskAssets = (t.taskAssets || []).map(ta => {
+            if (ta.assetId === assetId) {
+              return {
+                ...ta,
+                isCompleted: true,
+                condition,
+                completedDate: new Date().toISOString().substring(0, 10),
+                photoAfterUrl: photoUrl,
+                notes: note || ta.notes
+              };
+            }
+            return ta;
+          });
+
           return {
             ...t,
             completedAssetIds: updatedCompleted,
             progress,
             status,
+            taskAssets: updatedTaskAssets,
             fieldPhotos: [newPhoto, ...t.fieldPhotos]
           };
         }
         return t;
       })
     );
+
+    this.recalculateProjectStats(task.projectId);
+  }
+
+  // Cập nhật trạng thái hoàn thành và hiện trạng của 1 tài sản trong 1 task cụ thể (Độc lập, không xung đột giữa các task)
+  setTaskAssetCompletion(taskId: string, assetId: string, completed: boolean, photoUrl?: string, note?: string, condition?: AssetCondition) {
+    const asset = this.masterAssets().find(a => a.id === assetId);
+    let targetProjectId = '';
+
+    this.tasks.update(tasks =>
+      tasks.map(t => {
+        if (t.id === taskId) {
+          targetProjectId = t.projectId;
+          let updatedCompleted = [...t.completedAssetIds];
+          let updatedPhotos = [...t.fieldPhotos];
+
+          if (completed) {
+            if (!updatedCompleted.includes(assetId)) {
+              updatedCompleted.push(assetId);
+            }
+            if (photoUrl) {
+              const newPhoto: FieldPhoto = {
+                id: 'photo-' + Date.now(),
+                assetId,
+                assetName: asset?.name || 'Tài sản',
+                url: photoUrl,
+                timestamp: new Date().toLocaleString('vi-VN'),
+                lat: asset?.lat || 10.7769,
+                lng: asset?.lng || 106.7009,
+                note: note || 'Nghiệm thu tiến độ theo task',
+                uploadedBy: 'Cán bộ giám sát / Đội thi công'
+              };
+              const existingIndex = updatedPhotos.findIndex(p => p.assetId === assetId);
+              if (existingIndex >= 0) {
+                updatedPhotos[existingIndex] = newPhoto;
+              } else {
+                updatedPhotos = [newPhoto, ...updatedPhotos];
+              }
+            }
+          } else {
+            updatedCompleted = updatedCompleted.filter(id => id !== assetId);
+          }
+
+          const progress = Math.round((updatedCompleted.length / (t.assetIds.length || 1)) * 100);
+          const status: TaskStatus = progress === 100 ? 'COMPLETED' : (progress > 0 ? 'IN_PROGRESS' : 'NOT_STARTED');
+
+          const updatedTaskAssets = (t.taskAssets || []).map(ta => {
+            if (ta.assetId === assetId) {
+              return {
+                ...ta,
+                isCompleted: completed,
+                condition: condition || (completed ? 'GOOD' : ta.condition || 'NORMAL'),
+                completedDate: completed ? new Date().toISOString().substring(0, 10) : undefined,
+                photoAfterUrl: photoUrl || ta.photoAfterUrl,
+                notes: note !== undefined ? note : ta.notes
+              };
+            }
+            return ta;
+          });
+
+          return {
+            ...t,
+            completedAssetIds: updatedCompleted,
+            progress,
+            status,
+            taskAssets: updatedTaskAssets,
+            fieldPhotos: updatedPhotos
+          };
+        }
+        return t;
+      })
+    );
+
+    if (targetProjectId) {
+      this.recalculateProjectStats(targetProjectId);
+    }
   }
 
   // --- REPORTING & PAYMENT METHODS ---
@@ -1262,11 +1618,44 @@ export class ProjectService {
     );
   }
 
-  // Internal helper to keep project stats synced
+  // Nhà thầu tạo & nộp báo cáo nghiệm thu khối lượng hoàn thành lên Ban QLDA
+  submitContractorReport(data: {
+    projectId: string;
+    periodTitle: string;
+    contractor: string;
+    items: ReportItem[];
+    amountRequested: number;
+  }): ReportPayment {
+    const project = this.getProjectById(data.projectId);
+    const reportCode = 'BCNT-2026-0' + (this.reports().length + 1);
+    const newReport: ReportPayment = {
+      id: 'rep-' + Date.now(),
+      projectId: data.projectId,
+      projectCode: project?.code || '',
+      projectName: project?.name || '',
+      code: reportCode,
+      periodTitle: data.periodTitle || `Báo cáo nghiệm thu & Đề nghị thanh toán (${reportCode})`,
+      contractor: data.contractor || project?.contractor || 'Đơn vị thi công',
+      createdDate: new Date().toISOString().split('T')[0],
+      totalCompletedTasks: new Set(data.items.map(it => it.taskId)).size,
+      totalCompletedAssets: data.items.length,
+      amountRequested: data.amountRequested,
+      status: 'PENDING_INSPECTION',
+      items: data.items
+    };
+
+    this.reports.update(reports => [newReport, ...reports]);
+    return newReport;
+  }
+
+  // Internal helper to keep project stats synced dựa trên tiến độ hoàn thành từ các Task
   private recalculateProjectStats(projectId: string) {
     const assets = this.getProjectAssets(projectId);
     const total = assets.length;
-    const completed = assets.filter(a => a.status === 'COMPLETED').length;
+    const tasks = this.getProjectTasks(projectId);
+    const completedSet = new Set<string>();
+    tasks.forEach(t => (t.completedAssetIds || []).forEach(id => completedSet.add(id)));
+    const completed = assets.filter(a => completedSet.has(a.id)).length;
     const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
     this.projects.update(list =>

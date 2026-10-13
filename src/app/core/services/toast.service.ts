@@ -14,7 +14,7 @@ export interface ToastMessage {
 export class ToastService {
   toasts = signal<ToastMessage[]>([]);
 
-  show(type: 'success' | 'warning' | 'danger' | 'info', title: string, message: string, duration: number = 4000) {
+  show(type: 'success' | 'warning' | 'danger' | 'info', title: string, message: string = '', duration: number = 4000) {
     const id = Math.random().toString(36).substring(2, 9);
     const newToast: ToastMessage = { id, type, title, message, duration };
     this.toasts.update(list => [...list, newToast]);
@@ -26,19 +26,19 @@ export class ToastService {
     }
   }
 
-  success(title: string, message: string) {
+  success(title: string, message: string = '') {
     this.show('success', title, message);
   }
 
-  warning(title: string, message: string) {
+  warning(title: string, message: string = '') {
     this.show('warning', title, message);
   }
 
-  danger(title: string, message: string) {
+  danger(title: string, message: string = '') {
     this.show('danger', title, message);
   }
 
-  info(title: string, message: string) {
+  info(title: string, message: string = '') {
     this.show('info', title, message);
   }
 

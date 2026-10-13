@@ -95,7 +95,7 @@
         (click)="setActiveTab('assets')"
       >
         <i class="bi bi-geo-alt-fill"></i>
-        <span>3. Quản lý tài sản (Mapping)</span>
+        <span>3. Hồ sơ tài sản (Catalog)</span>
         <span class="tab-badge primary">{{ projectAssets.length }}</span>
       </button>
 
@@ -115,7 +115,7 @@
         (click)="setActiveTab('reports')"
       >
         <i class="bi bi-cash-coin"></i>
-        <span>5. Báo cáo & Thanh toán</span>
+        <span>5. Nghiệm thu và thanh toán</span>
         <span class="tab-badge warning">{{ projectReports.length }}</span>
       </button>
     </div>
@@ -275,8 +275,7 @@
             <tr>
               <th style="width: 40px;">#</th>
               <th>Tên Hồ Sơ / Tài Liệu</th>
-              <th style="width: 130px;">Tên File & Loại</th>
-              <th style="width: 100px;">Dung Lượng</th>
+              <th style="width: 140px;">Tên File & Loại</th>
               <th style="width: 120px;">Ngày Tải</th>
               <th style="width: 180px;">Người Tải</th>
               <th>Ghi Chú</th>
@@ -297,7 +296,6 @@
               <td>
                 <span class="file-code">{{ doc.fileName }}</span>
               </td>
-              <td>{{ doc.fileSize }}</td>
               <td>{{ doc.uploadDate | date:'dd/MM/yyyy' }}</td>
               <td>
                 <span class="uploader-name">{{ doc.uploadedBy }}</span>
@@ -321,7 +319,7 @@
             </tr>
 
             <tr *ngIf="filteredDocuments.length === 0">
-              <td colspan="8" class="empty-state">
+              <td colspan="7" class="empty-state">
                 <i class="bi bi-folder-x"></i>
                 <p>Chưa có tài liệu nào thuộc nhóm này</p>
                 <button class="btn btn-sm btn-primary" (click)="openUploadModal(activeDocCategory)">Tải lên file đầu tiên</button>
@@ -333,13 +331,13 @@
     </div>
   </div>
 
-  <!-- TAB 3: QUẢN LÝ TÀI SẢN (ASSET MAPPING) -->
+  <!-- TAB 3: HỒ SƠ TÀI SẢN KỸ THUẬT (ASSET MASTER DATA / CATALOG) -->
   <div *ngIf="activeTab === 'assets'" class="tab-content-panel">
     <div class="assets-top-card app-card mb-3">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h3 class="card-title"><i class="bi bi-pin-map-fill"></i> Quản Lý Tài Sản Đã Gán Vào Dự Án</h3>
-          <p class="card-subtitle">Ánh xạ không gian (Map) các đối tượng từ kho dữ liệu tổng. Cập nhật trạng thái bảo trì độc lập cho từng đối tượng.</p>
+          <h3 class="card-title"><i class="bi bi-folder2-open"></i> Hồ Sơ Tài Sản Kỹ Thuật (Asset Master Data / Catalog)</h3>
+          <p class="card-subtitle">Quản lý danh mục dữ liệu tĩnh & hồ sơ gốc: Mã tài sản, thông số kỹ thuật, vị trí, lý trình, ngày đưa vào sử dụng và đơn vị quản lý.</p>
         </div>
         <button class="btn btn-primary" (click)="openAddAssetModal()">
           <i class="bi bi-plus-circle-fill"></i>
@@ -347,39 +345,44 @@
         </button>
       </div>
 
-      <!-- Filters & Stats Bar -->
+      <!-- Banner chuẩn hóa Data Modeling -->
+      <div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2 px-3 fs-xs border">
+        <i class="bi bi-shield-check fs-6 text-primary"></i>
+        <div>
+          <strong>Chuẩn hóa Data Modeling:</strong> Tab này đóng vai trò là Catalog tĩnh / hồ sơ tài sản (không lưu trạng thái bảo trì biến động). Mọi hiện trạng đánh giá (Hoạt động tốt, Bình thường, Hư hỏng, Cần thay thế) và trạng thái hoàn thành được quản lý và lưu vết độc lập theo từng lần thực hiện công việc tại <strong>Tab 4. Quản lý công việc</strong>.
+        </div>
+      </div>
+
+      <!-- Filters Bar -->
       <div class="asset-filter-bar">
         <div class="search-box">
           <i class="bi bi-search"></i>
           <input
             type="text"
             class="form-control"
-            placeholder="Tìm theo mã tài sản, tên cột đèn, cây xanh, vị trí..."
+            placeholder="Tìm theo mã tài sản, tên, tuyến đường, lý trình, thông số kỹ thuật..."
             [(ngModel)]="assetSearchKeyword"
+            (ngModelChange)="assetCurrentPage = 1"
           />
         </div>
 
         <div class="filter-item">
           <label>Lớp dữ liệu:</label>
-          <select class="form-select" [(ngModel)]="assetFilterLayer">
+          <select class="form-select" [(ngModel)]="assetFilterLayer" (ngModelChange)="assetCurrentPage = 1">
             <option value="ALL">Tất cả lớp dữ liệu</option>
             <option *ngFor="let layer of projectService.layers()" [value]="layer.id">{{ layer.name }}</option>
           </select>
         </div>
 
-        <div class="filter-item">
-          <label>Trạng thái bảo trì:</label>
-          <select class="form-select" [(ngModel)]="assetFilterStatus">
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="PENDING">Chờ xử lý</option>
-            <option value="IN_PROGRESS">Đang sửa</option>
-            <option value="COMPLETED">Đã xong</option>
-          </select>
+        <div class="filter-item ms-auto">
+          <span class="badge bg-light text-primary border py-2 px-3 fs-xs">
+            <i class="bi bi-database-fill me-1"></i> Tổng số: <strong>{{ projectAssets.length }}</strong> tài sản trong hồ sơ
+          </span>
         </div>
       </div>
     </div>
 
-    <!-- Layout: GIS Mini Map + Data Table with INLINE EDITING -->
+    <!-- Layout: GIS Mini Map + Static Asset Catalog Table -->
     <div class="asset-content-split">
       <!-- Mini Map preview -->
       <div class="app-card map-side-card">
@@ -396,22 +399,21 @@
         </div>
       </div>
 
-      <!-- Asset Data Table with INLINE EDITING STATUS -->
+      <!-- Static Asset Catalog Table with Pagination -->
       <div class="app-card table-side-card">
         <div class="custom-table-container">
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 100px;">Mã TS</th>
+                <th style="width: 110px;">Mã TS</th>
                 <th>Tên Tài Sản & Vị Trí</th>
-                <th style="width: 150px;">Lớp Dữ Liệu</th>
-                <th style="width: 160px;">Trạng Thái Bảo Trì (Inline)</th>
-                <th style="width: 150px;">Công Việc Phân Công</th>
+                <th style="width: 180px;">Lớp & Phân Nhóm</th>
+                <th style="width: 220px;">Tuyến đường</th>
                 <th style="width: 60px; text-align: center;">Gỡ</th>
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let asset of projectAssets">
+              <tr *ngFor="let asset of paginatedProjectAssets">
                 <td>
                   <span class="asset-code-tag">{{ asset.code }}</span>
                 </td>
@@ -425,37 +427,21 @@
                   <span class="badge" [ngClass]="getLayerBadgeClass(asset.layerId)">
                     {{ asset.layerName }}
                   </span>
+                  <div class="text-muted fs-xs mt-1">{{ asset.category || 'Tài sản hạ tầng' }}</div>
                 </td>
                 <td>
-                  <!-- INLINE EDITING DROPDOWN FOR ASSET STATUS -->
-                  <div class="inline-status-select-wrap">
-                    <select
-                      class="form-select form-select-sm inline-select"
-                      [ngClass]="'status-' + asset.status.toLowerCase()"
-                      [ngModel]="asset.status"
-                      (ngModelChange)="onInlineAssetStatusChange(asset, $event)"
-                    >
-                      <option value="PENDING">Chờ xử lý</option>
-                      <option value="IN_PROGRESS">Đang sửa</option>
-                      <option value="COMPLETED">Đã xong</option>
-                    </select>
-                  </div>
-                </td>
-                <td>
-                  <span class="task-assigned-tag" *ngIf="asset.assignedTaskTitle">
-                    <i class="bi bi-check2-circle text-success"></i> {{ asset.assignedTaskTitle }}
-                  </span>
-                  <span class="text-muted" *ngIf="!asset.assignedTaskTitle">Chưa giao task</span>
+                  <span class="d-block fw-semibold fs-xs">{{ asset.route }}</span>
+                  <span class="text-muted fs-xs" *ngIf="asset.chainage"><i class="bi bi-signpost-2"></i> {{ asset.chainage }}</span>
                 </td>
                 <td style="text-align: center;">
-                  <button class="btn btn-sm btn-ghost text-danger" title="Gỡ khỏi dự án" (click)="removeAsset(asset)">
-                    <i class="bi bi-x-circle"></i>
+                  <button class="btn btn-sm btn-ghost text-danger" title="Gỡ khỏi danh mục dự án" (click)="removeAsset(asset)">
+                    <i class="bi bi-trash"></i>
                   </button>
                 </td>
               </tr>
 
               <tr *ngIf="projectAssets.length === 0">
-                <td colspan="6" class="empty-state">
+                <td colspan="5" class="empty-state">
                   <i class="bi bi-geo"></i>
                   <p>Dự án chưa có tài sản nào được gán từ Master Map</p>
                   <button class="btn btn-primary btn-sm" (click)="openAddAssetModal()">Mở màn hình gán tài sản</button>
@@ -463,18 +449,83 @@
               </tr>
             </tbody>
           </table>
+
+          <!-- Thanh phân trang cho Bảng Tài Sản -->
+          <div class="table-pagination-bar" *ngIf="projectAssets.length > 0">
+            <div class="pagination-info">
+              Hiển thị <strong>{{ assetStartIdx }} - {{ assetEndIdx }}</strong> / <strong>{{ projectAssets.length }}</strong> tài sản
+            </div>
+
+            <div class="pagination-controls">
+              <div class="page-size-selector">
+                <span class="fs-xs text-muted">Số hàng:</span>
+                <select class="form-select form-select-sm page-size-select" [ngModel]="assetPageSize" (ngModelChange)="onAssetPageSizeChange($event)">
+                  <option [value]="5">5</option>
+                  <option [value]="10">10</option>
+                  <option [value]="20">20</option>
+                </select>
+              </div>
+
+              <div class="pagination-buttons">
+                <button
+                  class="btn btn-sm btn-ghost pagination-btn"
+                  [disabled]="assetCurrentPage === 1"
+                  (click)="setAssetPage(1)"
+                  title="Trang đầu"
+                >
+                  <i class="bi bi-chevron-double-left"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-ghost pagination-btn"
+                  [disabled]="assetCurrentPage === 1"
+                  (click)="setAssetPage(assetCurrentPage - 1)"
+                  title="Trang trước"
+                >
+                  <i class="bi bi-chevron-left"></i>
+                </button>
+
+                <div class="page-numbers">
+                  <button
+                    *ngFor="let p of assetPaginationPages"
+                    class="btn btn-sm page-num-btn"
+                    [class.active]="p === assetCurrentPage"
+                    (click)="setAssetPage(p)"
+                  >
+                    {{ p }}
+                  </button>
+                </div>
+
+                <button
+                  class="btn btn-sm btn-ghost pagination-btn"
+                  [disabled]="assetCurrentPage === totalAssetPages"
+                  (click)="setAssetPage(assetCurrentPage + 1)"
+                  title="Trang kế"
+                >
+                  <i class="bi bi-chevron-right"></i>
+                </button>
+                <button
+                  class="btn btn-sm btn-ghost pagination-btn"
+                  [disabled]="assetCurrentPage === totalAssetPages"
+                  (click)="setAssetPage(totalAssetPages)"
+                  title="Trang cuối"
+                >
+                  <i class="bi bi-chevron-double-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- TAB 4: QUẢN LÝ CÔNG VIỆC (TASK MANAGEMENT) -->
+  <!-- TAB 4: QUẢN LÝ CÔNG VIỆC & LƯU VẾT HIỆN TRẠNG TÀI SẢN (TASK MANAGEMENT) -->
   <div *ngIf="activeTab === 'tasks'" class="tab-content-panel">
     <div class="app-card">
       <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-          <h3 class="card-title"><i class="bi bi-card-checklist"></i> Quản Lý Công Việc & Phân Công Thi Công</h3>
-          <p class="card-subtitle">Chẻ nhỏ dự án thành các đầu việc cụ thể, đính kèm danh sách tài sản định hướng tọa độ hiện trường.</p>
+          <h3 class="card-title"><i class="bi bi-card-checklist"></i> Quản Lý Công Việc & Đánh Giá Hiện Trạng Hiện Trường</h3>
+          <p class="card-subtitle">Chẻ nhỏ dự án thành các đầu việc thi công/tuần kiểm. Quản lý trạng thái công việc và lưu vết hiện trạng đánh giá cho từng tài sản.</p>
         </div>
         <div class="header-btns">
           <button class="btn btn-primary" (click)="openCreateTaskModal()">
@@ -484,85 +535,106 @@
         </div>
       </div>
 
-      <!-- Task Table with INLINE STATUS DROPDOWN -->
+      <!-- Task Table with Expandable Asset Condition Panel -->
       <div class="custom-table-container">
         <table class="custom-table">
           <thead>
             <tr>
               <th style="width: 100px;">Mã CV</th>
               <th>Tiêu Đề Công Việc & Mô Tả</th>
-              <th style="width: 160px;">Đội / Tổ Phụ Trách</th>
-              <th style="width: 120px;">Số Tài Sản</th>
-              <th style="width: 150px;">Tiến Độ</th>
-              <th style="width: 160px;">Trạng Thái (Inline)</th>
-              <th style="width: 110px;">Hạn Chót</th>
-              <th style="width: 120px; text-align: center;">App Thợ</th>
+              <th style="width: 180px;">Nhà Thầu</th>
+              <th style="width: 140px;">Tài Sản Gắn Kèm</th>
+              <th style="width: 130px;">Tiến Độ</th>
+              <th style="width: 160px;">Trạng Thái CV</th>
+              <th style="width: 105px;">Hạn Chót</th>
+              <th style="width: 190px; text-align: center;">Thao Tác</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let task of projectTasks">
-              <td>
-                <span class="task-code-pill">{{ task.code }}</span>
-              </td>
-              <td>
-                <div class="task-main-cell">
-                  <div class="task-title-line">
-                    <span class="title">{{ task.title }}</span>
-                    <span class="badge" [class.badge-danger]="task.priority === 'URGENT'" [class.badge-warning]="task.priority === 'HIGH'" [class.badge-secondary]="task.priority === 'MEDIUM' || task.priority === 'LOW'">
-                      {{ task.priority }}
-                    </span>
+            <ng-container *ngFor="let task of projectTasks">
+              <tr>
+                <td>
+                  <span class="task-code-pill">{{ task.code }}</span>
+                </td>
+                <td>
+                  <div class="task-main-cell">
+                    <div class="task-title-line">
+                      <span class="title">{{ task.title }}</span>
+                      <span class="badge" [class.badge-danger]="task.priority === 'URGENT'" [class.badge-warning]="task.priority === 'HIGH'" [class.badge-secondary]="task.priority === 'MEDIUM' || task.priority === 'LOW'">
+                        {{ task.priority }}
+                      </span>
+                    </div>
+                    <div class="task-desc">{{ task.description }}</div>
                   </div>
-                  <div class="task-desc">{{ task.description }}</div>
-                </div>
-              </td>
-              <td>
-                <div class="team-cell">
-                  <i class="bi bi-people-fill text-primary"></i>
-                  <span>{{ task.assignedTeam }}</span>
-                </div>
-              </td>
-              <td>
-                <span class="badge badge-primary">{{ task.assetIds.length }} tài sản</span>
-                <div class="text-muted fs-xs" *ngIf="task.completedAssetIds.length > 0">
-                  ({{ task.completedAssetIds.length }} đã xong)
-                </div>
-              </td>
-              <td>
-                <div class="progress-cell">
-                  <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" [style.width.%]="task.progress"></div>
+                </td>
+                <td>
+                  <div class="team-cell">
+                    <i class="bi bi-building text-primary"></i>
+                    <span>{{ task.contractor || project?.contractor || task.assignedTeam }}</span>
                   </div>
-                  <span class="percent-text">{{ task.progress }}%</span>
-                </div>
-              </td>
-              <td>
-                <!-- INLINE STATUS DROPDOWN FOR TASKS -->
-                <select
-                  class="form-select form-select-sm inline-select"
-                  [ngClass]="'status-' + task.status.toLowerCase()"
-                  [ngModel]="task.status"
-                  (ngModelChange)="onInlineTaskStatusChange(task, $event)"
-                >
-                  <option value="NOT_STARTED">Chưa bắt đầu</option>
-                  <option value="IN_PROGRESS">Đang thực hiện</option>
-                  <option value="PAUSED">Tạm dừng</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                </select>
-              </td>
-              <td>
-                <span class="date-text">{{ task.deadline | date:'dd/MM/yyyy' }}</span>
-              </td>
-              <td style="text-align: center;">
-                <button
-                  class="btn btn-sm btn-outline-primary"
-                  title="Mở màn hình thợ hiện trường cho task này"
-                  (click)="openMobileContractorForTask(task)"
-                >
-                  <i class="bi bi-phone"></i>
-                  <span>Mở App</span>
-                </button>
-              </td>
-            </tr>
+                </td>
+                <td>
+                  <button
+                    class="btn btn-sm btn-outline-primary py-0 px-2 fs-xs"
+                    (click)="openTaskAssetsModal(task)"
+                    title="Nhấn để mở modal danh sách tài sản"
+                  >
+                    <i class="bi bi-geo-alt me-1"></i>
+                    {{ (task.taskAssets && task.taskAssets.length) ? task.taskAssets.length : task.assetIds.length }} tài sản
+                  </button>
+                  <div class="text-muted fs-xs mt-1" *ngIf="task.completedAssetIds.length > 0">
+                    ({{ task.completedAssetIds.length }} đã xong)
+                  </div>
+                </td>
+                <td>
+                  <div class="progress-cell">
+                    <div class="progress-bar-bg">
+                      <div class="progress-bar-fill" [style.width.%]="task.progress"></div>
+                    </div>
+                    <span class="percent-text">{{ task.progress }}%</span>
+                  </div>
+                </td>
+                <td>
+                  <!-- INLINE STATUS DROPDOWN FOR TASKS -->
+                  <select
+                    class="form-select form-select-sm inline-select"
+                    [ngClass]="'status-' + task.status.toLowerCase()"
+                    [ngModel]="task.status"
+                    (ngModelChange)="onInlineTaskStatusChange(task, $event)"
+                  >
+                    <option value="NOT_STARTED">Chưa bắt đầu</option>
+                    <option value="IN_PROGRESS">Đang thực hiện</option>
+                    <option value="PAUSED">Tạm dừng</option>
+                    <option value="COMPLETED">Hoàn thành</option>
+                  </select>
+                </td>
+                <td>
+                  <span class="date-text">{{ task.deadline | date:'dd/MM/yyyy' }}</span>
+                </td>
+                <td style="text-align: center;">
+                  <div class="d-flex align-items-center justify-content-center gap-1">
+                    <!-- Nút nhấn mở modal danh sách & đánh giá hiện trạng tài sản -->
+                    <button
+                      class="btn btn-sm btn-primary py-1 px-2 d-inline-flex align-items-center gap-1 fs-xs"
+                      title="Mở danh sách & đánh giá hiện trạng tài sản"
+                      (click)="openTaskAssetsModal(task)"
+                    >
+                      <i class="bi bi-list-check"></i>
+                      <span>Tài sản ({{ (task.taskAssets && task.taskAssets.length) ? task.taskAssets.length : task.assetIds.length }})</span>
+                    </button>
+
+                    <button
+                      class="btn btn-sm btn-outline-secondary py-1 px-2 d-inline-flex align-items-center gap-1 fs-xs"
+                      title="Mở giao diện thợ hiện trường cho task này"
+                      (click)="openMobileContractorForTask(task)"
+                    >
+                      <i class="bi bi-phone"></i>
+                      <span>App Thợ</span>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </ng-container>
 
             <tr *ngIf="projectTasks.length === 0">
               <td colspan="8" class="empty-state">
@@ -582,15 +654,14 @@
     <div class="app-card mb-3">
       <div class="d-flex justify-content-between align-items-center">
         <div>
-          <h3 class="card-title"><i class="bi bi-cash-stack"></i> Tổng Hợp Khối Lượng & Nghiệm Thu Thanh Toán</h3>
-          <p class="card-subtitle">Luồng giao tiếp 2 chiều: Nhà thầu báo cáo đòi tiền ➔ Cán bộ vận hành kiểm tra ➔ Cán bộ ban duyệt thanh toán.</p>
+          <h3 class="card-title"><i class="bi bi-cash-stack"></i> Nghiệm Thu Khối Lượng & Thanh Toán</h3>
+          <p class="card-subtitle">Hồ sơ nghiệm thu & đề nghị thanh toán do Nhà thầu gửi lên ➔ Cán bộ giám sát kiểm tra thực tế (Split-view) ➔ Phê duyệt giải ngân.</p>
         </div>
         <div class="header-btns">
-          <!-- Section 5: Auto-fill report generation -->
-          <button class="btn btn-success" (click)="generateAutoReport()">
-            <i class="bi bi-magic"></i>
-            <span>Tạo Báo Cáo Nghiệm Thu Tự Động (Auto-fill)</span>
-          </button>
+          <a routerLink="/contractor-reports" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-box-arrow-up-right me-1"></i>
+            <span>Mở Cổng Nhà Thầu Lập Báo Cáo</span>
+          </a>
         </div>
       </div>
     </div>
@@ -959,13 +1030,13 @@
 
           <div class="form-row mb-3">
             <div class="form-group flex-1">
-              <label class="form-label required">Đội ngũ / Tổ phụ trách:</label>
+              <label class="form-label required">Nhà thầu phụ trách:</label>
               <input
                 type="text"
                 class="form-control"
-                placeholder="VD: Tổ Kỹ thuật Điện Chiếu Sáng 1"
-                [(ngModel)]="newTask.assignedTeam"
-                name="assignedTeam"
+                placeholder="VD: Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn"
+                [(ngModel)]="newTask.contractor"
+                name="contractor"
                 required
               />
             </div>
@@ -1228,6 +1299,147 @@
         <button class="btn btn-secondary" (click)="closeRejectModal()">Hủy</button>
         <button class="btn btn-danger" [disabled]="!rejectionReason" (click)="confirmRejectReport()">
           Xác nhận từ chối
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: DANH SÁCH & ĐÁNH GIÁ HIỆN TRẠNG TÀI SẢN THEO TASK -->
+  <div class="modal-backdrop" *ngIf="isTaskAssetsModalOpen && selectedTaskForAssets" (click)="closeTaskAssetsModal()">
+    <div class="modal-content modal-xl" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1">
+            <span class="task-code-pill font-bold">{{ selectedTaskForAssets.code }}</span>
+            <h3 class="m-0 fs-5 font-bold">{{ selectedTaskForAssets.title }}</h3>
+            <span class="badge" [class.badge-danger]="selectedTaskForAssets.priority === 'URGENT'" [class.badge-warning]="selectedTaskForAssets.priority === 'HIGH'" [class.badge-secondary]="selectedTaskForAssets.priority === 'MEDIUM' || selectedTaskForAssets.priority === 'LOW'">
+              {{ selectedTaskForAssets.priority }}
+            </span>
+          </div>
+          <p class="m-0 text-muted fs-xs">
+            <i class="bi bi-diagram-3-fill text-primary me-1"></i>
+            Đánh giá hiện trạng & kiểm soát tiến độ từng tài sản trong đợt thi công này • Lưu vết độc lập, giữ nguyên Catalog gốc
+          </p>
+        </div>
+        <button class="close-btn" (click)="closeTaskAssetsModal()"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Task Meta Summary Bar -->
+        <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border mb-3 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-3">
+            <div class="fs-xs">
+              <span class="text-muted">Nhà thầu:</span>
+              <strong class="text-primary ms-1"><i class="bi bi-building"></i> {{ selectedTaskForAssets.contractor || project?.contractor || selectedTaskForAssets.assignedTeam }}</strong>
+            </div>
+            <div class="fs-xs">
+              <span class="text-muted">Hạn hoàn thành:</span>
+              <strong class="text-danger ms-1">{{ selectedTaskForAssets.deadline | date:'dd/MM/yyyy' }}</strong>
+            </div>
+            <div class="fs-xs">
+              <span class="text-muted">Trạng thái CV:</span>
+              <span class="badge ms-1" [ngClass]="'status-' + selectedTaskForAssets.status.toLowerCase()">
+                {{ getTaskStatusLabel(selectedTaskForAssets.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-primary border py-2 px-3 fs-xs">
+              <i class="bi bi-check2-circle text-success me-1"></i>
+              Tiến độ: <strong>{{ selectedTaskForAssets.completedAssetIds.length }} / {{ selectedTaskForAssets.taskAssets.length }} tài sản đã xong</strong> ({{ selectedTaskForAssets.progress }}%)
+            </span>
+          </div>
+        </div>
+
+        <!-- Assets Table inside Modal -->
+        <div class="custom-table-container border rounded bg-white">
+          <table class="table table-hover align-middle m-0 custom-subtable">
+            <thead>
+              <tr class="table-light">
+                <th style="width: 110px;">Mã TS</th>
+                <th>Tên Tài Sản</th>
+                <th style="width: 220px;">Hiện Trạng Đánh Giá (Condition)</th>
+                <th style="width: 150px; text-align: center;">Tiến Độ Xử Lý</th>
+                <th>Ghi Chú Đánh Giá / Thi Công</th>
+                <th style="width: 90px; text-align: center;">Ảnh</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ta of selectedTaskForAssets.taskAssets">
+                <td>
+                  <span class="asset-code-tag">{{ ta.assetCode }}</span>
+                </td>
+                <td>
+                  <div class="fw-semibold fs-xs text-dark">{{ ta.assetName }}</div>
+                </td>
+                <td>
+                  <!-- Dropdown chọn Hiện trạng tài sản trong Task -->
+                  <select
+                    class="form-select form-select-sm condition-select py-1 w-100"
+                    [ngModel]="ta.condition"
+                    (ngModelChange)="onTaskAssetConditionChange(selectedTaskForAssets, ta, $event)"
+                  >
+                    <option value="GOOD">🟢 Hoạt động tốt</option>
+                    <option value="NORMAL">🔵 Bình thường</option>
+                    <option value="DAMAGED">🔴 Hư hỏng</option>
+                    <option value="NEEDS_REPLACEMENT">🟠 Cần thay thế</option>
+                  </select>
+                </td>
+                <td style="text-align: center;">
+                  <button
+                    class="btn btn-sm py-1 px-3 d-inline-flex align-items-center gap-1 w-100 justify-content-center"
+                    [ngClass]="ta.isCompleted ? 'btn-success' : 'btn-outline-secondary'"
+                    (click)="onToggleTaskAssetComplete(selectedTaskForAssets, ta)"
+                  >
+                    <i class="bi" [ngClass]="ta.isCompleted ? 'bi-check2-circle' : 'bi-circle'"></i>
+                    <span>{{ ta.isCompleted ? 'Đã hoàn thành' : 'Chưa xong' }}</span>
+                  </button>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="ta.notes"
+                    placeholder="Ghi chú đánh giá kỹ thuật..."
+                    (change)="onTaskAssetNotesChange(selectedTaskForAssets, ta)"
+                  />
+                </td>
+                <td style="text-align: center;">
+                  <a
+                    *ngIf="ta.photoAfterUrl || ta.photoBeforeUrl"
+                    [href]="ta.photoAfterUrl || ta.photoBeforeUrl"
+                    target="_blank"
+                    class="badge bg-light text-primary border"
+                    title="Xem ảnh hiện trường"
+                  >
+                    <i class="bi bi-image"></i> Xem
+                  </a>
+                  <span *ngIf="!ta.photoAfterUrl && !ta.photoBeforeUrl" class="text-muted fs-xs">—</span>
+                </td>
+              </tr>
+
+              <tr *ngIf="!selectedTaskForAssets.taskAssets || selectedTaskForAssets.taskAssets.length === 0">
+                <td colspan="6" class="text-center text-muted py-4 fs-xs">
+                  <i class="bi bi-folder-x fs-4 d-block mb-1 text-muted"></i>
+                  Chưa có tài sản nào được gắn vào công việc này
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+        <button
+          class="btn btn-outline-primary btn-sm"
+          (click)="openMobileContractorForTask(selectedTaskForAssets); closeTaskAssetsModal()"
+        >
+          <i class="bi bi-phone me-1"></i>
+          <span>Mở App Thợ Hiện Trường</span>
+        </button>
+
+        <button class="btn btn-secondary btn-sm" (click)="closeTaskAssetsModal()">
+          <i class="bi bi-check-lg me-1"></i> Đóng
         </button>
       </div>
     </div>

@@ -1,0 +1,536 @@
+<div class="page-container">
+  <!-- VIEW 1: DANH SÁCH BÁO CÁO CỦA NHÀ THẦU -->
+  <ng-container *ngIf="currentView === 'LIST'">
+    <div class="page-header">
+      <div class="header-left">
+        <div class="breadcrumb">
+          <span>Hệ thống</span>
+          <i class="bi bi-chevron-right"></i>
+          <span>Phân hệ Nhà Thầu</span>
+          <i class="bi bi-chevron-right"></i>
+          <span class="active">Báo cáo Nghiệm thu & Thanh toán</span>
+        </div>
+        <h1 class="page-title"><i class="bi bi-file-earmark-check-fill text-primary me-2"></i>Cổng Nhà Thầu - Báo Cáo Nghiệm Thu & Khối Lượng</h1>
+        <p class="page-subtitle">Khởi tạo đợt nghiệm thu khối lượng thi công hoàn thành, đính kèm minh chứng hiện trường GPS và gửi Ban QLDA phê duyệt giải ngân.</p>
+      </div>
+
+      <div class="header-actions">
+        <!-- Bộ chọn nhà thầu thao tác -->
+        <div class="contractor-switcher">
+          <label>Nhà thầu đang thao tác:</label>
+          <select class="form-select form-select-sm" [ngModel]="selectedContractor" (ngModelChange)="onContractorChange($event)">
+            <option *ngFor="let c of contractorList" [value]="c">{{ c }}</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary btn-create" (click)="openCreateReport()">
+          <i class="bi bi-plus-circle-fill"></i>
+          <span>Tạo Báo Cáo Nghiệm Thu Mới</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Summary Grid -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-icon icon-blue"><i class="bi bi-folder-check"></i></div>
+        <div class="kpi-info">
+          <div class="kpi-value">{{ contractorReports.length }}</div>
+          <div class="kpi-label">Tổng đợt báo cáo đã gửi</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-amber"><i class="bi bi-clock-history"></i></div>
+        <div class="kpi-info">
+          <div class="kpi-value">{{ pendingReportsCount }}</div>
+          <div class="kpi-label">Hồ sơ chờ Ban kiểm tra</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-emerald"><i class="bi bi-check-circle-fill"></i></div>
+        <div class="kpi-info">
+          <div class="kpi-value">{{ approvedReportsCount }}</div>
+          <div class="kpi-label">Hồ sơ đã được phê duyệt</div>
+        </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-icon icon-purple"><i class="bi bi-cash-stack"></i></div>
+        <div class="kpi-info">
+          <div class="kpi-value">{{ formatMoney(totalRequestedAmount) }} đ</div>
+          <div class="kpi-label">Tổng kinh phí đề nghị thanh toán</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Reports Table -->
+    <div class="app-card">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+          <h3 class="card-title"><i class="bi bi-receipt-cutoff"></i> Lịch Sử Các Đợt Báo Cáo Nghiệm Thu Của Nhà Thầu</h3>
+          <p class="card-subtitle">Theo dõi trạng thái kiểm tra thực tế hiện trường và tiến độ phê duyệt thanh toán từ Ban QLDA.</p>
+        </div>
+        <button class="btn btn-sm btn-outline-primary" (click)="openCreateReport()">
+          <i class="bi bi-plus-lg"></i> Tạo đợt mới
+        </button>
+      </div>
+
+      <div class="custom-table-container">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th style="width: 120px;">Mã Báo Cáo</th>
+              <th>Tiêu Đề Đợt Nghiệm Thu & Dự Án</th>
+              <th style="width: 130px;">Khối Lượng</th>
+              <th style="width: 160px;">Số Tiền Đề Nghị</th>
+              <th style="width: 150px;">Trạng Thái Duyệt</th>
+              <th style="width: 110px;">Ngày Gửi</th>
+              <th style="width: 160px; text-align: center;">Màn Hình Đối Chiếu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let rep of contractorReports">
+              <td><span class="report-code-badge">{{ rep.code }}</span></td>
+              <td>
+                <div class="font-semibold text-dark">{{ rep.periodTitle }}</div>
+                <div class="fs-xs text-primary mt-1">
+                  <i class="bi bi-folder2-open me-1"></i>{{ rep.projectName }} ({{ rep.projectCode }})
+                </div>
+              </td>
+              <td><span class="badge badge-primary">{{ rep.totalCompletedAssets }} tài sản</span></td>
+              <td>
+                <div class="text-danger font-bold">{{ formatMoney(rep.amountRequested) }} đ</div>
+                <div class="fs-xs text-success" *ngIf="rep.amountApproved">
+                  Đã duyệt: {{ formatMoney(rep.amountApproved) }} đ
+                </div>
+              </td>
+              <td>
+                <span
+                  class="badge"
+                  [class.badge-warning]="rep.status === 'PENDING_INSPECTION'"
+                  [class.badge-success]="rep.status === 'APPROVED' || rep.status === 'PAID'"
+                  [class.badge-danger]="rep.status === 'REJECTED'"
+                >
+                  <i class="bi bi-clock-history me-1" *ngIf="rep.status === 'PENDING_INSPECTION'"></i>
+                  <i class="bi bi-check-circle-fill me-1" *ngIf="rep.status === 'APPROVED'"></i>
+                  <i class="bi bi-cash-stack me-1" *ngIf="rep.status === 'PAID'"></i>
+                  <i class="bi bi-x-circle-fill me-1" *ngIf="rep.status === 'REJECTED'"></i>
+                  {{ rep.status === 'PENDING_INSPECTION' ? 'Chờ kiểm tra' : (rep.status === 'APPROVED' ? 'Đã duyệt' : (rep.status === 'PAID' ? 'Đã thanh toán' : 'Từ chối')) }}
+                </span>
+                <div class="text-danger fs-xs mt-1" *ngIf="rep.status === 'REJECTED' && rep.rejectedReason">
+                  Lý do: {{ rep.rejectedReason }}
+                </div>
+              </td>
+              <td>{{ rep.createdDate | date:'dd/MM/yyyy' }}</td>
+              <td style="text-align: center;">
+                <button class="btn btn-sm btn-outline-primary" (click)="openReportDetail(rep)">
+                  <i class="bi bi-layout-split me-1"></i> Xem Split-view
+                </button>
+              </td>
+            </tr>
+
+            <tr *ngIf="contractorReports.length === 0">
+              <td colspan="7" class="empty-state py-5 text-center">
+                <i class="bi bi-clipboard2-plus fs-2 text-muted mb-2 d-block"></i>
+                <p class="text-muted mb-3">Nhà thầu chưa lập đợt báo cáo nghiệm thu nào</p>
+                <button class="btn btn-primary btn-sm" (click)="openCreateReport()">
+                  <i class="bi bi-plus-circle me-1"></i> Khởi tạo đợt báo cáo đầu tiên
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- VIEW 2: MÀN HÌNH LẬP BÁO CÁO NGHIỆM THU MỚI (CHỌN DỰ ÁN -> CHỌN TASK -> DANH SÁCH TÀI SẢN & ẢNH MINH CHỨNG) -->
+  <ng-container *ngIf="currentView === 'CREATE'">
+    <div class="page-header create-header">
+      <div class="header-left">
+        <div class="breadcrumb">
+          <a class="breadcrumb-link" (click)="cancelCreateReport()"><i class="bi bi-arrow-left me-1"></i> Quay lại danh sách</a>
+          <i class="bi bi-chevron-right"></i>
+          <span class="active">Tạo Báo Cáo Nghiệm Thu Mới</span>
+        </div>
+        <h1 class="page-title"><i class="bi bi-pencil-square text-primary me-2"></i>Lập Đợt Báo Cáo Nghiệm Thu & Đề Nghị Thanh Toán</h1>
+        <p class="page-subtitle">Chọn dự án và đầu việc thi công, sau đó cập nhật kết quả và ảnh minh chứng cho từng tài sản hoàn thành.</p>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+        <button class="btn btn-secondary" (click)="cancelCreateReport()">Hủy</button>
+        <button class="btn btn-primary" (click)="submitContractorReport()" [disabled]="selectedDraftAssets.length === 0">
+          <i class="bi bi-send-check-fill me-1"></i>
+          <span>Gửi Báo Cáo Lên Ban QLDA ({{ selectedDraftAssets.length }})</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- KHỐI BƯỚC 1 & BƯỚC 2: CHỌN DỰ ÁN & CHỌN TASK -->
+    <div class="app-card selection-card mb-3">
+      <div class="selection-grid">
+        <!-- BƯỚC 1: CHỌN DỰ ÁN LIÊN QUAN NHÀ THẦU -->
+        <div class="form-group flex-1">
+          <label class="form-label required">
+            <span class="step-num">1</span> Chọn Dự Án (Dự án thuộc nhà thầu):
+          </label>
+          <select
+            class="form-select form-select-lg"
+            [ngModel]="selectedProjectId"
+            (ngModelChange)="onSelectProject($event)"
+          >
+            <option value="" disabled>-- Vui lòng chọn dự án --</option>
+            <option *ngFor="let p of contractorProjects" [value]="p.id">
+              {{ p.code }} - {{ p.name }}
+            </option>
+          </select>
+          <div class="fs-xs text-muted mt-1" *ngIf="selectedProject">
+            <i class="bi bi-geo-alt"></i> {{ selectedProject.routeName }} | Dự toán: <strong>{{ formatMoney(selectedProject.budget) }} đ</strong>
+          </div>
+        </div>
+
+        <!-- BƯỚC 2: CHỌN TASK (CÔNG VIỆC) -->
+        <div class="form-group flex-1">
+          <label class="form-label required">
+            <span class="step-num">2</span> Chọn Đầu Việc (Task) Cần Nghiệm Thu:
+          </label>
+          <select
+            class="form-select form-select-lg"
+            [ngModel]="selectedTaskId"
+            (ngModelChange)="onSelectTask($event)"
+            [disabled]="availableTasks.length === 0"
+          >
+            <option value="" disabled>-- Vui lòng chọn đầu việc --</option>
+            <option *ngFor="let t of availableTasks" [value]="t.id">
+              {{ t.code }} - {{ t.title }} ({{ (t.taskAssets && t.taskAssets.length) ? t.taskAssets.length : t.assetIds.length }} tài sản)
+            </option>
+          </select>
+          <div class="fs-xs text-primary mt-1" *ngIf="selectedTask">
+            <i class="bi bi-shield-check"></i> Hạn chót: {{ selectedTask.deadline | date:'dd/MM/yyyy' }} | Tiến độ task: {{ selectedTask.progress }}%
+          </div>
+        </div>
+      </div>
+
+      <!-- Tiêu đề đợt báo cáo -->
+      <div class="form-group mt-3 pt-3 border-top">
+        <label class="form-label required font-semibold">Tiêu đề đợt nghiệm thu & thanh toán:</label>
+        <input
+          type="text"
+          class="form-control"
+          placeholder="VD: Báo cáo nghiệm thu & Đề nghị thanh toán Đợt 1 - Tuyến Nguyễn Huệ"
+          [(ngModel)]="reportPeriodTitle"
+        />
+      </div>
+    </div>
+
+    <!-- KHỐI BƯỚC 3: GIAO DIỆN TÁCH 2 BÊN (BÊN TRÁI: DANH SÁCH TÀI SẢN, BÊN PHẢI: ẢNH VÀ NHẬP KẾT QUẢ) -->
+    <div class="workspace-split" *ngIf="assetDrafts.length > 0">
+      <!-- CỘT TRÁI: DANH SÁCH TÀI SẢN TRONG TASK -->
+      <div class="app-card left-assets-pane">
+        <div class="pane-header d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <h4 class="pane-title"><i class="bi bi-list-check me-1"></i> Danh Sách Tài Sản Trong Task</h4>
+            <span class="fs-xs text-muted">Đã chọn: <strong>{{ selectedDraftAssets.length }} / {{ assetDrafts.length }}</strong> tài sản</span>
+          </div>
+          <div class="select-all-tools fs-xs">
+            <a class="tool-link" (click)="selectAllAssets(true)">Chọn hết</a> |
+            <a class="tool-link" (click)="selectAllAssets(false)">Bỏ chọn</a>
+          </div>
+        </div>
+
+        <div class="assets-scroll-box">
+          <div
+            *ngFor="let item of assetDrafts"
+            class="asset-draft-card"
+            [class.active]="activeAssetDraft?.assetId === item.assetId"
+            [class.selected-for-report]="item.isSelected"
+            (click)="selectActiveAsset(item)"
+          >
+            <!-- Checkbox đưa vào báo cáo -->
+            <div class="checkbox-col" (click)="$event.stopPropagation()">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                [checked]="item.isSelected"
+                (change)="toggleAssetSelection(item)"
+                title="Đưa vào báo cáo nghiệm thu"
+              />
+            </div>
+
+            <!-- Nội dung tóm tắt tài sản -->
+            <div class="asset-info-col">
+              <div class="top-row">
+                <span class="asset-code-badge">{{ item.assetCode }}</span>
+                <span class="badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                <span class="status-tag" [class.done]="item.isCompleted">
+                  {{ item.isCompleted ? '✓ Hoàn thành' : 'Đang xử lý' }}
+                </span>
+              </div>
+              <div class="asset-name">{{ item.assetName }}</div>
+              <div class="asset-address text-muted fs-xs"><i class="bi bi-geo-alt"></i> {{ item.address }}</div>
+              <div class="bottom-row mt-1">
+                <span class="condition-badge" [class]="'cond-' + item.condition.toLowerCase()">
+                  {{ item.condition === 'GOOD' ? '🟢 Tốt' : (item.condition === 'NORMAL' ? '🔵 Bình thường' : (item.condition === 'DAMAGED' ? '🔴 Hư hỏng' : '🟠 Cần thay')) }}
+                </span>
+                <span class="cost-tag">{{ formatMoney(item.cost) }} đ</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CỘT PHẢI: ẢNH MINH CHỨNG & TRƯỜNG NHẬP BÁO CÁO KẾT QUẢ CHO TÀI SẢN ĐANG CHỌN -->
+      <div class="app-card right-detail-pane" *ngIf="activeAssetDraft">
+        <div class="pane-header d-flex justify-content-between align-items-center mb-3">
+          <div>
+            <h4 class="pane-title text-primary"><i class="bi bi-camera-fill me-1"></i> Báo Cáo Kết Quả & Ảnh Minh Chứng</h4>
+            <div class="fs-xs text-muted">
+              Tài sản: <strong>{{ activeAssetDraft.assetCode }} - {{ activeAssetDraft.assetName }}</strong>
+            </div>
+          </div>
+          <span class="badge bg-light text-primary border py-1 px-2 fs-xs">
+            <i class="bi bi-geo-alt-fill text-danger me-1"></i> GPS: {{ activeAssetDraft.lat }}, {{ activeAssetDraft.lng }}
+          </span>
+        </div>
+
+        <div class="detail-content-scroll">
+          <!-- 1. KHU VỰC ẢNH MINH CHỨNG HIỆN TRƯỜNG -->
+          <div class="photo-section-card mb-3">
+            <label class="form-label font-bold text-dark mb-2">
+              <i class="bi bi-image me-1"></i> Ảnh Chụp Hiện Trường Nghiệm Thu:
+            </label>
+
+            <div class="photo-preview-container">
+              <img [src]="activeAssetDraft.photoUrl" alt="Ảnh hiện trường" class="evidence-img" />
+              <!-- Watermark đóng dấu GPS & thời gian -->
+              <div class="gps-watermark">
+                <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeAssetDraft.lat }}, {{ activeAssetDraft.lng }}</div>
+                <div><i class="bi bi-calendar3"></i> Ngày nghiệm thu: {{ activeAssetDraft.completedDate }}</div>
+                <div><i class="bi bi-tag-fill"></i> Mã đối tượng: {{ activeAssetDraft.assetCode }}</div>
+                <div><i class="bi bi-building"></i> Nhà thầu: {{ selectedContractor }}</div>
+              </div>
+            </div>
+
+            <!-- Tải ảnh mới hoặc chọn ảnh mẫu nhanh -->
+            <div class="photo-actions-bar mt-2 d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="upload-btn-wrap">
+                <label class="btn btn-sm btn-outline-primary m-0 cursor-pointer">
+                  <i class="bi bi-upload me-1"></i> Tải ảnh từ máy tính
+                  <input type="file" accept="image/*" class="d-none" (change)="onCustomPhotoUpload($event)" />
+                </label>
+              </div>
+
+              <!-- Chọn nhanh ảnh mẫu theo kịch bản -->
+              <div class="preset-photos-wrap d-flex align-items-center gap-1">
+                <span class="fs-xs text-muted">Chọn ảnh mẫu:</span>
+                <button
+                  *ngFor="let p of presetPhotos"
+                  class="btn btn-sm btn-ghost p-1 fs-xs border"
+                  (click)="setPresetPhoto(p.url)"
+                  title="Chọn ảnh: {{ p.label }}"
+                >
+                  {{ p.label }}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. CÁC TRƯỜNG NHẬP BÁO CÁO KẾT QUẢ THI CÔNG -->
+          <div class="form-section-card">
+            <h5 class="section-sub-title mb-3"><i class="bi bi-clipboard2-check me-1"></i> Thông Tin Kết Quả Thi Công</h5>
+
+            <!-- Hàng 1: Trạng thái & Hiện trạng đánh giá -->
+            <div class="form-row mb-3">
+              <div class="form-group flex-1">
+                <label class="form-label required">Trạng thái hoàn thành:</label>
+                <div class="form-check form-switch pt-1">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    id="chkCompleted"
+                    [(ngModel)]="activeAssetDraft.isCompleted"
+                  />
+                  <label class="form-check-label fw-bold" for="chkCompleted" [class.text-success]="activeAssetDraft.isCompleted">
+                    {{ activeAssetDraft.isCompleted ? '✓ Đã hoàn thành thi công' : 'Chưa hoàn thành' }}
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label required">Hiện trạng kỹ thuật đánh giá:</label>
+                <select class="form-select form-select-sm" [(ngModel)]="activeAssetDraft.condition">
+                  <option value="GOOD">🟢 Hoạt động tốt / Đạt chuẩn</option>
+                  <option value="NORMAL">🔵 Bình thường / Ổn định</option>
+                  <option value="DAMAGED">🔴 Hư hỏng / Khắc phục tạm</option>
+                  <option value="NEEDS_REPLACEMENT">🟠 Cần thay thế phụ tùng</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Hàng 2: Đơn giá đề nghị & Ngày hoàn thành -->
+            <div class="form-row mb-3">
+              <div class="form-group flex-1">
+                <label class="form-label required">Đơn giá / Kinh phí đề nghị (VNĐ):</label>
+                <input
+                  type="number"
+                  class="form-control form-control-sm font-bold text-danger"
+                  [(ngModel)]="activeAssetDraft.cost"
+                  placeholder="Nhập chi phí đề nghị..."
+                />
+                <span class="fs-xs text-muted">{{ formatMoney(activeAssetDraft.cost) }} VNĐ</span>
+              </div>
+
+              <div class="form-group flex-1">
+                <label class="form-label required">Ngày hoàn thành thực tế:</label>
+                <input
+                  type="date"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="activeAssetDraft.completedDate"
+                />
+              </div>
+            </div>
+
+            <!-- Hàng 3: Ghi chú báo cáo kết quả thi công -->
+            <div class="form-group mb-3">
+              <label class="form-label required">Nội dung báo cáo kết quả thi công & kiểm tra:</label>
+              <textarea
+                class="form-control form-control-sm"
+                rows="3"
+                placeholder="Mô tả chi tiết công việc đã thi công (vd: Đã thay thế chóa đèn LED 150W tiết kiệm điện, đo điện áp an toàn đạt chuẩn...)"
+                [(ngModel)]="activeAssetDraft.notes"
+              ></textarea>
+            </div>
+
+            <!-- Hàng 4: Người phụ trách -->
+            <div class="form-group">
+              <label class="form-label">Kỹ sư / Thợ phụ trách thi công:</label>
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="activeAssetDraft.technicianName"
+                placeholder="VD: Kỹ sư Nguyễn Văn A"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Trạng thái trống khi chưa chọn task -->
+    <div class="app-card py-5 text-center" *ngIf="assetDrafts.length === 0">
+      <i class="bi bi-arrow-up-circle fs-2 text-primary mb-2 d-block"></i>
+      <h4 class="text-dark">Vui lòng chọn Dự án và Đầu việc (Task) ở trên</h4>
+      <p class="text-muted">Hệ thống sẽ tải danh sách các tài sản được gắn trong task để bạn báo cáo kết quả và đính kèm ảnh minh chứng.</p>
+    </div>
+
+    <!-- THANH FOOTER TỔNG KẾT & NÚT GỬI BÁO CÁO (STICKY BOTTOM) -->
+    <div class="sticky-footer-bar" *ngIf="assetDrafts.length > 0">
+      <div class="footer-summary">
+        <div>
+          Số lượng tài sản đề nghị: <strong class="text-primary">{{ selectedDraftAssets.length }} / {{ assetDrafts.length }}</strong> tài sản
+        </div>
+        <div>
+          Tổng kinh phí đề nghị thanh toán: <strong class="text-danger fs-5">{{ formatMoney(totalDraftAmount) }} VNĐ</strong>
+        </div>
+      </div>
+
+      <div class="footer-actions d-flex align-items-center gap-2">
+        <button class="btn btn-secondary" (click)="cancelCreateReport()">Hủy</button>
+        <button
+          class="btn btn-primary"
+          [disabled]="selectedDraftAssets.length === 0 || !reportPeriodTitle"
+          (click)="submitContractorReport()"
+        >
+          <i class="bi bi-send-check-fill me-1"></i>
+          <span>Gửi Báo Cáo Nghiệm Thu Lên Ban QLDA ({{ selectedDraftAssets.length }})</span>
+        </button>
+      </div>
+    </div>
+  </ng-container>
+
+  <!-- MODAL SPLIT-VIEW XEM LẠI BÁO CÁO ĐÃ GỬI -->
+  <div class="modal-backdrop" *ngIf="selectedReportDetail" (click)="closeReportDetail()">
+    <div class="modal-content modal-lg split-view-modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3 class="m-0"><i class="bi bi-layout-split text-primary me-2"></i>Chi Tiết Đợt Nghiệm Thu & Minh Chứng Đối Chiếu</h3>
+          <span class="fs-xs text-muted">{{ selectedReportDetail.code }} • {{ selectedReportDetail.periodTitle }}</span>
+        </div>
+        <button class="close-btn" (click)="closeReportDetail()"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="split-view-body">
+        <!-- NỬA BÊN TRÁI: DANH SÁCH TÀI SẢN -->
+        <div class="split-left-pane">
+          <div class="pane-header">
+            <span class="pane-title">Danh Sách Tài Sản Hoàn Thành ({{ selectedReportDetail.items.length }})</span>
+          </div>
+
+          <div class="split-items-list">
+            <div
+              *ngFor="let item of selectedReportDetail.items"
+              class="split-asset-item"
+              [class.active]="activeInspectionItem?.assetId === item.assetId"
+              (click)="selectInspectionItem(item)"
+            >
+              <div class="item-top">
+                <span class="code">{{ item.assetCode }}</span>
+                <span class="badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                <span class="status-indicator" [class.approved]="item.inspectorApproved">
+                  {{ item.inspectorApproved ? '✓ Đã duyệt' : 'Chờ kiểm tra' }}
+                </span>
+              </div>
+              <div class="item-name">{{ item.assetName }}</div>
+              <div class="item-cost-row">
+                <span class="cost">{{ formatMoney(item.cost) }} đ</span>
+                <span class="date">{{ item.completedDate }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="split-summary-bar">
+            <div>Tổng kinh phí: <strong class="text-danger">{{ formatMoney(selectedReportDetail.amountRequested) }} đ</strong></div>
+            <div>Trạng thái: <strong>{{ selectedReportDetail.status }}</strong></div>
+          </div>
+        </div>
+
+        <!-- NỬA BÊN PHẢI: ẢNH MINH CHỨNG & GPS -->
+        <div class="split-right-pane" *ngIf="activeInspectionItem">
+          <div class="pane-header">
+            <span class="pane-title">Ảnh Chụp Hiện Trường & Dữ Liệu GPS</span>
+            <span class="badge" [class.badge-success]="activeInspectionItem.inspectorApproved" [class.badge-warning]="!activeInspectionItem.inspectorApproved">
+              {{ activeInspectionItem.inspectorApproved ? 'Đã duyệt đạt' : 'Chờ Ban kiểm tra' }}
+            </span>
+          </div>
+
+          <div class="photo-preview-wrap">
+            <img [src]="activeInspectionItem.photoUrl" alt="Ảnh minh chứng" class="inspection-img" />
+            <div class="photo-watermark">
+              <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
+              <div><i class="bi bi-clock-fill"></i> Thời gian: {{ activeInspectionItem.completedDate }}</div>
+              <div><i class="bi bi-tag-fill"></i> Mã đối tượng: {{ activeInspectionItem.assetCode }}</div>
+            </div>
+          </div>
+
+          <div class="photo-meta-details mt-3">
+            <div class="meta-row">
+              <span class="label">Tên tài sản:</span>
+              <span class="val font-semibold">{{ activeInspectionItem.assetName }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="label">Đơn giá đề nghị:</span>
+              <span class="val text-danger font-bold">{{ formatMoney(activeInspectionItem.cost) }} đ</span>
+            </div>
+            <div class="meta-row">
+              <span class="label">Ghi chú nhà thầu:</span>
+              <span class="val">{{ activeInspectionItem.inspectorNotes || 'Đạt tiêu chuẩn kỹ thuật thiết kế' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeReportDetail()">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>

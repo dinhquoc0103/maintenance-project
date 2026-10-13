@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ProjectService } from '../../../core/services/project.service';
+import { PatrolService } from '../../../core/services/patrol.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -16,6 +17,18 @@ import { ProjectService } from '../../../core/services/project.service';
           <span>Tổng quan (Dashboard)</span>
         </a>
 
+        <a routerLink="/patrol" routerLinkActive="active" class="nav-item">
+          <i class="bi bi-shield-check"></i>
+          <span>Tuần kiểm Hạ tầng (VII.2)</span>
+          <span class="badge badge-danger" *ngIf="newIssuesCount > 0">{{ newIssuesCount }}</span>
+        </a>
+
+        <a routerLink="/field-portal" routerLinkActive="active" class="nav-item">
+          <i class="bi bi-person-workspace"></i>
+          <span>Cổng Hiện Trường (Web Thợ)</span>
+          <span class="badge badge-warning" *ngIf="pendingTasksCount > 0">{{ pendingTasksCount }}</span>
+        </a>
+
         <a routerLink="/projects" routerLinkActive="active" class="nav-item">
           <i class="bi bi-folder2-open"></i>
           <span>Quản lý Dự án (1. Quản lý)</span>
@@ -25,6 +38,12 @@ import { ProjectService } from '../../../core/services/project.service';
         <a routerLink="/master-map" routerLinkActive="active" class="nav-item">
           <i class="bi bi-map-fill"></i>
           <span>Bản đồ Master GIS (3. Tài sản)</span>
+        </a>
+
+        <a routerLink="/contractor-reports" routerLinkActive="active" class="nav-item">
+          <i class="bi bi-file-earmark-check-fill"></i>
+          <span>Báo cáo Nghiệm thu (Nhà thầu)</span>
+          <span class="badge badge-primary">Mới</span>
         </a>
 
         <a routerLink="/acceptance-center" routerLinkActive="active" class="nav-item">
@@ -214,8 +233,17 @@ import { ProjectService } from '../../../core/services/project.service';
 })
 export class SidebarComponent {
   projectService = inject(ProjectService);
+  patrolService = inject(PatrolService);
 
   get pendingReportsCount(): number {
     return this.projectService.reports().filter(r => r.status === 'PENDING_INSPECTION').length;
+  }
+
+  get newIssuesCount(): number {
+    return this.patrolService.issues().filter(i => i.status === 'NEW').length;
+  }
+
+  get pendingTasksCount(): number {
+    return this.patrolService.issues().filter(i => i.status === 'QUICK_FIXING' || (i.status === 'NEW' && i.quickFixDetails)).length;
   }
 }
