@@ -1,10 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, ViewChild, ElementRef, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, ActivatedRoute } from '@angular/router';
+import * as L from 'leaflet';
 import { PatrolService } from '../../../core/services/patrol.service';
 import { ProjectService } from '../../../core/services/project.service';
 import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCondition } from '../../../core/models/patrol.model';
+import { LayerId, Asset } from '../../../core/models/maintenance.model';
 
 @Component({
   selector: 'app-field-portal',
@@ -92,21 +94,23 @@ import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCo
 
           <button
             class="tab-btn"
-            [class.active]="activeTab === 'TASKS'"
-            (click)="activeTab = 'TASKS'"
+            [class.active]="activeTab === 'MY_ISSUES' || activeTab === 'REPORT'"
+            (click)="activeTab = 'MY_ISSUES'"
           >
-            <i class="bi bi-tools"></i>
-            <span>2. Nhiệm Vụ Khắc Phục Được Giao (UC 10)</span>
-            <span class="badge bg-warning text-dark ms-1">{{ myAssignedTasks.length }}</span>
+            <i class="bi bi-journal-check"></i>
+            <span>2. Sổ Sự Cố Của Tôi & Ghi Nhận Mới (UC 7)</span>
+            <span class="badge bg-danger ms-1" *ngIf="myRejectedIssuesCount > 0">{{ myRejectedIssuesCount }} bị từ chối</span>
+            <span class="badge bg-primary ms-1" *ngIf="myRejectedIssuesCount === 0">{{ myReportedIssues.length }} vụ</span>
           </button>
 
           <button
             class="tab-btn"
-            [class.active]="activeTab === 'REPORT'"
-            (click)="activeTab = 'REPORT'"
+            [class.active]="activeTab === 'TASKS'"
+            (click)="activeTab = 'TASKS'"
           >
-            <i class="bi bi-camera-fill"></i>
-            <span>3. Báo Cáo Sự Cố Hiện Trường (UC 7)</span>
+            <i class="bi bi-tools"></i>
+            <span>3. Nhiệm Vụ Khắc Phục Được Giao (UC 10)</span>
+            <span class="badge bg-warning text-dark ms-1">{{ myAssignedTasks.length }}</span>
           </button>
         </div>
       </header>
@@ -383,115 +387,177 @@ import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCo
           </div>
         </div>
 
-        <!-- ==================== TAB 3: BÁO CÁO SỰ CỐ HIỆN TRƯỜNG TRÊN WEB (UC 7) ==================== -->
-        <div *ngIf="activeTab === 'REPORT'" class="report-portal-panel">
-          <div class="portal-box-card max-w-800 mx-auto">
-            <div class="card-title-bar bg-light">
-              <i class="bi bi-camera-fill text-danger"></i>
-              <h4 class="m-0 fw-bold fs-6">Ghi Nhận & Báo Cáo Sự Cố Mới Tại Hiện Trường (Web Form - UC 7)</h4>
-            </div>
-
-            <div class="p-4">
-              <div class="alert alert-info fs-xs mb-3">
-                <i class="bi bi-info-circle-fill"></i> Nhân viên báo cáo sự cố trực tiếp qua trình duyệt web khi phát hiện sự cố ngoài hiện trường. Dữ liệu sẽ đồng bộ tức thời sang <strong>Bàn làm việc của Cán bộ Admin</strong>.
+        <!-- ==================== TAB 2: SỔ SỰ CỐ TUẦN KIỂM CỦA TÔI & GHI NHẬN MỚI (UC 7) ==================== -->
+        <div *ngIf="activeTab === 'MY_ISSUES' || activeTab === 'REPORT'" class="my-issues-portal-panel">
+          <!-- TOP TOOLBAR & KPI SUMMARY -->
+          <div class="portal-box-card mb-3">
+            <div class="card-title-bar bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+              <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-journal-text fs-5 text-primary"></i>
+                <div>
+                  <h4 class="m-0 fw-bold fs-6">Sổ Theo Dõi Sự Cố Tuần Kiểm Của Tôi (Hiện Trường - UC 7)</h4>
+                  <p class="m-0 fs-xxs text-muted">
+                    Quản lý danh sách sự cố do bạn phát hiện. Theo dõi phê duyệt, nhận phản hồi từ chối và cập nhật gửi lại thẩm tra.
+                  </p>
+                </div>
               </div>
 
-              <div class="mb-3">
-                <label class="form-label fw-bold">Tiêu đề sự cố phát hiện (*):</label>
+              <!-- NÚT GHI NHẬN SỰ CỐ MỚI TO NỔI BẬT -->
+              <button class="btn btn-primary d-flex align-items-center gap-2 fw-bold shadow-sm" (click)="openCreateIssueModal()">
+                <i class="bi bi-plus-circle-fill fs-5"></i>
+                <span>GHI NHẬN SỰ CỐ MỚI TẠI HIỆN TRƯỜNG</span>
+              </button>
+            </div>
+
+            <!-- KPI CHIPS BAR (LƯỚI 4 CỘT CHUẨN KHÔNG BỊ VỠ GIAO DIỆN) -->
+            <div class="kpi-chips-container border-bottom bg-white p-3">
+              <div class="kpi-mini-grid">
+                <div class="kpi-mini-card bg-light">
+                  <span class="label">Tổng sự cố đã ghi nhận</span>
+                  <strong class="val text-dark">{{ myReportedIssues.length }} vụ</strong>
+                </div>
+                <div class="kpi-mini-card bg-primary-subtle">
+                  <span class="label">Mới gửi (Chờ duyệt)</span>
+                  <strong class="val text-primary">{{ countMyIssuesByStatus('NEW') }} vụ</strong>
+                </div>
+                <div class="kpi-mini-card bg-danger-subtle border-danger">
+                  <span class="label text-danger">🔴 Bị từ chối (Cần sửa lại)</span>
+                  <strong class="val text-danger">{{ countMyIssuesByStatus('REJECTED') }} vụ</strong>
+                </div>
+                <div class="kpi-mini-card bg-success-subtle">
+                  <span class="label">Đang xử lý / Hoàn thành</span>
+                  <strong class="val text-success">{{ countMyIssuesByStatus('QUICK_FIXING') + countMyIssuesByStatus('RESOLVED') + countMyIssuesByStatus('MOVED_TO_PROJECT') }} vụ</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- SEARCH & STATUS FILTERS (TOOLBAR GỌN ĐẸP) -->
+            <div class="my-issues-toolbar">
+              <div class="search-input-box">
+                <i class="bi bi-search text-muted"></i>
                 <input
                   type="text"
-                  class="form-control"
-                  placeholder="Ví dụ: Đèn chiếu sáng bị chập cháy, Cây gãy cành to..."
-                  [(ngModel)]="reportForm.title"
+                  class="form-control form-control-sm"
+                  placeholder="Tìm theo mã sự cố, tên, tuyến đường..."
+                  [(ngModel)]="myIssuesSearchKeyword"
                 />
               </div>
 
-              <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Loại vấn đề hạ tầng (*):</label>
-                  <select class="form-select form-select-sm" [(ngModel)]="reportForm.categoryId">
-                    <option *ngFor="let cat of patrolService.categories()" [value]="cat.id">
-                      [{{ cat.code }}] {{ cat.name }}
-                    </option>
-                  </select>
+              <div class="filter-status-box">
+                <span class="fs-xs text-muted">Lọc theo trạng thái:</span>
+                <select class="form-select form-select-sm w-auto" [(ngModel)]="myIssuesStatusFilter">
+                  <option value="ALL">Tất cả ({{ myReportedIssues.length }})</option>
+                  <option value="REJECTED">🔴 Bị từ chối tiếp nhận ({{ countMyIssuesByStatus('REJECTED') }})</option>
+                  <option value="NEW">Mới gửi (Chờ duyệt) ({{ countMyIssuesByStatus('NEW') }})</option>
+                  <option value="QUICK_FIXING">Đang khắc phục ({{ countMyIssuesByStatus('QUICK_FIXING') }})</option>
+                  <option value="RESOLVED">Đã hoàn thành / Nghiệm thu ({{ countMyIssuesByStatus('RESOLVED') }})</option>
+                  <option value="MOVED_TO_PROJECT">Đã chuyển Dự Án ({{ countMyIssuesByStatus('MOVED_TO_PROJECT') }})</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- CARDS GRID SỰ CỐ CỦA TÔI -->
+          <div class="my-issues-grid">
+            <div
+              *ngFor="let iss of filteredMyIssues"
+              class="my-issue-card"
+              [class.rejected-border]="iss.status === 'REJECTED'"
+            >
+              <!-- Card Top -->
+              <div class="my-issue-top">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="issue-code font-monospace fw-bold">{{ iss.code }}</span>
+                  <span class="priority-pill" [ngClass]="'priority-' + iss.priority.toLowerCase()">{{ iss.priority }}</span>
+                  <span class="layer-pill" [style.background-color]="getLayerColor(iss.layerId) + '20'" [style.color]="getLayerColor(iss.layerId)">
+                    {{ iss.categoryName }}
+                  </span>
                 </div>
 
-                <div class="col-md-6">
-                  <label class="form-label fw-bold">Tài sản GIS gần nhất (nếu có):</label>
-                  <select class="form-select form-select-sm" [(ngModel)]="reportForm.assetId" (ngModelChange)="onSelectAsset()">
-                    <option value="">-- Không xác định mã tài sản --</option>
-                    <option *ngFor="let ast of projectService.masterAssets().slice(0, 12)" [value]="ast.id">
-                      [{{ ast.code }}] {{ ast.name }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="col-md-6" *ngIf="reportForm.assetId">
-                  <label class="form-label fw-bold">Đánh giá hiện trạng tài sản (*):</label>
-                  <select class="form-select form-select-sm" [(ngModel)]="reportForm.assetCondition">
-                    <option value="DAMAGED">🔴 Hư hỏng (Cần xử lý)</option>
-                    <option value="NEEDS_REPLACEMENT">🟠 Cần thay thế mới</option>
-                    <option value="NORMAL">🔵 Bình thường (Cần theo dõi)</option>
-                    <option value="GOOD">🟢 Hoạt động tốt</option>
-                  </select>
-                </div>
+                <span class="status-badge" [ngClass]="'status-' + iss.status.toLowerCase()">
+                  {{ getStatusLabel(iss.status) }}
+                </span>
               </div>
 
-              <div class="row g-2 mb-3">
-                <div class="col-md-6">
-                  <label class="form-label">Tọa độ GPS hiện trường:</label>
-                  <div class="input-group input-group-sm">
-                    <input type="text" class="form-control font-monospace" [value]="reportForm.lat.toFixed(5) + ', ' + reportForm.lng.toFixed(5)" readonly />
-                    <button class="btn btn-outline-secondary" type="button" (click)="refreshGPS()" title="Cập nhật GPS">
-                      <i class="bi bi-arrow-clockwise"></i> GPS
-                    </button>
+              <!-- Card Body -->
+              <div class="my-issue-body">
+                <div class="img-box">
+                  <img [src]="iss.photoBeforeUrl" alt="Hiện trường" />
+                  <span class="time-tag">{{ iss.reportedAt }}</span>
+                </div>
+
+                <div class="info-box">
+                  <h4 class="issue-title">{{ iss.title }}</h4>
+                  <div class="meta-line text-muted fs-xs">
+                    <i class="bi bi-geo-alt-fill text-danger"></i>
+                    <span><strong>{{ iss.address }}</strong> ({{ iss.routeName }})</span>
+                  </div>
+
+                  <!-- Danh sách nhiều tài sản cùng loại (Nguyên tắc 2) -->
+                  <div class="attached-assets-chips mt-2" *ngIf="iss.attachedAssets && iss.attachedAssets.length > 0">
+                    <span class="chip-title fs-xxs text-muted d-block mb-1">
+                      <i class="bi bi-diagram-3-fill text-primary"></i> Đính kèm {{ iss.attachedAssets.length }} tài sản cùng loại (Nguyên tắc 2):
+                    </span>
+                    <div class="d-flex flex-wrap gap-1">
+                      <span class="badge bg-light text-dark border" *ngFor="let a of iss.attachedAssets">
+                        [{{ a.assetCode }}] {{ a.assetName }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div class="single-asset-line mt-1 fs-xs text-muted" *ngIf="(!iss.attachedAssets || iss.attachedAssets.length === 0) && iss.assetCode">
+                    <i class="bi bi-pin-angle-fill text-primary"></i>
+                    <span>Tài sản: <strong>[{{ iss.assetCode }}]</strong> {{ iss.assetName }}</span>
+                  </div>
+
+                  <p class="issue-desc text-muted fs-xs mt-2 m-0">{{ iss.description }}</p>
+
+                  <!-- ==================== KHUNG CẢNH BÁO BỊ TỪ CHỐI TIẾP NHẬN ==================== -->
+                  <div class="rejected-alert-card mt-3" *ngIf="iss.status === 'REJECTED'">
+                    <div class="d-flex align-items-start gap-2">
+                      <i class="bi bi-exclamation-octagon-fill text-danger fs-4 mt-0 flex-shrink-0"></i>
+                      <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center flex-wrap">
+                          <strong class="text-danger fs-xs">CÁN BỘ QUẢN LÝ TỪ CHỐI TIẾP NHẬN:</strong>
+                          <span class="fs-xxs text-muted">{{ iss.rejectedAt }} • {{ iss.rejectedBy }}</span>
+                        </div>
+                        <div class="reject-reason-box mt-1">
+                          "{{ iss.rejectReason }}"
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+                          <span class="fs-xxs text-muted">
+                            <i class="bi bi-info-circle"></i> Sự cố chưa đóng. Vui lòng bấm nút bên để sửa và gửi lại thẩm tra.
+                          </span>
+                          <button class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-1 shadow-sm" (click)="openEditRejectedIssueModal(iss)">
+                            <i class="bi bi-pencil-square"></i>
+                            <span>CẬP NHẬT & GỬI LẠI THẨM TRA</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ==================== KHUNG THÔNG BÁO VỪA GỬI LẠI ĐANG CHỜ DUYỆT ==================== -->
+                  <div class="resubmitted-alert-card mt-2 p-2 rounded" *ngIf="iss.resubmittedAt && iss.status === 'NEW'">
+                    <div class="d-flex align-items-center gap-2">
+                      <i class="bi bi-arrow-repeat text-warning fs-5"></i>
+                      <div class="fs-xs">
+                        <strong>Bạn đã cập nhật & gửi lại:</strong>
+                        <span class="text-muted ms-1">({{ iss.resubmittedAt }})</span>
+                        <div class="text-dark fs-xxs" *ngIf="iss.resubmitNotes">
+                          <strong>Giải trình:</strong> {{ iss.resubmitNotes }}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div class="col-md-6">
-                  <label class="form-label">Tuyến đường:</label>
-                  <input type="text" class="form-control form-control-sm" [(ngModel)]="reportForm.routeName" />
-                </div>
               </div>
+            </div>
 
-              <div class="mb-3">
-                <label class="form-label">Địa chỉ số nhà cụ thể:</label>
-                <input type="text" class="form-control form-control-sm" [(ngModel)]="reportForm.address" />
-              </div>
-
-              <!-- Chọn ảnh chụp hiện trường -->
-              <div class="mb-3">
-                <label class="form-label fw-bold">Ảnh chụp hiện trường sự cố (*):</label>
-                <div class="d-flex gap-2 mb-2">
-                  <div
-                    *ngFor="let sample of samplePhotos"
-                    class="sample-photo-btn"
-                    [class.active]="reportForm.photoUrl === sample.url"
-                    (click)="reportForm.photoUrl = sample.url"
-                  >
-                    <img [src]="sample.url" alt="" />
-                    <span>{{ sample.title }}</span>
-                  </div>
-                </div>
-                <div class="current-photo-view" *ngIf="reportForm.photoUrl">
-                  <img [src]="reportForm.photoUrl" alt="Ảnh hiện trường" />
-                  <span class="tag-attached"><i class="bi bi-check2"></i> Đã đính kèm ảnh</span>
-                </div>
-              </div>
-
-              <div class="mb-3">
-                <label class="form-label">Mô tả hiện trạng chi tiết:</label>
-                <textarea class="form-control form-control-sm" rows="2" [(ngModel)]="reportForm.description" placeholder="Ghi chú mức độ nguy hiểm, kích thước sự cố..."></textarea>
-              </div>
-
-              <button
-                class="btn btn-primary w-100 py-3 fw-bold fs-6"
-                [disabled]="!reportForm.title.trim()"
-                (click)="submitPatrolReport()"
-              >
-                <i class="bi bi-send-fill me-1"></i>
-                <span>GỬI BÁO CÁO SỰ CỐ VỀ TRUNG TÂM ADMIN</span>
-              </button>
+            <div *ngIf="filteredMyIssues.length === 0" class="empty-state text-center p-5 text-muted bg-white rounded border">
+              <i class="bi bi-inbox fs-1 text-muted"></i>
+              <h5 class="mt-2">Không tìm thấy sự cố nào trong bộ lọc!</h5>
+              <p class="fs-xs">Bấm nút "Ghi Nhận Sự Cố Mới Tại Hiện Trường" bên trên để tạo báo cáo đầu tiên.</p>
             </div>
           </div>
         </div>
@@ -541,6 +607,283 @@ import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCo
               <i class="bi bi-check-circle-fill"></i> Nộp Báo Cáo Hoàn Thành
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL GHI NHẬN / CẬP NHẬT SỰ CỐ HIỆN TRƯỜNG (CHUẨN 3 NGUYÊN TẮC & BẢN ĐỒ GIS TƯƠNG TÁC) -->
+    <div class="custom-modal-backdrop" *ngIf="showIssueModal">
+      <div class="custom-modal-dialog modal-xl">
+        <!-- Modal Header -->
+        <div class="custom-header-bar" [ngClass]="isEditingIssue ? 'header-rejected' : 'header-create'">
+          <div class="d-flex align-items-center gap-2">
+            <i class="bi fs-5" [ngClass]="isEditingIssue ? 'bi-arrow-clockwise' : 'bi-camera-fill'"></i>
+            <div>
+              <h5 class="modal-title m-0 fw-bold">
+                {{ isEditingIssue ? ('Cập Nhật & Gửi Lại Sự Cố [' + editingIssue?.code + '] (Sau Khi Bị Từ Chối)') : 'Ghi Nhận Sự Cố Hạ Tầng Tại Hiện Trường (Chuẩn 3 Nguyên Tắc GIS)' }}
+              </h5>
+              <p class="m-0 fs-xxs opacity-75">
+                {{ isEditingIssue ? 'Sửa lại ảnh, vị trí hoặc bổ sung tài sản GIS để Quản lý thẩm tra lại' : '1 báo cáo - 1 loại vấn đề - chọn nhiều tài sản cùng loại gắn vào sự cố' }}
+              </p>
+            </div>
+          </div>
+          <button class="btn-close btn-close-white" (click)="closeIssueModal()"></button>
+        </div>
+
+        <!-- Banner 3 Nguyên Tắc Cốt Lõi -->
+        <div class="principles-banner p-2 px-3 bg-light border-bottom">
+          <div class="d-flex align-items-center gap-2 fs-xs flex-wrap">
+            <span class="badge bg-dark">3 NGUYÊN TẮC NGHIỆP VỤ:</span>
+            <span><strong>1:</strong> 1 báo cáo = 1 Layer.</span>
+            <span class="text-muted">•</span>
+            <span><strong>2:</strong> Được chọn nhiều tài sản cùng loại (vd: các vị trí lún liên tiếp).</span>
+            <span class="text-muted">•</span>
+            <span><strong>3:</strong> Người đi tuần tự đánh giá hiện trường, phần mềm quản lý dữ liệu.</span>
+          </div>
+        </div>
+
+        <!-- Modal Body Split Layout -->
+        <div class="custom-modal-body p-3">
+          <!-- Nếu đang sửa sự cố bị từ chối, hiển thị lý do từ chối -->
+          <div class="alert alert-danger p-2 fs-xs mb-3 d-flex align-items-center gap-2" *ngIf="isEditingIssue">
+            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger flex-shrink-0"></i>
+            <div>
+              <strong>Lý do Quản lý từ chối trước đó:</strong>
+              <span class="ms-1">{{ editingIssue?.rejectReason }}</span>
+              <div class="text-muted fs-xxs mt-0">Từ chối bởi {{ editingIssue?.rejectedBy }} lúc {{ editingIssue?.rejectedAt }}</div>
+            </div>
+          </div>
+
+          <div class="modal-split-layout">
+            <!-- CỘT TRÁI (50%): FORM NHẬP LIỆU CÓ SPACING VÀ SECTION RÕ RÀNG -->
+            <div class="modal-form-col">
+              <!-- KHỐI 1: CHỌN LỚP HẠ TẦNG GIS & LOẠI VẤN ĐỀ (BƯỚC 1 & 2) -->
+              <div class="modal-form-section mb-3">
+                <div class="section-title-tag">
+                  <i class="bi bi-diagram-3-fill text-primary"></i>
+                  <span>BƯỚC 1 & 2: PHÂN LOẠI HẠ TẦNG GIS & LOẠI VẤN ĐỀ SỰ CỐ</span>
+                </div>
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold fs-xs d-flex justify-content-between align-items-center mb-1">
+                      <span>1. Lớp Dữ Liệu Hạ Tầng GIS (*):</span>
+                      <span class="badge bg-secondary-subtle text-secondary font-normal fs-xxs">1 Báo cáo = 1 Layer</span>
+                    </label>
+                    <select
+                      class="form-select form-select-sm fw-semibold"
+                      [ngModel]="issueModalForm.layerId"
+                      (ngModelChange)="onSelectLayer($event)"
+                    >
+                      <option value="ROADWAY">🛣️ Mặt đường & Biển báo (Lớp ROADWAY)</option>
+                      <option value="LIGHTING">💡 Chiếu sáng đô thị (Lớp LIGHTING)</option>
+                      <option value="GREENERY">🌳 Cây xanh & Công viên (Lớp GREENERY)</option>
+                      <option value="DRAINAGE">🚰 Thoát nước & Hố ga (Lớp DRAINAGE)</option>
+                    </select>
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold fs-xs mb-1">2. Loại Vấn Đề Hạ Tầng (* Lọc theo Lớp):</label>
+                    <select class="form-select form-select-sm" [(ngModel)]="issueModalForm.categoryId">
+                      <option *ngFor="let cat of availableCategories" [value]="cat.id">
+                        [{{ cat.code }}] {{ cat.name }} (Ưu tiên: {{ cat.defaultPriority }})
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 2: CHỌN NHIỀU TÀI SẢN CÙNG LOẠI (NGUYÊN TẮC 2) -->
+              <div class="modal-form-section mb-3">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                  <div class="section-title-tag m-0">
+                    <i class="bi bi-geo-alt-fill text-primary"></i>
+                    <span>3. CHỌN TÀI SẢN GIS CÙNG LOẠI GẮN VÀO BÁO CÁO (*)</span>
+                  </div>
+                  <span class="badge" [ngClass]="issueModalForm.selectedAssetIds.length > 0 ? 'bg-success' : 'bg-secondary'">
+                    Đã chọn {{ issueModalForm.selectedAssetIds.length }} tài sản
+                  </span>
+                </div>
+                <p class="fs-xxs text-muted m-0 mb-2">
+                  Nguyên tắc 2: Nếu có nhiều điểm hư hỏng cùng loại liên tiếp (vd: 3 vị trí lún trên đoạn đường), tick chọn cả 3 tài sản vào 1 báo cáo.
+                </p>
+
+                <!-- Search & List assets -->
+                <div class="assets-picker-box">
+                  <div class="input-group input-group-sm mb-2">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input
+                      type="text"
+                      class="form-control"
+                      placeholder="Tìm mã hoặc tên tài sản trong lớp..."
+                      [(ngModel)]="assetSearchKeyword"
+                    />
+                    <button class="btn btn-outline-secondary" type="button" *ngIf="assetSearchKeyword" (click)="assetSearchKeyword = ''">
+                      <i class="bi bi-x"></i>
+                    </button>
+                  </div>
+
+                  <div class="assets-scroll-list">
+                    <div
+                      *ngFor="let ast of filteredAvailableAssets"
+                      class="asset-item-row"
+                      [class.selected]="isAssetSelected(ast.id)"
+                      (click)="toggleAssetSelection(ast)"
+                    >
+                      <input
+                        type="checkbox"
+                        class="form-check-input m-0 flex-shrink-0"
+                        [checked]="isAssetSelected(ast.id)"
+                        (click)="$event.stopPropagation()"
+                        (change)="toggleAssetSelection(ast)"
+                      />
+                      <div class="flex-grow-1 min-w-0">
+                        <div class="d-flex justify-content-between">
+                          <strong class="font-monospace text-primary fs-xs">{{ ast.code }}</strong>
+                          <span class="badge bg-light text-muted fs-xxs">{{ ast.chainage || 'Đô thị' }}</span>
+                        </div>
+                        <div class="text-truncate fw-semibold text-dark fs-xs">{{ ast.name }}</div>
+                        <div class="text-truncate text-muted fs-xxs"><i class="bi bi-geo-alt"></i> {{ ast.address }}</div>
+                      </div>
+                    </div>
+
+                    <div *ngIf="filteredAvailableAssets.length === 0" class="p-3 text-center text-muted fs-xs">
+                      Không có tài sản nào phù hợp từ khóa
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- KHỐI 3: THÔNG TIN SỰ CỐ & HIỆN TRƯỜNG (BƯỚC 4) -->
+              <div class="modal-form-section mb-3">
+                <div class="section-title-tag mb-2">
+                  <i class="bi bi-file-earmark-text-fill text-primary"></i>
+                  <span>4. TIÊU ĐỀ & CHI TIẾT HIỆN TRƯỜNG</span>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold fs-xs mb-1">Tiêu Đề Sự Cố Phát Hiện (*):</label>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="issueModalForm.title"
+                    placeholder="VD: Mặt đường sụt lún ổ gà 3 điểm liên tiếp..."
+                  />
+                </div>
+
+                <div class="row g-3 mb-3">
+                  <div class="col-md-6">
+                    <label class="form-label fs-xs mb-1 fw-semibold">Tọa độ GPS hiện trường:</label>
+                    <div class="input-group input-group-sm">
+                      <input type="text" class="form-control font-monospace" [value]="issueModalForm.lat.toFixed(5) + ', ' + issueModalForm.lng.toFixed(5)" readonly />
+                      <button class="btn btn-outline-secondary" type="button" (click)="refreshGPSInModal()" title="Cập nhật GPS">
+                        <i class="bi bi-arrow-clockwise"></i>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fs-xs mb-1 fw-semibold">Tuyến đường:</label>
+                    <input type="text" class="form-control form-control-sm" [(ngModel)]="issueModalForm.routeName" />
+                  </div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fs-xs mb-1 fw-semibold">Địa chỉ số nhà cụ thể:</label>
+                  <input type="text" class="form-control form-control-sm" [(ngModel)]="issueModalForm.address" />
+                </div>
+
+                <!-- ẢNH HIỆN TRƯỜNG -->
+                <div class="mb-3">
+                  <label class="form-label fw-bold fs-xs mb-1">Ảnh Chụp Hiện Trường (*):</label>
+                  <div class="sample-photos-row mb-2">
+                    <div
+                      *ngFor="let sample of samplePhotos"
+                      class="sample-photo-btn"
+                      [class.active]="issueModalForm.photoUrl === sample.url"
+                      (click)="issueModalForm.photoUrl = sample.url"
+                    >
+                      <img [src]="sample.url" alt="" />
+                      <span>{{ sample.title }}</span>
+                    </div>
+                  </div>
+                  <div class="current-photo-view" *ngIf="issueModalForm.photoUrl">
+                    <img [src]="issueModalForm.photoUrl" alt="Ảnh hiện trường" />
+                    <span class="tag-attached"><i class="bi bi-check2"></i> Đã đính kèm ảnh</span>
+                  </div>
+                </div>
+
+                <!-- MÔ TẢ HIỆN TRẠNG -->
+                <div class="mb-2">
+                  <label class="form-label fs-xs mb-1 fw-semibold">Mô tả hiện trạng chi tiết:</label>
+                  <textarea
+                    class="form-control form-control-sm"
+                    rows="3"
+                    [(ngModel)]="issueModalForm.description"
+                    placeholder="Mô tả mức độ hư hại, kích thước (rộng x sâu)..."
+                  ></textarea>
+                </div>
+
+                <!-- NẾU RESUBMIT: GIẢI TRÌNH CẬP NHẬT -->
+                <div class="mt-3 p-3 bg-danger-subtle border border-danger-subtle rounded-3" *ngIf="isEditingIssue">
+                  <label class="form-label fw-bold fs-xs text-danger mb-1 d-flex align-items-center gap-1">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                    <span>Nội Dung Giải Trình & Bổ Sung Gửi Lại Cho Quản Lý (*):</span>
+                  </label>
+                  <textarea
+                    class="form-control form-control-sm border-danger"
+                    rows="2"
+                    [(ngModel)]="issueModalForm.resubmitNote"
+                    placeholder="VD: Em đã ra chụp lại ảnh góc nghiêng 45 độ đo độ lún và chọn thêm tài sản liền kề theo chỉ đạo."
+                  ></textarea>
+                </div>
+              </div>
+            </div>
+
+            <!-- CỘT PHẢI (50%): BẢN ĐỒ GIS TƯƠNG TÁC RỘNG RÃI -->
+            <div class="modal-map-col">
+              <div class="map-toolbar-box">
+                <div class="d-flex align-items-center gap-2">
+                  <i class="bi bi-map-fill text-primary"></i>
+                  <strong class="fs-xs">Bản Đồ Số GIS: Lớp {{ getLayerName(issueModalForm.layerId) }}</strong>
+                </div>
+                <div class="d-flex align-items-center gap-1">
+                  <button class="btn btn-xs btn-outline-primary" type="button" (click)="fitMapToSelected()">
+                    <i class="bi bi-arrows-angle-expand"></i> Bao quát
+                  </button>
+                  <button class="btn btn-xs btn-outline-success" type="button" (click)="centerMapOnUser()">
+                    <i class="bi bi-geo-alt"></i> Vị trí của tôi
+                  </button>
+                </div>
+              </div>
+
+              <!-- MAP CONTAINER -->
+              <div class="modal-map-wrapper">
+                <div #issueModalMapContainer class="modal-leaflet-map"></div>
+              </div>
+
+              <div class="map-helper-tip mt-2">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <span>
+                  Bản đồ hiển thị các tài sản thuộc <strong>Lớp {{ getLayerName(issueModalForm.layerId) }}</strong>. Bấm trực tiếp vào điểm tài sản trên bản đồ để chọn/bỏ chọn. Điểm số (1, 2, 3...) và đường nối thể hiện các tài sản được gắn chung vào sự cố này.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="custom-modal-footer">
+          <button class="btn btn-secondary btn-sm" (click)="closeIssueModal()">Hủy bỏ</button>
+          <button
+            class="btn btn-sm fw-bold"
+            [ngClass]="isEditingIssue ? 'btn-danger' : 'btn-primary'"
+            [disabled]="!issueModalForm.title.trim() || issueModalForm.selectedAssetIds.length === 0"
+            (click)="submitIssueModal()"
+          >
+            <i class="bi" [ngClass]="isEditingIssue ? 'bi-send-check' : 'bi-send-fill'"></i>
+            <span>
+              {{ isEditingIssue ? 'GỬI LẠI CHO QUẢN LÝ THẨM TRA' : ('GỬI BÁO CÁO VỀ ADMIN (' + issueModalForm.selectedAssetIds.length + ' TÀI SẢN)') }}
+            </span>
+          </button>
         </div>
       </div>
     </div>
@@ -919,21 +1262,192 @@ import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCo
       &.status-new { background: #eff6ff; color: #1d4ed8; }
       &.status-quick_fixing { background: #fef3c7; color: #b45309; }
       &.status-resolved { background: #ecfdf5; color: #047857; }
+      &.status-moved_to_project { background: #f3e8ff; color: #7e22ce; }
+      &.status-rejected { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; }
+    }
+
+    .layer-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
 
     .fs-xs { font-size: 11.5px; }
+    .fs-xxs { font-size: 10px; }
+    .max-w-400 { max-width: 400px; }
+
+    /* KPI MINI CARDS GRID */
+    .kpi-mini-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    @media (max-width: 900px) {
+      .kpi-mini-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    .kpi-mini-card {
+      padding: 10px 14px;
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .kpi-mini-card .label {
+      font-size: 11px;
+      color: var(--gray-600);
+    }
+    .kpi-mini-card .val {
+      font-size: 16px;
+      font-weight: 700;
+    }
+
+    .my-issues-toolbar {
+      padding: 10px 16px;
+      background: #f8fafc;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .search-input-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      max-width: 480px;
+      min-width: 250px;
+    }
+
+    .filter-status-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* MY ISSUES CARDS */
+    .my-issues-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .my-issue-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      transition: all 0.15s ease;
+    }
+
+    .my-issue-card.rejected-border {
+      border-color: #fca5a5;
+      border-width: 1.5px;
+      background: #fffafa;
+    }
+
+    .my-issue-card .my-issue-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--gray-100);
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .my-issue-card .my-issue-body {
+      display: flex;
+      gap: 16px;
+    }
+
+    .my-issue-card .my-issue-body .img-box {
+      position: relative;
+      width: 140px;
+      height: 95px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      background: #e2e8f0;
+    }
+
+    .my-issue-card .my-issue-body .img-box img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .my-issue-card .my-issue-body .img-box .time-tag {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(0,0,0,0.65);
+      color: white;
+      font-size: 9.5px;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .my-issue-card .my-issue-body .info-box {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .my-issue-card .my-issue-body .info-box .issue-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin: 0 0 4px 0;
+    }
+
+    .rejected-alert-card {
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+
+    .rejected-alert-card .reject-reason-box {
+      background: white;
+      border: 1px solid #fca5a5;
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: #b91c1c;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .resubmitted-alert-card {
+      background: #fefce8;
+      border: 1px solid #fef08a;
+    }
 
     /* MODAL */
     .custom-modal-backdrop {
       position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(2px);
-      z-index: 1050;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 9999;
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 20px;
+      padding: 12px;
     }
 
     .custom-modal-dialog {
@@ -942,11 +1456,268 @@ import { PatrolIssue, PatrolSchedule, PatrolPersonnel, AttendanceStatus, AssetCo
       background: white;
       border-radius: 12px;
       overflow: hidden;
-      box-shadow: var(--shadow-xl);
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
 
-      .modal-header { padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; }
-      .modal-body { padding: 18px; }
-      .modal-footer { padding: 12px 18px; background: #f8fafc; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 8px; }
+    .custom-modal-dialog.modal-xl {
+      max-width: 1780px;
+      width: calc(100vw - 32px);
+      height: calc(100vh - 32px);
+      max-height: calc(100vh - 32px);
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      background: white;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+    }
+
+    .custom-header-bar {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+      color: white;
+      width: 100%;
+    }
+    .custom-header-bar.header-create {
+      background: #2563eb;
+    }
+    .custom-header-bar.header-rejected {
+      background: #dc2626;
+    }
+
+    .principles-banner {
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    .custom-modal-body {
+      overflow-y: auto;
+      flex: 1;
+      padding: 16px 20px;
+      background: #f1f5f9;
+      width: 100%;
+    }
+
+    .custom-modal-footer {
+      padding: 12px 20px;
+      background: white;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-shrink: 0;
+      width: 100%;
+    }
+
+    .modal-header {
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-footer {
+      padding: 12px 20px;
+      background: white;
+      border-top: 1px solid var(--gray-200);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* MODAL SPLIT LAYOUT */
+    .modal-split-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      align-items: stretch;
+      min-height: 100%;
+      width: 100%;
+    }
+
+    .modal-form-col {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-form-section {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 14px 16px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .section-title-tag {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--gray-700);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .modal-map-col {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 10px;
+      padding: 14px;
+      height: 100%;
+      min-height: 580px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+
+    .map-toolbar-box {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .modal-map-wrapper {
+      flex: 1;
+      min-height: 500px;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--gray-300);
+      position: relative;
+    }
+
+    .modal-leaflet-map {
+      width: 100%;
+      height: 100%;
+      min-height: 500px;
+    }
+
+    .map-helper-tip {
+      font-size: 11.5px;
+      color: var(--gray-600);
+      display: flex;
+      gap: 6px;
+      line-height: 1.45;
+      margin-top: 10px;
+      padding: 8px 10px;
+      background: #f8fafc;
+      border-radius: 6px;
+      border: 1px solid var(--gray-200);
+    }
+
+    .row-2-inputs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .sample-photos-row {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+
+    .sample-photo-btn {
+      border: 1.5px solid var(--gray-300);
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      width: 95px;
+      flex-shrink: 0;
+      text-align: center;
+      background: white;
+      transition: all 0.15s ease;
+    }
+    .sample-photo-btn img {
+      width: 100%;
+      height: 48px;
+      object-fit: cover;
+    }
+    .sample-photo-btn span {
+      font-size: 10px;
+      display: block;
+      padding: 3px 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .sample-photo-btn.active {
+      border-color: var(--primary-600);
+      background: #eff6ff;
+      font-weight: 700;
+      color: var(--primary-700);
+    }
+
+    .current-photo-view {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      height: 120px;
+      margin-top: 8px;
+      border: 1px solid var(--gray-200);
+    }
+    .current-photo-view img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .current-photo-view .tag-attached {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(16,185,129,0.9);
+      color: white;
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* ASSETS PICKER */
+    .assets-picker-box {
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 10px;
+      background: #f8fafc;
+    }
+
+    .assets-picker-box .assets-scroll-list {
+      max-height: 180px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .assets-picker-box .asset-item-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .assets-picker-box .asset-item-row:hover {
+      background: #f1f5f9;
+      border-color: var(--gray-300);
+    }
+    .assets-picker-box .asset-item-row.selected {
+      background: #eff6ff;
+      border-color: var(--primary-400);
+      box-shadow: 0 1px 2px rgba(59, 130, 246, 0.1);
     }
   `]
 })
@@ -958,10 +1729,39 @@ export class FieldPortalComponent implements OnInit {
   // Persona: TUAN_NAM | THO_HAI
   currentPersona: 'TUAN_NAM' | 'THO_HAI' = 'TUAN_NAM';
 
-  // 3 Distinct Tabs: ATTENDANCE | TASKS | REPORT
-  activeTab: 'ATTENDANCE' | 'TASKS' | 'REPORT' = 'ATTENDANCE';
+  // 3 Distinct Tabs: ATTENDANCE | TASKS | REPORT | MY_ISSUES
+  activeTab: 'ATTENDANCE' | 'TASKS' | 'REPORT' | 'MY_ISSUES' = 'ATTENDANCE';
 
   taskStatusFilter = 'ALL';
+
+  // Sổ theo dõi sự cố của tôi
+  myIssuesSearchKeyword = '';
+  myIssuesStatusFilter = 'ALL';
+
+  // Modal Ghi nhận sự cố mới / Cập nhật sự cố bị từ chối
+  showIssueModal = false;
+  isEditingIssue = false;
+  editingIssue?: PatrolIssue;
+  assetSearchKeyword = '';
+
+  issueModalForm = {
+    title: 'Sụt lún mép vỉa hè lát đá hoa cương',
+    description: 'Khoảng 3m2 vỉa hè bị sụt lún mép tạo rãnh sâu nguy hiểm cho người đi bộ.',
+    layerId: 'ROADWAY' as LayerId,
+    categoryId: 'cat-4',
+    selectedAssetIds: ['ast-24'] as string[],
+    photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=700&q=80',
+    lat: 10.77450,
+    lng: 106.70320,
+    address: 'Số 68 Phố đi bộ Nguyễn Huệ, P. Bến Nghé, Q.1',
+    routeName: 'Tuyến Phố Đi Bộ Nguyễn Huệ',
+    resubmitNote: ''
+  };
+
+  @ViewChild('issueModalMapContainer') issueModalMapContainer?: ElementRef;
+  private modalMap?: L.Map;
+  private modalMarkersGroup?: L.FeatureGroup;
+  private modalPolyline?: L.Polyline;
 
   // Form Điểm danh Web (Check-in)
   checkInForm = {
@@ -980,8 +1780,9 @@ export class FieldPortalComponent implements OnInit {
     note: 'Đã hoàn tất thay thế bu lông neo và kiểm tra chịu lực an toàn.'
   };
 
-  // Form Báo cáo sự cố trên Web của nhân viên tuần tra
+  // Mẫu ảnh hiện trường tham khảo
   samplePhotos = [
+    { title: 'Sụt lún vỉa hè', url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=700&q=80' },
     { title: 'Đèn chập cháy', url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=700&q=80' },
     { title: 'Cây gãy cành', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=700&q=80' },
     { title: 'Hố ga nứt vỡ', url: 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=700&q=80' }
@@ -1004,7 +1805,7 @@ export class FieldPortalComponent implements OnInit {
     this.updateClock();
     setInterval(() => this.updateClock(), 1000);
 
-    // Hỗ trợ query params: /field-portal?tab=ATTENDANCE
+    // Hỗ trợ query params: /field-portal?tab=ATTENDANCE hoặc tab=MY_ISSUES
     this.route.queryParams.subscribe(params => {
       if (params['tab']) {
         this.activeTab = params['tab'];
@@ -1019,7 +1820,7 @@ export class FieldPortalComponent implements OnInit {
   onPersonaChange() {
     if (this.currentPersona === 'TUAN_NAM') {
       this.checkInForm.personnelId = 'ns-1';
-      this.activeTab = 'ATTENDANCE';
+      this.activeTab = 'MY_ISSUES';
     } else {
       this.activeTab = 'TASKS';
     }
@@ -1086,6 +1887,389 @@ export class FieldPortalComponent implements OnInit {
     }
   }
 
+  // SỔ SỰ CỐ CỦA TÔI (CỔNG HIỆN TRƯỜNG - UC 7)
+  get myReportedIssues(): PatrolIssue[] {
+    return this.patrolService.issues();
+  }
+
+  get myRejectedIssuesCount(): number {
+    return this.myReportedIssues.filter(i => i.status === 'REJECTED').length;
+  }
+
+  countMyIssuesByStatus(status: string): number {
+    return this.myReportedIssues.filter(i => i.status === status).length;
+  }
+
+  get filteredMyIssues(): PatrolIssue[] {
+    return this.myReportedIssues.filter(iss => {
+      if (this.myIssuesStatusFilter !== 'ALL' && iss.status !== this.myIssuesStatusFilter) {
+        return false;
+      }
+      if (this.myIssuesSearchKeyword.trim()) {
+        const kw = this.myIssuesSearchKeyword.toLowerCase();
+        const matchCode = iss.code?.toLowerCase().includes(kw);
+        const matchTitle = iss.title?.toLowerCase().includes(kw);
+        const matchAddr = iss.address?.toLowerCase().includes(kw);
+        const matchRoute = iss.routeName?.toLowerCase().includes(kw);
+        const matchAsset = iss.assetName?.toLowerCase().includes(kw) || iss.assetCode?.toLowerCase().includes(kw);
+        return matchCode || matchTitle || matchAddr || matchRoute || matchAsset;
+      }
+      return true;
+    });
+  }
+
+  get availableCategories() {
+    return this.patrolService.categories().filter(c => c.layerId === this.issueModalForm.layerId);
+  }
+
+  get availableAssetsForLayer(): Asset[] {
+    return this.projectService.masterAssets().filter(a => a.layerId === this.issueModalForm.layerId);
+  }
+
+  get filteredAvailableAssets(): Asset[] {
+    if (!this.assetSearchKeyword.trim()) {
+      return this.availableAssetsForLayer;
+    }
+    const kw = this.assetSearchKeyword.toLowerCase();
+    return this.availableAssetsForLayer.filter(a =>
+      a.code.toLowerCase().includes(kw) ||
+      a.name.toLowerCase().includes(kw) ||
+      (a.address && a.address.toLowerCase().includes(kw))
+    );
+  }
+
+  isAssetSelected(assetId: string): boolean {
+    return this.issueModalForm.selectedAssetIds.includes(assetId);
+  }
+
+  getLayerName(layerId: LayerId): string {
+    switch (layerId) {
+      case 'ROADWAY': return 'Mặt đường & Biển báo';
+      case 'LIGHTING': return 'Chiếu sáng đô thị';
+      case 'GREENERY': return 'Cây xanh & Công viên';
+      case 'DRAINAGE': return 'Thoát nước & Hố ga';
+      default: return layerId;
+    }
+  }
+
+  getLayerColor(layerId: LayerId): string {
+    switch (layerId) {
+      case 'ROADWAY': return '#8b5cf6';
+      case 'LIGHTING': return '#eab308';
+      case 'GREENERY': return '#10b981';
+      case 'DRAINAGE': return '#06b6d4';
+      default: return '#6b7280';
+    }
+  }
+
+  getStatusLabel(status: string): string {
+    switch (status) {
+      case 'NEW': return 'Mới tiếp nhận (Chờ duyệt)';
+      case 'QUICK_FIXING': return 'Đang khắc phục';
+      case 'RESOLVED': return 'Đã hoàn thành';
+      case 'MOVED_TO_PROJECT': return 'Đã chuyển Dự án Duy tu';
+      case 'REJECTED': return 'Bị từ chối tiếp nhận';
+      default: return status;
+    }
+  }
+
+  // MODAL GHI NHẬN / SỬA SỰ CỐ
+  openCreateIssueModal() {
+    this.isEditingIssue = false;
+    this.editingIssue = undefined;
+    this.issueModalForm = {
+      title: 'Sụt lún mép vỉa hè lát đá hoa cương',
+      description: 'Khoảng 3m2 vỉa hè bị sụt lún mép tạo rãnh sâu nguy hiểm cho người đi bộ.',
+      layerId: 'ROADWAY' as LayerId,
+      categoryId: 'cat-4',
+      selectedAssetIds: ['ast-24'],
+      photoUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=700&q=80',
+      lat: 10.77450,
+      lng: 106.70320,
+      address: 'Số 68 Phố đi bộ Nguyễn Huệ, P. Bến Nghé, Q.1',
+      routeName: 'Tuyến Phố Đi Bộ Nguyễn Huệ',
+      resubmitNote: ''
+    };
+    this.showIssueModal = true;
+    setTimeout(() => this.initModalMap(), 250);
+  }
+
+  openEditRejectedIssueModal(issue: PatrolIssue) {
+    this.isEditingIssue = true;
+    this.editingIssue = issue;
+    const selectedIds = issue.attachedAssets && issue.attachedAssets.length > 0
+      ? issue.attachedAssets.map(a => a.assetId)
+      : (issue.assetId ? [issue.assetId] : []);
+
+    this.issueModalForm = {
+      title: issue.title,
+      description: issue.description,
+      layerId: issue.layerId,
+      categoryId: issue.categoryId,
+      selectedAssetIds: selectedIds,
+      photoUrl: issue.photoBeforeUrl,
+      lat: issue.lat,
+      lng: issue.lng,
+      address: issue.address,
+      routeName: issue.routeName,
+      resubmitNote: issue.resubmitNotes || ''
+    };
+    this.showIssueModal = true;
+    setTimeout(() => this.initModalMap(), 250);
+  }
+
+  closeIssueModal() {
+    this.showIssueModal = false;
+    if (this.modalMap) {
+      this.modalMap.remove();
+      this.modalMap = undefined;
+    }
+  }
+
+  onSelectLayer(layerId: LayerId) {
+    if (this.issueModalForm.layerId === layerId) return;
+    this.issueModalForm.layerId = layerId;
+    this.issueModalForm.selectedAssetIds = [];
+    const cats = this.availableCategories;
+    if (cats.length > 0) {
+      this.issueModalForm.categoryId = cats[0].id;
+    }
+    const assets = this.availableAssetsForLayer;
+    if (assets.length > 0) {
+      this.issueModalForm.selectedAssetIds = [assets[0].id];
+      this.issueModalForm.lat = assets[0].lat;
+      this.issueModalForm.lng = assets[0].lng;
+      this.issueModalForm.address = assets[0].address;
+      this.issueModalForm.routeName = assets[0].route;
+    }
+    this.renderModalMapAssets();
+  }
+
+  toggleAssetSelection(ast: Asset) {
+    const idx = this.issueModalForm.selectedAssetIds.indexOf(ast.id);
+    if (idx >= 0) {
+      this.issueModalForm.selectedAssetIds.splice(idx, 1);
+    } else {
+      this.issueModalForm.selectedAssetIds.push(ast.id);
+      if (this.issueModalForm.selectedAssetIds.length === 1) {
+        this.issueModalForm.lat = ast.lat;
+        this.issueModalForm.lng = ast.lng;
+        this.issueModalForm.address = ast.address;
+        this.issueModalForm.routeName = ast.route;
+      }
+    }
+    this.renderModalMapAssets();
+  }
+
+  refreshGPSInModal() {
+    const deltaLat = (Math.random() - 0.5) * 0.0006;
+    const deltaLng = (Math.random() - 0.5) * 0.0006;
+    this.issueModalForm.lat = +(10.7745 + deltaLat).toFixed(5);
+    this.issueModalForm.lng = +(10.7032 + deltaLng).toFixed(5);
+    this.renderModalMapAssets();
+  }
+
+  initModalMap() {
+    if (!this.issueModalMapContainer) return;
+    if (this.modalMap) {
+      this.modalMap.remove();
+    }
+    const container = this.issueModalMapContainer.nativeElement;
+    this.modalMap = L.map(container, {
+      center: [this.issueModalForm.lat, this.issueModalForm.lng],
+      zoom: 16,
+      zoomControl: true
+    });
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors',
+      maxZoom: 19
+    }).addTo(this.modalMap);
+
+    this.modalMarkersGroup = L.featureGroup().addTo(this.modalMap);
+    this.renderModalMapAssets();
+    this.modalMap.invalidateSize();
+    setTimeout(() => {
+      this.modalMap?.invalidateSize();
+    }, 200);
+  }
+
+  renderModalMapAssets() {
+    if (!this.modalMap || !this.modalMarkersGroup) return;
+    this.modalMarkersGroup.clearLayers();
+    if (this.modalPolyline) {
+      this.modalMap.removeLayer(this.modalPolyline);
+      this.modalPolyline = undefined;
+    }
+
+    const layerColor = this.getLayerColor(this.issueModalForm.layerId);
+    const selectedPoints: L.LatLngExpression[] = [];
+
+    // Render các tài sản thuộc layer
+    this.availableAssetsForLayer.forEach(ast => {
+      const isSelected = this.isAssetSelected(ast.id);
+      const selectedIndex = this.issueModalForm.selectedAssetIds.indexOf(ast.id);
+
+      if (isSelected) {
+        selectedPoints.push([ast.lat, ast.lng]);
+        const numberBadge = selectedIndex + 1;
+        const selectedIcon = L.divIcon({
+          className: 'modal-asset-selected-marker',
+          html: `<div style="
+            background: #dc2626;
+            color: white;
+            font-weight: 800;
+            font-size: 11px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 0 3px white, 0 3px 8px rgba(0,0,0,0.4);
+            border: 2px solid #991b1b;
+          ">${numberBadge}</div>`,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const marker = L.marker([ast.lat, ast.lng], { icon: selectedIcon }).addTo(this.modalMarkersGroup!);
+        marker.bindPopup(`
+          <div style="font-family: inherit; font-size: 12px;">
+            <div style="font-weight: bold; color: #dc2626;">[Điểm ${numberBadge}] ${ast.code}</div>
+            <div style="font-weight: 600;">${ast.name}</div>
+            <div style="color: #6b7280; font-size: 11px;">${ast.address}</div>
+            <div style="margin-top: 4px; color: #059669; font-weight: bold;">✓ ĐÃ GẮN VÀO SỰ CỐ NÀY</div>
+          </div>
+        `);
+        marker.on('click', () => this.toggleAssetSelection(ast));
+      } else {
+        const defaultIcon = L.divIcon({
+          className: 'modal-asset-unselected-marker',
+          html: `<div style="
+            background: ${layerColor};
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            cursor: pointer;
+          "></div>`,
+          iconSize: [14, 14],
+          iconAnchor: [7, 7]
+        });
+
+        const marker = L.marker([ast.lat, ast.lng], { icon: defaultIcon }).addTo(this.modalMarkersGroup!);
+        marker.bindTooltip(`[${ast.code}] ${ast.name}`, { direction: 'top', offset: [0, -8] });
+        marker.on('click', () => this.toggleAssetSelection(ast));
+      }
+    });
+
+    // Vẽ polyline nối các tài sản được chọn (Nguyên tắc 2: nhiều tài sản cùng loại liên tiếp)
+    if (selectedPoints.length > 1) {
+      this.modalPolyline = L.polyline(selectedPoints, {
+        color: '#dc2626',
+        weight: 3,
+        dashArray: '6, 6',
+        opacity: 0.8
+      }).addTo(this.modalMap);
+    }
+
+    // Marker GPS người đi tuần
+    const userIcon = L.divIcon({
+      className: 'modal-user-pos-marker',
+      html: `<div style="
+        background: #2563eb;
+        color: white;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        border: 2.5px solid white;
+        box-shadow: 0 0 0 4px rgba(37,99,235,0.35);
+      "></div>`,
+      iconSize: [18, 18],
+      iconAnchor: [9, 9]
+    });
+    L.marker([this.issueModalForm.lat, this.issueModalForm.lng], { icon: userIcon })
+      .bindTooltip('Vị trí hiện trường của bạn', { direction: 'bottom' })
+      .addTo(this.modalMarkersGroup);
+  }
+
+  fitMapToSelected() {
+    if (!this.modalMap) return;
+    if (this.modalMarkersGroup && this.modalMarkersGroup.getLayers().length > 0) {
+      this.modalMap.fitBounds(this.modalMarkersGroup.getBounds(), { padding: [30, 30] });
+    }
+  }
+
+  centerMapOnUser() {
+    if (!this.modalMap) return;
+    this.modalMap.setView([this.issueModalForm.lat, this.issueModalForm.lng], 17);
+  }
+
+  submitIssueModal() {
+    if (!this.issueModalForm.title.trim()) {
+      alert('Vui lòng nhập tiêu đề sự cố!');
+      return;
+    }
+    if (this.issueModalForm.selectedAssetIds.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 tài sản GIS cho sự cố (Nguyên tắc 2)!');
+      return;
+    }
+
+    const selectedAssets = this.projectService.masterAssets().filter(a =>
+      this.issueModalForm.selectedAssetIds.includes(a.id)
+    );
+    const primaryAsset = selectedAssets[0];
+    const category = this.patrolService.categories().find(c => c.id === this.issueModalForm.categoryId);
+
+    const attachedAssetsList = selectedAssets.map(a => ({
+      assetId: a.id,
+      assetCode: a.code,
+      assetName: a.name,
+      layerId: a.layerId,
+      condition: 'DAMAGED' as AssetCondition,
+      notes: a.address
+    }));
+
+    if (this.isEditingIssue && this.editingIssue) {
+      // Resubmit sự cố sau khi bị từ chối
+      this.patrolService.resubmitIssue(
+        this.editingIssue.id,
+        {
+          title: this.issueModalForm.title,
+          description: this.issueModalForm.description,
+          layerId: this.issueModalForm.layerId,
+          categoryId: this.issueModalForm.categoryId,
+          attachedAssetIds: this.issueModalForm.selectedAssetIds,
+          photoUrl: this.issueModalForm.photoUrl,
+          lat: this.issueModalForm.lat,
+          lng: this.issueModalForm.lng,
+          address: this.issueModalForm.address,
+          routeName: this.issueModalForm.routeName
+        },
+        this.issueModalForm.resubmitNote || 'Đã kiểm tra lại hiện trường và bổ sung tài sản theo yêu cầu'
+      );
+    } else {
+      // Tạo sự cố mới tại hiện trường chuẩn 3 nguyên tắc
+      this.patrolService.createPatrolIssue({
+        title: this.issueModalForm.title,
+        description: this.issueModalForm.description,
+        layerId: this.issueModalForm.layerId,
+        categoryId: this.issueModalForm.categoryId,
+        attachedAssetIds: this.issueModalForm.selectedAssetIds,
+        photoUrl: this.issueModalForm.photoUrl,
+        lat: this.issueModalForm.lat,
+        lng: this.issueModalForm.lng,
+        address: this.issueModalForm.address,
+        routeName: this.issueModalForm.routeName,
+        reportedByName: 'Trần Đình Nam (Tuần tra viên)'
+      });
+    }
+
+    this.closeIssueModal();
+  }
+
   // THỢ (UC 10)
   get myAssignedTasks(): PatrolIssue[] {
     return this.patrolService.issues().filter(i => {
@@ -1145,7 +2329,7 @@ export class FieldPortalComponent implements OnInit {
     );
   }
 
-  // BÁO CÁO SỰ CỐ TRÊN WEB (UC 7)
+  // BÁO CÁO SỰ CỐ TRÊN WEB (UC 7 CŨ - CHUYỂN SANG MODAL MỚI)
   onSelectAsset() {
     const ast = this.projectService.masterAssets().find(a => a.id === this.reportForm.assetId);
     if (ast) {
@@ -1164,18 +2348,6 @@ export class FieldPortalComponent implements OnInit {
   }
 
   submitPatrolReport() {
-    this.patrolService.simulateReportFromMobile({
-      title: this.reportForm.title,
-      description: this.reportForm.description,
-      categoryId: this.reportForm.categoryId,
-      assetId: this.reportForm.assetId || undefined,
-      assetCondition: this.reportForm.assetCondition,
-      photoUrl: this.reportForm.photoUrl,
-      lat: this.reportForm.lat,
-      lng: this.reportForm.lng,
-      address: this.reportForm.address,
-      routeName: this.reportForm.routeName,
-      reportedByName: 'Trần Đình Nam (Tuần tra viên)'
-    });
+    this.openCreateIssueModal();
   }
 }

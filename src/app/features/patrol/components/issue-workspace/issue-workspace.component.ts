@@ -32,6 +32,7 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
             <select class="form-select form-select-sm" [(ngModel)]="statusFilter">
               <option value="ALL">Tất cả trạng thái ({{ patrolService.issues().length }})</option>
               <option value="NEW">Mới báo về ({{ countByStatus('NEW') }})</option>
+              <option value="REJECTED">Bị từ chối tiếp nhận ({{ countByStatus('REJECTED') }})</option>
               <option value="QUICK_FIXING">Đang khắc phục nhanh ({{ countByStatus('QUICK_FIXING') }})</option>
               <option value="RESOLVED">Đã hoàn thành / Nghiệm thu ({{ countByStatus('RESOLVED') }})</option>
               <option value="MOVED_TO_PROJECT">Đã gom vào Dự án Duy tu ({{ countByStatus('MOVED_TO_PROJECT') }})</option>
@@ -87,9 +88,11 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
                 <input
                   type="checkbox"
                   class="form-check-input m-0"
+                  [disabled]="iss.status === 'REJECTED' || iss.status === 'MOVED_TO_PROJECT'"
                   [checked]="selectedIssueIds.has(iss.id)"
                   (click)="$event.stopPropagation()"
                   (change)="toggleSelectIssue(iss.id)"
+                  [title]="iss.status === 'REJECTED' ? 'Sự cố bị từ chối không thể gom dự án' : ''"
                 />
                 <span class="issue-code">{{ iss.code }}</span>
                 <span class="priority-pill" [ngClass]="'priority-' + iss.priority.toLowerCase()">
@@ -173,28 +176,74 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
               <!-- Nút 1: Khắc phục nhanh -->
               <button
                 class="btn-action-flow btn-quick-fix"
-                [disabled]="currentIssue.status === 'MOVED_TO_PROJECT' || currentIssue.status === 'RESOLVED'"
+                [disabled]="currentIssue.status === 'MOVED_TO_PROJECT' || currentIssue.status === 'RESOLVED' || currentIssue.status === 'REJECTED'"
                 (click)="openQuickFixModal()"
               >
                 <div class="action-icon"><i class="bi bi-tools"></i></div>
                 <div class="action-text">
                   <div class="main-label">1. &lt;Tạo Task Khắc Phục Nhanh&gt;</div>
-                  <div class="sub-label">Sự cố nhỏ lẻ, chi phí thấp &rarr; Giao thợ sửa ngay trong ngày</div>
+                  <div class="sub-label">
+                    {{ currentIssue.status === 'REJECTED' ? 'Sự cố đã bị từ chối tiếp nhận (Đang khóa)' : 'Sự cố nhỏ lẻ, chi phí thấp &rarr; Giao thợ sửa ngay trong ngày' }}
+                  </div>
                 </div>
               </button>
 
               <!-- Nút 2: Chuyển thành Dự Án Duy Tu -->
               <button
                 class="btn-action-flow btn-move-project"
-                [disabled]="currentIssue.status === 'MOVED_TO_PROJECT'"
+                [disabled]="currentIssue.status === 'MOVED_TO_PROJECT' || currentIssue.status === 'REJECTED'"
                 (click)="openConvertProjectModal()"
               >
                 <div class="action-icon"><i class="bi bi-folder-plus"></i></div>
                 <div class="action-text">
                   <div class="main-label">2. &lt;Chuyển Thành Dự Án Duy Tu&gt;</div>
-                  <div class="sub-label">Sự cố lớn/hệ thống &rarr; Tự động map Asset_ID sang Dự án Duy tu</div>
+                  <div class="sub-label">
+                    {{ currentIssue.status === 'REJECTED' ? 'Sự cố đã bị từ chối tiếp nhận (Đang khóa)' : 'Sự cố lớn/hệ thống &rarr; Tự động map Asset_ID sang Dự án Duy tu' }}
+                  </div>
                 </div>
               </button>
+
+              <!-- Nút 3: Từ chối tiếp nhận sự cố -->
+              <button
+                class="btn-action-flow btn-reject"
+                [disabled]="currentIssue.status === 'MOVED_TO_PROJECT' || currentIssue.status === 'RESOLVED' || currentIssue.status === 'REJECTED'"
+                (click)="openRejectModal()"
+              >
+                <div class="action-icon"><i class="bi bi-x-circle-fill"></i></div>
+                <div class="action-text">
+                  <div class="main-label">3. &lt;Từ Chối Tiếp Nhận Sự Cố&gt;</div>
+                  <div class="sub-label">
+                    {{ currentIssue.status === 'REJECTED' ? 'Đã từ chối tiếp nhận sự cố này' : 'Ảnh sai/lậu/thiếu thông tin &rarr; Yêu cầu người đi tuần cập nhật lại' }}
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- ALERT KHI SỰ CỐ BỊ TỪ CHỐI TIẾP NHẬN -->
+          <div class="alert alert-danger d-flex gap-3 align-items-start mt-3 mb-0" *ngIf="currentIssue.status === 'REJECTED'">
+            <i class="bi bi-exclamation-octagon-fill fs-3 text-danger flex-shrink-0"></i>
+            <div class="flex-grow-1">
+              <div class="fw-bold fs-6 text-danger">SỰ CỐ NÀY ĐÃ BỊ TỪ CHỐI TIẾP NHẬN</div>
+              <div class="mt-1 fs-sm"><strong>Lý do từ chối:</strong> {{ currentIssue.rejectReason }}</div>
+              <div class="fs-xs text-muted mt-1">
+                Từ chối bởi: <strong>{{ currentIssue.rejectedBy }}</strong> • Lúc: <strong>{{ currentIssue.rejectedAt }}</strong>
+              </div>
+              <div class="fs-xs text-dark mt-2 p-2 bg-white rounded border">
+                <i class="bi bi-info-circle-fill text-primary"></i> <em>Sự cố chưa bị đóng. Người đi tuần có thể xem lý do này trên Cổng Hiện Trường, cập nhật bổ sung hình ảnh/thông tin và bấm gửi lại để Quản lý thẩm tra lại.</em>
+              </div>
+            </div>
+          </div>
+
+          <!-- ALERT KHI SỰ CỐ VỪA ĐƯỢC NGƯỜI ĐI TUẦN GỬI LẠI (RESUBMITTED) -->
+          <div class="alert alert-warning d-flex gap-2 align-items-center mt-3 mb-0 py-2" *ngIf="currentIssue.resubmittedAt && currentIssue.status === 'NEW'">
+            <i class="bi bi-arrow-repeat fs-4 text-warning flex-shrink-0"></i>
+            <div>
+              <strong class="text-dark">Sự cố vừa được Người tuần kiểm cập nhật & gửi lại thẩm tra:</strong>
+              <span class="fs-xs text-muted ms-1">({{ currentIssue.resubmittedAt }})</span>
+              <div class="fs-xs text-dark" *ngIf="currentIssue.resubmitNotes">
+                <strong>Ghi chú giải trình:</strong> {{ currentIssue.resubmitNotes }}
+              </div>
             </div>
           </div>
         </div>
@@ -260,7 +309,30 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
                 <div class="col-box">
                   <h4 class="section-heading"><i class="bi bi-geo-alt-fill text-danger"></i> Vị trí GPS & Tài sản GIS:</h4>
                   
-                  <div class="asset-gis-card mb-3" *ngIf="currentIssue.assetId">
+                  <!-- Nhiều tài sản đính kèm theo Nguyên tắc 2 -->
+                  <div class="attached-assets-box mb-3" *ngIf="currentIssue.attachedAssets && currentIssue.attachedAssets.length > 0">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                      <span class="badge bg-primary text-white">
+                        <i class="bi bi-diagram-3-fill me-1"></i> {{ currentIssue.attachedAssets.length }} tài sản cùng loại gắn vào sự cố (Nguyên tắc 2)
+                      </span>
+                      <span class="badge bg-light text-dark">Lớp: {{ currentIssue.categoryName }}</span>
+                    </div>
+                    <div class="attached-list">
+                      <div class="attached-item" *ngFor="let ast of currentIssue.attachedAssets">
+                        <div class="d-flex justify-content-between align-items-center">
+                          <span class="asset-code font-monospace fw-bold text-primary">{{ ast.assetCode }}</span>
+                          <span class="badge bg-danger text-white fs-xxs">Hư hỏng</span>
+                        </div>
+                        <div class="asset-name text-dark fw-semibold mt-1">{{ ast.assetName }}</div>
+                        <div class="asset-meta text-muted fs-xs mt-1">
+                          <i class="bi bi-geo-alt"></i> {{ ast.address || currentIssue.address }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- 1 Tài sản đơn lẻ -->
+                  <div class="asset-gis-card mb-3" *ngIf="(!currentIssue.attachedAssets || currentIssue.attachedAssets.length === 0) && currentIssue.assetId">
                     <div class="d-flex justify-content-between align-items-center">
                       <span class="asset-tag">{{ currentIssue.assetCode }}</span>
                       <span class="badge bg-light text-dark">Lớp: {{ currentIssue.categoryName }}</span>
@@ -593,6 +665,60 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
         </div>
       </div>
     </div>
+
+    <!-- MODAL 4: TỪ CHỐI TIẾP NHẬN SỰ CỐ -->
+    <div class="custom-modal-backdrop" *ngIf="showRejectModal">
+      <div class="custom-modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header bg-danger text-white">
+            <h5 class="modal-title d-flex align-items-center gap-2">
+              <i class="bi bi-x-circle-fill"></i>
+              <span>Từ Chối Tiếp Nhận Sự Cố [{{ currentIssue?.code }}]</span>
+            </h5>
+            <button class="btn-close btn-close-white" (click)="showRejectModal = false"></button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-warning fs-xs mb-3">
+              <i class="bi bi-info-circle-fill"></i> Khi từ chối, sự cố <strong>không bị đóng hoàn toàn</strong>. Người đi tuần có thể xem lý do từ chối này trên Cổng Hiện Trường, cập nhật bổ sung hình ảnh/thông tin và gửi lại để thẩm tra.
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Chọn lý do nhanh:</label>
+              <div class="d-flex flex-wrap gap-1 mb-2">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-secondary"
+                  *ngFor="let sample of quickRejectReasons"
+                  (click)="rejectReasonText = sample"
+                >
+                  {{ sample }}
+                </button>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label fw-bold">Nội dung giải thích lý do từ chối (*):</label>
+              <textarea
+                class="form-control"
+                rows="3"
+                [(ngModel)]="rejectReasonText"
+                placeholder="Nhập chi tiết: Vd: Ảnh chụp bị mờ / góc sai; Sai vị trí tài sản trên bản đồ; Báo cáo trùng lặp..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="btn btn-secondary btn-sm" (click)="showRejectModal = false">Hủy</button>
+            <button
+              class="btn btn-danger btn-sm"
+              [disabled]="!rejectReasonText.trim()"
+              (click)="submitRejectIssue()"
+            >
+              <i class="bi bi-x-circle"></i> Xác Nhận Từ Chối Tiếp Nhận
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     .workspace-container {
@@ -794,7 +920,7 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
 
       .actions-buttons-grid {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 10px;
       }
 
@@ -848,6 +974,38 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
             box-shadow: 0 2px 4px rgba(29,78,216,0.15);
           }
         }
+
+        &.btn-reject {
+          background: #fef2f2;
+          color: #dc2626;
+          border-color: #fecaca;
+          &:hover:not(:disabled) {
+            background: #fee2e2;
+            box-shadow: 0 2px 4px rgba(220,38,38,0.15);
+          }
+        }
+      }
+    }
+
+    .attached-assets-box {
+      background: #f8fafc;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      padding: 10px 12px;
+
+      .attached-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .attached-item {
+        background: white;
+        border: 1px solid var(--gray-200);
+        border-radius: 6px;
+        padding: 6px 10px;
+        .asset-code { font-size: 11px; }
+        .asset-name { font-size: 12px; }
       }
     }
 
@@ -1099,7 +1257,7 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
       &.status-quick_fixing { background: #fef3c7; color: #b45309; }
       &.status-resolved { background: #ecfdf5; color: #047857; }
       &.status-moved_to_project { background: #f3e8ff; color: #7e22ce; }
-      &.status-rejected { background: #f1f5f9; color: #64748b; }
+      &.status-rejected { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; font-weight: 700; }
     }
 
     .layer-pill {
@@ -1199,6 +1357,17 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
     note: 'Đã kiểm tra hiện trường, thiết bị vận hành tốt, đạt tiêu chuẩn kỹ thuật.'
   };
 
+  // Modal Từ chối tiếp nhận sự cố
+  showRejectModal = false;
+  rejectReasonText = '';
+  quickRejectReasons = [
+    'Ảnh chụp hiện trường bị mờ / không đúng góc chụp',
+    'Sai vị trí tọa độ GPS hoặc sai địa bàn quản lý',
+    'Báo cáo trùng lặp với sự cố đã tiếp nhận',
+    'Mô tả quá sơ sài, thiếu kích thước hư hỏng cụ thể',
+    'Tài sản GIS đính kèm không đúng với hiện trường'
+  ];
+
   // Mini Leaflet Map
   @ViewChild('miniMapContainer') miniMapContainer?: ElementRef;
   private miniMap?: L.Map;
@@ -1244,7 +1413,7 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   get isAllSelected(): boolean {
-    const list = this.filteredIssues;
+    const list = this.filteredIssues.filter(i => i.status !== 'REJECTED' && i.status !== 'MOVED_TO_PROJECT');
     return list.length > 0 && list.every(i => this.selectedIssueIds.has(i.id));
   }
 
@@ -1252,7 +1421,9 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
     if (this.isAllSelected) {
       this.selectedIssueIds.clear();
     } else {
-      this.filteredIssues.forEach(i => this.selectedIssueIds.add(i.id));
+      this.filteredIssues
+        .filter(i => i.status !== 'REJECTED' && i.status !== 'MOVED_TO_PROJECT')
+        .forEach(i => this.selectedIssueIds.add(i.id));
     }
   }
 
@@ -1288,7 +1459,7 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
       case 'QUICK_FIXING': return 'Đang khắc phục';
       case 'RESOLVED': return 'Đã hoàn thành';
       case 'MOVED_TO_PROJECT': return 'Chuyển Dự án Duy tu';
-      case 'REJECTED': return 'Từ chối';
+      case 'REJECTED': return 'Bị từ chối tiếp nhận';
     }
   }
 
@@ -1327,6 +1498,8 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   // Mini Leaflet Map Logic
+  private miniMarkersGroup?: L.FeatureGroup;
+
   private initMiniMap() {
     if (!this.miniMapContainer || this.miniMap) return;
 
@@ -1340,44 +1513,96 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(this.miniMap);
 
+    this.miniMarkersGroup = L.featureGroup().addTo(this.miniMap);
+
     this.updateMiniMap(this.currentIssue);
   }
 
   private updateMiniMap(iss?: PatrolIssue) {
     if (!this.miniMap || !iss) return;
 
-    if (this.miniMarker) {
-      this.miniMap.removeLayer(this.miniMarker);
+    if (!this.miniMarkersGroup) {
+      this.miniMarkersGroup = L.featureGroup().addTo(this.miniMap);
     }
+    this.miniMarkersGroup.clearLayers();
 
-    this.miniMap.setView([iss.lat, iss.lng], 16);
+    const layerColor = this.getLayerColor(iss.layerId);
 
-    const pinIcon = L.divIcon({
-      className: 'pulse-marker',
-      html: `
-        <div style="background-color: ${this.getLayerColor(iss.layerId)}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
-          !
-        </div>
-      `,
-      iconSize: [28, 28],
-      iconAnchor: [14, 14]
-    });
+    // Nếu sự cố có nhiều tài sản đính kèm (Nguyên tắc 2)
+    if (iss.attachedAssets && iss.attachedAssets.length > 0) {
+      const boundsCoords: [number, number][] = [];
 
-    this.miniMarker = L.marker([iss.lat, iss.lng], { icon: pinIcon })
-      .addTo(this.miniMap)
-      .bindPopup(`<b>[${iss.code}]</b><br>${iss.title}<br><i>${iss.address}</i>`)
-      .openPopup();
+      iss.attachedAssets.forEach((ast, idx) => {
+        const aLat = ast.lat || iss.lat;
+        const aLng = ast.lng || iss.lng;
+        boundsCoords.push([aLat, aLng]);
+
+        const multiIcon = L.divIcon({
+          className: 'pulse-marker',
+          html: `
+            <div style="background-color: ${layerColor}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.45);">
+              ${idx + 1}
+            </div>
+          `,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14]
+        });
+
+        const m = L.marker([aLat, aLng], { icon: multiIcon })
+          .bindPopup(`<b>[${ast.assetCode}]</b><br>${ast.assetName}<br><i>${ast.address || iss.address}</i>`);
+        this.miniMarkersGroup!.addLayer(m);
+      });
+
+      // Nếu có từ 2 tài sản trở lên, vẽ polyline nối chúng lại
+      if (boundsCoords.length > 1) {
+        const line = L.polyline(boundsCoords, { color: layerColor, weight: 3, dashArray: '5, 5' });
+        this.miniMarkersGroup.addLayer(line);
+      }
+
+      this.miniMap.fitBounds(L.latLngBounds(boundsCoords), { padding: [30, 30], maxZoom: 17 });
+    } else {
+      // 1 Tài sản đơn lẻ
+      this.miniMap.setView([iss.lat, iss.lng], 16);
+
+      const pinIcon = L.divIcon({
+        className: 'pulse-marker',
+        html: `
+          <div style="background-color: ${layerColor}; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; border: 2px solid white; box-shadow: 0 0 10px rgba(0,0,0,0.5);">
+            !
+          </div>
+        `,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      const m = L.marker([iss.lat, iss.lng], { icon: pinIcon })
+        .bindPopup(`<b>[${iss.code}]</b><br>${iss.title}<br><i>${iss.address}</i>`)
+        .openPopup();
+      this.miniMarkersGroup.addLayer(m);
+    }
   }
 
   // Modal Handlers
-  openQuickFixModal() {
+  openRejectModal() {
     if (!this.currentIssue) return;
+    this.rejectReasonText = '';
+    this.showRejectModal = true;
+  }
+
+  submitRejectIssue() {
+    if (!this.currentIssue || !this.rejectReasonText.trim()) return;
+    this.patrolService.rejectIssue(this.currentIssue.id, this.rejectReasonText.trim(), 'Lê Hoàng Long (Cán bộ QLDA)');
+    this.showRejectModal = false;
+  }
+
+  openQuickFixModal() {
+    if (!this.currentIssue || this.currentIssue.status === 'REJECTED' || this.currentIssue.status === 'MOVED_TO_PROJECT' || this.currentIssue.status === 'RESOLVED') return;
     this.quickFixForm.note = `Xử lý sự cố: ${this.currentIssue.title} tại ${this.currentIssue.address}`;
     this.showQuickFixModal = true;
   }
 
   submitQuickFix() {
-    if (!this.currentIssue) return;
+    if (!this.currentIssue || this.currentIssue.status === 'REJECTED') return;
     this.patrolService.createQuickFixTask(
       this.currentIssue.id,
       this.quickFixForm.contractorOrTeam,
@@ -1391,7 +1616,7 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   openConvertProjectModal() {
-    if (!this.currentIssue) return;
+    if (!this.currentIssue || this.currentIssue.status === 'REJECTED' || this.currentIssue.status === 'MOVED_TO_PROJECT') return;
     this.issuesToConvert = [this.currentIssue];
     this.convertProjectForm.projectName = `Dự án Duy tu khẩn cấp xử lý sự cố ${this.currentIssue.code} (${this.currentIssue.routeName})`;
     this.convertProjectForm.routeName = this.currentIssue.routeName;
@@ -1399,8 +1624,11 @@ export class IssueWorkspaceComponent implements OnInit, AfterViewInit, OnDestroy
   }
 
   openBatchProjectModal() {
-    const list = this.patrolService.issues().filter(i => this.selectedIssueIds.has(i.id));
-    if (list.length === 0) return;
+    const list = this.patrolService.issues().filter(i => this.selectedIssueIds.has(i.id) && i.status !== 'REJECTED' && i.status !== 'MOVED_TO_PROJECT');
+    if (list.length === 0) {
+      alert('Không có sự cố hợp lệ nào để gom dự án! Các sự cố bị từ chối tiếp nhận không thể chuyển sang dự án duy tu.');
+      return;
+    }
     this.issuesToConvert = list;
     const route = list[0].routeName;
     this.convertProjectForm.projectName = `Dự án Duy tu tổng thể xử lý ${list.length} sự cố hạ tầng ${route}`;

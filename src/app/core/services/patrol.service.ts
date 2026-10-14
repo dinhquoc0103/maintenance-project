@@ -410,6 +410,17 @@ export class PatrolService {
       assetId: 'ast-24',
       assetCode: 'DB-NH-06',
       assetName: 'Gờ giảm tốc cao su đúc phản quang ngã ba Hải Triều',
+      attachedAssets: [
+        {
+          assetId: 'ast-24',
+          assetCode: 'DB-NH-06',
+          assetName: 'Gờ giảm tốc cao su đúc phản quang ngã ba Hải Triều',
+          condition: 'DAMAGED',
+          lat: 10.77340,
+          lng: 106.70480,
+          address: 'Ngã ba Nguyễn Huệ - Hải Triều, Q.1'
+        }
+      ],
       quickFixDetails: {
         contractorOrTeam: 'Đội Phản ứng nhanh Duy tu Quận 1',
         assignedWorker: 'Nguyễn Văn Hải (Thợ cơ khí)',
@@ -478,6 +489,41 @@ export class PatrolService {
         linkedAt: '11/10/2026 14:00',
         linkedBy: 'Cán bộ Ban QLDA 1'
       }
+    },
+    {
+      id: 'iss-7',
+      code: 'SC-2026-105',
+      title: 'Sụt lún vỉa hè lát đá đoạn trước số 82 Nguyễn Huệ (kèm 2 vị trí liên tiếp)',
+      reportedAt: '13/10/2026 08:45',
+      reportedBy: { id: 'ns-1', name: 'Trần Đình Nam', phone: '0903.112.456' },
+      categoryId: 'cat-4',
+      categoryName: 'Mặt đường sụt lún, ổ gà, lượn sóng nguy hiểm',
+      layerId: 'ROADWAY',
+      priority: 'HIGH',
+      status: 'REJECTED',
+      description: 'Vỉa hè lát đá bị lún võng 5cm, đọng nước mưa khi triều cường. Có 2 điểm kế tiếp nhau.',
+      photoBeforeUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=700&q=80',
+      lat: 10.77380,
+      lng: 106.70420,
+      address: 'Số 82 Phố đi bộ Nguyễn Huệ, P. Bến Nghé, Q.1',
+      routeName: 'Tuyến Nguyễn Huệ',
+      assetId: 'ast-24',
+      assetCode: 'DB-NH-06',
+      assetName: 'Gờ giảm tốc & Vỉa hè Nguyễn Huệ',
+      attachedAssets: [
+        {
+          assetId: 'ast-24',
+          assetCode: 'DB-NH-06',
+          assetName: 'Gờ giảm tốc & Vỉa hè Nguyễn Huệ',
+          condition: 'DAMAGED',
+          lat: 10.77340,
+          lng: 106.70480,
+          address: 'Ngã ba Nguyễn Huệ - Hải Triều, Q.1'
+        }
+      ],
+      rejectReason: 'Ảnh chụp hiện trường bị mờ và góc chụp không thể hiện rõ độ lún so với cao độ vỉa hè chuẩn. Đề nghị chụp lại góc nghiêng 45 độ và đo khoảng lún cụ thể.',
+      rejectedAt: '13/10/2026 09:15',
+      rejectedBy: 'Lê Hoàng Long (Cán bộ Quản lý Vận hành)'
     }
   ]);
 
@@ -634,6 +680,212 @@ export class PatrolService {
     this.toast.success('Nghiệm thu hoàn thành!', `Sự cố đã được sửa chữa và đánh dấu an toàn.`);
   }
 
+  // Cán bộ Quản lý Từ Chối Tiếp Nhận Sự Cố (Kèm lý do)
+  rejectIssue(issueId: string, reason: string, rejectedBy?: string) {
+    const mgr = rejectedBy || 'Cán bộ Quản lý Vận hành';
+    const nowStr = new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    let targetCode = '';
+
+    this.issues.update(list =>
+      list.map(iss => {
+        if (iss.id === issueId) {
+          targetCode = iss.code;
+          return {
+            ...iss,
+            status: 'REJECTED' as IssueStatus,
+            rejectReason: reason,
+            rejectedAt: nowStr,
+            rejectedBy: mgr
+          };
+        }
+        return iss;
+      })
+    );
+
+    this.addLog({
+      issueId,
+      personnelName: mgr,
+      action: 'REPORT_ISSUE',
+      title: `Từ chối tiếp nhận sự cố [${targetCode}]`,
+      details: `Lý do từ chối: ${reason}`,
+      timestamp: nowStr,
+      lat: 10.7745,
+      lng: 106.7025,
+      status: 'DANGER'
+    });
+
+    this.toast.danger('Đã từ chối tiếp nhận sự cố', `Mã [${targetCode}]. Người tuần kiểm có thể cập nhật lại để gửi lại.`);
+  }
+
+  // Người tuần kiểm Cập nhật & Gửi lại Sự cố bị từ chối (Resubmit)
+  resubmitIssue(
+    issueId: string,
+    updateData: {
+      title?: string;
+      description?: string;
+      photoUrl?: string;
+      layerId?: LayerId;
+      categoryId?: string;
+      attachedAssetIds?: string[];
+      address?: string;
+      routeName?: string;
+      lat?: number;
+      lng?: number;
+    },
+    resubmitNote?: string
+  ) {
+    const nowStr = new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    let targetCode = '';
+
+    const category = updateData.categoryId ? this.categories().find(c => c.id === updateData.categoryId) : undefined;
+    
+    // Thu thập danh sách tài sản đính kèm
+    const attachedAssets = (updateData.attachedAssetIds || []).map(id => {
+      const ast = this.projectService.masterAssets().find(a => a.id === id);
+      return {
+        assetId: id,
+        assetCode: ast?.code || '',
+        assetName: ast?.name || '',
+        condition: 'DAMAGED' as AssetCondition,
+        lat: ast?.lat,
+        lng: ast?.lng,
+        address: ast?.address
+      };
+    });
+
+    const firstAsset = attachedAssets[0];
+
+    this.issues.update(list =>
+      list.map(iss => {
+        if (iss.id === issueId) {
+          targetCode = iss.code;
+          return {
+            ...iss,
+            status: 'NEW' as IssueStatus, // Trở lại trạng thái Mới để Quản lý thẩm tra lại
+            title: updateData.title || iss.title,
+            description: updateData.description !== undefined ? updateData.description : iss.description,
+            photoBeforeUrl: updateData.photoUrl || iss.photoBeforeUrl,
+            layerId: updateData.layerId || (category ? category.layerId : iss.layerId),
+            categoryId: updateData.categoryId || iss.categoryId,
+            categoryName: category ? category.name : iss.categoryName,
+            attachedAssets: attachedAssets.length > 0 ? attachedAssets : iss.attachedAssets,
+            assetId: firstAsset ? firstAsset.assetId : iss.assetId,
+            assetCode: firstAsset ? firstAsset.assetCode : iss.assetCode,
+            assetName: firstAsset ? firstAsset.assetName : iss.assetName,
+            address: updateData.address || iss.address,
+            routeName: updateData.routeName || iss.routeName,
+            lat: updateData.lat || iss.lat,
+            lng: updateData.lng || iss.lng,
+            resubmittedAt: nowStr,
+            resubmitNotes: resubmitNote || 'Đã cập nhật lại hình ảnh và vị trí hiện trường theo yêu cầu'
+          };
+        }
+        return iss;
+      })
+    );
+
+    this.addLog({
+      issueId,
+      personnelName: 'Người tuần kiểm',
+      action: 'REPORT_ISSUE',
+      title: `[Hiện trường gửi lại] Cập nhật sự cố [${targetCode}]`,
+      details: `Đã cập nhật lại sau khi bị từ chối. Ghi chú giải trình: ${resubmitNote || 'Hoàn tất cập nhật'}`,
+      timestamp: nowStr,
+      lat: updateData.lat || 10.7745,
+      lng: updateData.lng || 106.7025,
+      status: 'WARNING'
+    });
+
+    this.toast.success(
+      'Đã gửi lại sự cố thành công!',
+      `Sự cố [${targetCode}] đã được gửi lại về Bàn làm việc của Quản lý để thẩm tra.`
+    );
+  }
+
+  // Tạo mới sự cố tuân thủ 3 nguyên tắc nghiệp vụ (1 loại vấn đề - nhiều tài sản cùng loại)
+  createPatrolIssue(data: {
+    title: string;
+    description: string;
+    layerId: LayerId;
+    categoryId: string;
+    attachedAssetIds: string[];
+    photoUrl?: string;
+    lat: number;
+    lng: number;
+    address: string;
+    routeName: string;
+    reportedByName: string;
+    reportedById?: string;
+  }): PatrolIssue {
+    const category = this.categories().find(c => c.id === data.categoryId);
+    const nowStr = new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+    // Thu thập danh sách nhiều tài sản cùng loại
+    const attachedAssets = (data.attachedAssetIds || []).map(id => {
+      const ast = this.projectService.masterAssets().find(a => a.id === id);
+      return {
+        assetId: id,
+        assetCode: ast?.code || '',
+        assetName: ast?.name || '',
+        condition: 'DAMAGED' as AssetCondition,
+        lat: ast?.lat,
+        lng: ast?.lng,
+        address: ast?.address
+      };
+    });
+
+    const firstAsset = attachedAssets[0];
+
+    const newIssue: PatrolIssue = {
+      id: 'iss-' + (this.issues().length + 10),
+      code: 'SC-2026-' + (100 + this.issues().length + 1),
+      title: data.title,
+      reportedAt: nowStr,
+      reportedBy: {
+        id: data.reportedById || 'ns-1',
+        name: data.reportedByName || 'Trần Đình Nam (Tuần tra viên)',
+        phone: '0903.112.456'
+      },
+      categoryId: data.categoryId,
+      categoryName: category?.name || 'Sự cố hạ tầng kỹ thuật',
+      layerId: data.layerId,
+      priority: category?.defaultPriority || 'HIGH',
+      status: 'NEW',
+      description: data.description,
+      photoBeforeUrl: data.photoUrl || 'https://images.unsplash.com/photo-1541888946425-d0fbb186c5f7?w=700&q=80',
+      lat: data.lat || (firstAsset?.lat || 10.7745),
+      lng: data.lng || (firstAsset?.lng || 106.7030),
+      address: data.address || (firstAsset?.address || 'Hiện trường tuần kiểm'),
+      routeName: data.routeName || 'Tuyến Nguyễn Huệ',
+      assetId: firstAsset?.assetId,
+      assetCode: firstAsset?.assetCode,
+      assetName: firstAsset?.assetName,
+      assetCondition: 'DAMAGED',
+      attachedAssets: attachedAssets
+    };
+
+    this.issues.update(list => [newIssue, ...list]);
+    this.selectedIssueId.set(newIssue.id);
+
+    this.addLog({
+      issueId: newIssue.id,
+      personnelName: newIssue.reportedBy.name,
+      action: 'REPORT_ISSUE',
+      title: `[Hiện trường] Ghi nhận sự cố mới: ${newIssue.title}`,
+      details: `Gắn ${attachedAssets.length} tài sản lớp ${data.layerId}. Địa điểm: ${newIssue.address}`,
+      timestamp: nowStr,
+      lat: newIssue.lat,
+      lng: newIssue.lng,
+      status: 'WARNING'
+    });
+
+    this.toast.success(
+      `Ghi nhận thành công sự cố [${newIssue.code}]!`,
+      `Đã đính kèm ${attachedAssets.length} tài sản lớp ${category?.name || data.layerId}`
+    );
+    return newIssue;
+  }
+
   // Luồng Chuyển Thành Dự Án Duy Tu (Trường hợp 2 - Kết nối trực tiếp Phân hệ Duy tu)
   convertIssuesToMaintenanceProject(
     issueIds: string[],
@@ -648,11 +900,18 @@ export class PatrolService {
       throw new Error('Chưa chọn sự cố nào để chuyển');
     }
 
-    // 1. Thu thập danh sách Asset IDs từ các sự cố đã chọn
+    // 1. Thu thập danh sách Asset IDs từ các sự cố đã chọn (bao gồm tất cả attachedAssets)
     const assetIds: string[] = [];
     issuesToConvert.forEach(iss => {
-      if (iss.assetId) {
+      if (iss.assetId && !assetIds.includes(iss.assetId)) {
         assetIds.push(iss.assetId);
+      }
+      if (iss.attachedAssets) {
+        iss.attachedAssets.forEach(a => {
+          if (a.assetId && !assetIds.includes(a.assetId)) {
+            assetIds.push(a.assetId);
+          }
+        });
       }
     });
 

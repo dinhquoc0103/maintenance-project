@@ -163,6 +163,26 @@ export interface PatrolIssue {
   assetName?: string;
   assetCondition?: AssetCondition; // Hiện trạng tài sản khi phát hiện sự cố: Hư hỏng | Cần thay thế
 
+  // Đính kèm nhiều tài sản cùng loại theo Nguyên tắc 2
+  attachedAssets?: {
+    assetId: string;
+    assetCode: string;
+    assetName: string;
+    condition?: AssetCondition;
+    lat?: number;
+    lng?: number;
+    address?: string;
+  }[];
+
+  // Luồng từ chối tiếp nhận của Cán bộ Quản lý
+  rejectReason?: string;
+  rejectedAt?: string;
+  rejectedBy?: string;
+
+  // Luồng cập nhật & gửi lại của Người tuần kiểm (Resubmit)
+  resubmittedAt?: string;
+  resubmitNotes?: string;
+
   // Luồng khắc phục nhanh (Trường hợp 1 - UC 10)
   quickFixDetails?: {
     contractorOrTeam: string;
