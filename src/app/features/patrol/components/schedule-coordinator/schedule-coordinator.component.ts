@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import * as L from 'leaflet';
 import { PatrolService } from '../../../../core/services/patrol.service';
 import { ProjectService } from '../../../../core/services/project.service';
-import { PatrolSchedule, ShiftType } from '../../../../core/models/patrol.model';
+import { PatrolSchedule, ShiftType, PatrolTeam, PatrolPersonnel } from '../../../../core/models/patrol.model';
 
 @Component({
   selector: 'app-schedule-coordinator',
@@ -98,8 +98,10 @@ import { PatrolSchedule, ShiftType } from '../../../../core/models/patrol.model'
 
               <!-- Nhân sự phụ trách -->
               <div class="personnel-list-box">
-                <div class="team-label text-muted fs-xs mb-1">
-                  <i class="bi bi-people-fill text-primary"></i> {{ sch.teamName }}:
+                <div class="team-label text-muted fs-xs mb-1 d-flex align-items-center gap-1 cursor-pointer" (click)="openTeamDetailModal(sch.teamId); $event.stopPropagation()" title="Bấm để xem danh sách nhân sự của đội">
+                  <i class="bi bi-people-fill text-primary"></i>
+                  <span class="text-primary text-decoration-underline fw-semibold">{{ sch.teamName }}</span>
+                  <i class="bi bi-info-circle text-muted fs-xxxs"></i>
                 </div>
                 <div class="personnel-chips">
                   <div
@@ -166,7 +168,9 @@ import { PatrolSchedule, ShiftType } from '../../../../core/models/patrol.model'
         <div class="map-floating-card" *ngIf="currentSchedule">
           <div class="d-flex justify-content-between align-items-center">
             <span class="badge bg-primary">Ca {{ getShiftLabel(currentSchedule.shift) }} • {{ formatDateVN(currentSchedule.date) }}</span>
-            <span class="fs-xs text-muted">{{ currentSchedule.teamName }}</span>
+            <span class="fs-xs text-primary cursor-pointer text-decoration-underline" (click)="openTeamDetailModal(currentSchedule.teamId)" title="Bấm để xem danh sách thành viên đội">
+              <i class="bi bi-info-circle"></i> {{ currentSchedule.teamName }}
+            </span>
           </div>
           <h4 class="mt-1 mb-1 fs-6 fw-bold">{{ currentSchedule.routeName }}</h4>
           <p class="fs-xs text-muted m-0" *ngIf="currentSchedule.notes">
@@ -210,10 +214,46 @@ import { PatrolSchedule, ShiftType } from '../../../../core/models/patrol.model'
             </div>
 
             <div class="mb-3">
-              <label class="form-label fw-bold">Đội / Cụm nhân sự tiếp nhận:</label>
-              <select class="form-select form-select-sm" [(ngModel)]="newScheduleForm.teamId">
+              <label class="form-label fw-bold">Đội / Cụm nhân sự tiếp nhận (*):</label>
+              <select class="form-select form-select-sm" [(ngModel)]="newScheduleForm.teamId" (ngModelChange)="onTeamChange()">
                 <option *ngFor="let t of patrolService.teams()" [value]="t.id">{{ t.name }}</option>
               </select>
+            </div>
+
+            <!-- CHỈ ĐỊNH NHÂN VIÊN ĐI CA -->
+            <div class="mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="form-label fw-bold m-0 fs-xs">
+                  <i class="bi bi-people-fill text-primary"></i> Chỉ định nhân viên đi ca (*):
+                </label>
+                <span class="badge bg-primary-subtle text-primary fs-xxs">
+                  Đã chọn: {{ newScheduleForm.selectedPersonnelIds.length }} người
+                </span>
+              </div>
+              <div class="p-2 border rounded bg-light" style="max-height: 140px; overflow-y: auto;">
+                <div *ngIf="personnelInSelectedTeam.length === 0" class="fs-xs text-muted fst-italic">
+                  Đội này hiện chưa có nhân sự khả dụng.
+                </div>
+                <div class="form-check form-check-sm mb-1" *ngFor="let p of personnelInSelectedTeam">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    [id]="'p_check_' + p.id"
+                    [checked]="newScheduleForm.selectedPersonnelIds.includes(p.id)"
+                    (change)="togglePersonnelSelection(p.id)"
+                  />
+                  <label class="form-check-label fs-xs d-flex align-items-center justify-content-between w-100 cursor-pointer" [for]="'p_check_' + p.id">
+                    <span>
+                      <strong>{{ p.name }}</strong>
+                      <span class="badge bg-secondary-subtle text-secondary ms-1 fs-xxxs">{{ p.role === 'TEAM_LEADER' ? 'Trưởng đội' : 'Tuần kiểm' }}</span>
+                    </span>
+                    <span class="text-muted fs-xxxs">{{ p.phone }}</span>
+                  </label>
+                </div>
+              </div>
+              <div class="fs-xxs text-danger mt-1" *ngIf="newScheduleForm.selectedPersonnelIds.length === 0">
+                * Vui lòng chọn ít nhất 1 nhân viên để phân công ca trực.
+              </div>
             </div>
 
             <div class="mb-3">
@@ -223,7 +263,80 @@ import { PatrolSchedule, ShiftType } from '../../../../core/models/patrol.model'
           </div>
           <div class="modal-footer">
             <button class="btn btn-secondary btn-sm" (click)="showAddModal = false">Hủy</button>
-            <button class="btn btn-primary btn-sm" (click)="submitAddSchedule()">Tạo Lịch Phân Công</button>
+            <button class="btn btn-primary btn-sm" [disabled]="newScheduleForm.selectedPersonnelIds.length === 0" (click)="submitAddSchedule()">Tạo Lịch Phân Công</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL XEM CHI TIẾT ĐỘI / CỤM NHÂN SỰ (READ-ONLY) -->
+    <div class="custom-modal-backdrop" *ngIf="showTeamDetailModal && viewingTeam">
+      <div class="custom-modal-dialog" style="max-width: 580px;">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title fs-6 fw-bold">
+              <i class="bi bi-shield-check"></i> Chi Tiết Đội Tuần Kiểm: {{ viewingTeam.name }}
+            </h5>
+            <button class="btn-close btn-close-white" (click)="showTeamDetailModal = false"></button>
+          </div>
+          <div class="modal-body p-3">
+            <div class="team-meta-box p-3 bg-light rounded border mb-3">
+              <div class="row g-2 fs-xs">
+                <div class="col-6">
+                  <span class="text-muted">Mã tổ đội:</span> <strong class="font-monospace ms-1">{{ viewingTeam.code }}</strong>
+                </div>
+                <div class="col-6">
+                  <span class="text-muted">Trưởng đội:</span> <strong class="text-primary ms-1">{{ viewingTeam.leaderName }}</strong>
+                </div>
+                <div class="col-12">
+                  <span class="text-muted">Địa bàn phụ trách:</span> <strong class="ms-1">{{ viewingTeam.assignedArea }}</strong>
+                </div>
+                <div class="col-12">
+                  <span class="text-muted">Mô tả nhiệm vụ:</span> <span class="ms-1">{{ viewingTeam.description }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <h6 class="fw-bold fs-xs m-0 text-dark">
+                <i class="bi bi-people-fill text-primary"></i> Danh sách thành viên ({{ getTeamMembers(viewingTeam.id).length }} nhân sự):
+              </h6>
+              <span class="badge bg-secondary-subtle text-secondary fs-xxs">Nhóm quyền: {{ viewingTeam.permissionGroup }}</span>
+            </div>
+
+            <div class="team-members-list border rounded overflow-hidden" style="max-height: 220px; overflow-y: auto;">
+              <table class="table table-sm table-hover m-0 fs-xs">
+                <thead class="table-light">
+                  <tr>
+                    <th>Mã</th>
+                    <th>Họ & Tên</th>
+                    <th>Vai trò</th>
+                    <th>Điện thoại</th>
+                    <th>Hôm nay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let m of getTeamMembers(viewingTeam.id)">
+                    <td class="font-monospace text-muted">{{ m.code }}</td>
+                    <td class="fw-bold">{{ m.name }}</td>
+                    <td>
+                      <span class="badge" [ngClass]="m.role === 'TEAM_LEADER' ? 'bg-primary' : 'bg-light text-dark border'">
+                        {{ m.role === 'TEAM_LEADER' ? 'Trưởng đội' : 'Tuần kiểm viên' }}
+                      </span>
+                    </td>
+                    <td>{{ m.phone }}</td>
+                    <td>
+                      <span class="badge fs-xxxs" [ngClass]="m.todayAttendance === 'CHECKED_IN' ? 'bg-success' : m.todayAttendance === 'LATE' ? 'bg-warning text-dark' : 'bg-secondary'">
+                        {{ m.todayAttendance === 'CHECKED_IN' ? 'Đã Check-in' : m.todayAttendance === 'LATE' ? 'Đi trễ' : 'Chưa Check-in' }}
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="modal-footer p-2 px-3">
+            <button class="btn btn-secondary btn-sm" (click)="showTeamDetailModal = false">Đóng</button>
           </div>
         </div>
       </div>
@@ -607,8 +720,12 @@ export class ScheduleCoordinatorComponent implements OnInit, AfterViewInit, OnDe
     shift: 'SANG' as ShiftType,
     routeIndex: 0,
     teamId: 'team-1',
+    selectedPersonnelIds: ['ns-1', 'ns-2'] as string[],
     notes: 'Tập trung tuần tra phát hiện sự cố hệ thống chiếu sáng và nắp hố ga thu nước.'
   };
+
+  showTeamDetailModal = false;
+  viewingTeam?: PatrolTeam;
 
   // Leaflet Route Map
   @ViewChild('routeMapContainer') routeMapContainer?: ElementRef;
@@ -866,9 +983,10 @@ export class ScheduleCoordinatorComponent implements OnInit, AfterViewInit, OnDe
     });
   }
 
-  // Modal Handlers
+  // Modal Handlers & Team Personnel Management
   openAddScheduleModal() {
     this.newScheduleForm.date = this.selectedDate;
+    this.onTeamChange();
     this.showAddModal = true;
   }
 
@@ -876,9 +994,55 @@ export class ScheduleCoordinatorComponent implements OnInit, AfterViewInit, OnDe
     // Auto sync
   }
 
+  get personnelInSelectedTeam(): PatrolPersonnel[] {
+    return this.patrolService.personnel().filter(p => p.teamId === this.newScheduleForm.teamId);
+  }
+
+  onTeamChange() {
+    const members = this.personnelInSelectedTeam;
+    this.newScheduleForm.selectedPersonnelIds = members.slice(0, 2).map(m => m.id);
+  }
+
+  togglePersonnelSelection(personnelId: string) {
+    const idx = this.newScheduleForm.selectedPersonnelIds.indexOf(personnelId);
+    if (idx >= 0) {
+      this.newScheduleForm.selectedPersonnelIds.splice(idx, 1);
+    } else {
+      this.newScheduleForm.selectedPersonnelIds.push(personnelId);
+    }
+  }
+
+  openTeamDetailModal(teamIdOrTeam: string | PatrolTeam) {
+    if (typeof teamIdOrTeam === 'string') {
+      this.viewingTeam = this.patrolService.teams().find(t => t.id === teamIdOrTeam);
+    } else {
+      this.viewingTeam = teamIdOrTeam;
+    }
+    if (this.viewingTeam) {
+      this.showTeamDetailModal = true;
+    }
+  }
+
+  getTeamMembers(teamId: string): PatrolPersonnel[] {
+    return this.patrolService.personnel().filter(p => p.teamId === teamId);
+  }
+
   submitAddSchedule() {
+    if (this.newScheduleForm.selectedPersonnelIds.length === 0) {
+      alert('Vui lòng chọn ít nhất 1 nhân viên để phân công ca trực!');
+      return;
+    }
     const route = this.predefinedRoutes[this.newScheduleForm.routeIndex];
     const team = this.patrolService.teams().find(t => t.id === this.newScheduleForm.teamId);
+
+    const assigned = this.patrolService.personnel()
+      .filter(p => this.newScheduleForm.selectedPersonnelIds.includes(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        phone: p.phone,
+        checkedIn: false
+      }));
 
     this.patrolService.addSchedule({
       date: this.newScheduleForm.date,
@@ -889,10 +1053,7 @@ export class ScheduleCoordinatorComponent implements OnInit, AfterViewInit, OnDe
       routeCoordinates: route.coords,
       teamId: this.newScheduleForm.teamId,
       teamName: team?.name || 'Đội tuần kiểm',
-      assignedPersonnel: [
-        { id: 'ns-1', name: 'Trần Đình Nam', phone: '0903.112.456', checkedIn: true },
-        { id: 'ns-2', name: 'Nguyễn Văn Minh', phone: '0918.445.890', checkedIn: false }
-      ],
+      assignedPersonnel: assigned,
       checkpointsTotal: route.coords.length,
       notes: this.newScheduleForm.notes
     });

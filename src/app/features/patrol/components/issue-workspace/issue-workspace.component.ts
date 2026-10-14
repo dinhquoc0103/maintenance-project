@@ -141,7 +141,7 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
         <div class="detail-header">
           <div class="d-flex justify-content-between align-items-start gap-3">
             <div>
-              <div class="d-flex align-items-center gap-2 mb-1">
+              <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                 <span class="detail-code">{{ currentIssue.code }}</span>
                 <span class="priority-pill" [ngClass]="'priority-' + currentIssue.priority.toLowerCase()">
                   {{ getPriorityLabel(currentIssue.priority) }}
@@ -152,6 +152,11 @@ import { PatrolIssue, IssuePriority, IssueStatus } from '../../../../core/models
                 <span class="layer-pill" [style.background-color]="getLayerColor(currentIssue.layerId) + '20'" [style.color]="getLayerColor(currentIssue.layerId)">
                   <i class="bi" [ngClass]="getLayerIcon(currentIssue.layerId)"></i>
                   {{ currentIssue.categoryName }}
+                </span>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle fs-xs" *ngIf="currentIssue.scheduleId" title="Sự cố phát hiện trong ca tuần tra">
+                  <i class="bi bi-calendar-event me-1"></i>
+                  Ca tuần: <strong>{{ currentIssue.scheduleId }}</strong>
+                  <span *ngIf="currentIssue.routeName"> ({{ currentIssue.routeName }})</span>
                 </span>
               </div>
               <h2 class="detail-title">{{ currentIssue.title }}</h2>

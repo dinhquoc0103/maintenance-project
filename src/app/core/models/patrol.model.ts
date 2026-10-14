@@ -146,6 +146,7 @@ export interface PatrolIssue {
     name: string;
     phone: string;
   };
+  scheduleId?: string; // Ca tuần kiểm liên kết phát hiện sự cố này
   categoryId: string;
   categoryName: string;
   layerId: LayerId;
