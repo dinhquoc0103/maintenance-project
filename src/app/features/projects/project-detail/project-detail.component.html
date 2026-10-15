@@ -1208,19 +1208,50 @@
           </div>
 
           <div class="photo-inspection-card">
-            <div class="photo-preview-wrap">
-              <img [src]="activeInspectionItem.photoUrl" alt="Ảnh hiện trường" class="inspection-img" />
-              <div class="photo-watermark">
-                <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
-                <div><i class="bi bi-clock-fill"></i> Thời gian: {{ activeInspectionItem.completedDate }} 15:45:20</div>
-                <div><i class="bi bi-tag-fill"></i> Mã đối tượng: {{ activeInspectionItem.assetCode }}</div>
+            <div class="d-flex gap-2 mb-2" *ngIf="activeInspectionItem.photoBeforeUrl && activeInspectionItem.photoAfterUrl; else singlePhotoInspect">
+              <div class="flex-1">
+                <div class="fs-xs fw-bold text-warning mb-1"><i class="bi bi-clock-history me-1"></i> 1. Trước khắc phục:</div>
+                <div class="photo-preview-wrap" style="height: 190px;">
+                  <img [src]="activeInspectionItem.photoBeforeUrl" alt="Ảnh trước khắc phục" class="inspection-img" />
+                  <div class="photo-watermark">
+                    <div><i class="bi bi-clock-history"></i> Trước thi công</div>
+                    <div><i class="bi bi-geo-alt-fill"></i> GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="fs-xs fw-bold text-success mb-1"><i class="bi bi-check2-circle me-1"></i> 2. Sau khắc phục:</div>
+                <div class="photo-preview-wrap" style="height: 190px;">
+                  <img [src]="activeInspectionItem.photoAfterUrl" alt="Ảnh sau khắc phục" class="inspection-img" />
+                  <div class="photo-watermark">
+                    <div><i class="bi bi-calendar3"></i> Nghiệm thu: {{ activeInspectionItem.completedDate }}</div>
+                    <div><i class="bi bi-tag-fill"></i> {{ activeInspectionItem.assetCode }}</div>
+                  </div>
+                </div>
               </div>
             </div>
+            <ng-template #singlePhotoInspect>
+              <div class="photo-preview-wrap">
+                <img [src]="activeInspectionItem.photoAfterUrl || activeInspectionItem.photoBeforeUrl || activeInspectionItem.photoUrl" alt="Ảnh hiện trường" class="inspection-img" />
+                <div class="photo-watermark">
+                  <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
+                  <div><i class="bi bi-clock-fill"></i> Thời gian: {{ activeInspectionItem.completedDate }} 15:45:20</div>
+                  <div><i class="bi bi-tag-fill"></i> Mã đối tượng: {{ activeInspectionItem.assetCode }}</div>
+                </div>
+              </div>
+            </ng-template>
 
             <div class="photo-meta-details mt-3">
               <div class="meta-row">
                 <span class="label">Tên tài sản:</span>
                 <span class="val font-semibold">{{ activeInspectionItem.assetName }}</span>
+              </div>
+              <div class="meta-row" *ngIf="activeInspectionItem.geometryType === 'LINE' || activeInspectionItem.chainage">
+                <span class="label">Thông số tuyến:</span>
+                <span class="val text-primary font-bold">
+                  Lý trình: {{ activeInspectionItem.chainage }} • Dài: {{ activeInspectionItem.lengthMeters }}m
+                  <span *ngIf="activeInspectionItem.areaSquareMeters">• Diện tích: {{ activeInspectionItem.areaSquareMeters | number }} m²</span>
+                </span>
               </div>
               <div class="meta-row">
                 <span class="label">Hạng mục công việc:</span>

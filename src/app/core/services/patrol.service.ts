@@ -150,10 +150,14 @@ export class PatrolService {
       teamId: 'team-1',
       teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
       assignedRoutes: ['Tuyến Nguyễn Huệ', 'Tuyến Lê Lợi'],
+      currentShift: 'SANG',
+      currentRouteName: 'Tuyến Phố đi bộ Nguyễn Huệ',
+      currentScheduleId: 'sch-1',
       isActive: true,
       todayAttendance: 'CHECKED_IN',
       checkInTime: '06:45 13/10/2026',
       checkInLocation: 'Công viên Tượng đài Bác Hồ (GPS: 10.7762, 106.7022)',
+      isGpsValid: true,
       isValidAttendance: true,
     },
     {
@@ -165,10 +169,14 @@ export class PatrolService {
       teamId: 'team-1',
       teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
       assignedRoutes: ['Tuyến Nguyễn Huệ'],
+      currentShift: 'SANG',
+      currentRouteName: 'Tuyến Phố đi bộ Nguyễn Huệ',
+      currentScheduleId: 'sch-1',
       isActive: true,
       todayAttendance: 'CHECKED_IN',
       checkInTime: '06:55 13/10/2026',
       checkInLocation: 'Đầu đường Nguyễn Huệ - Lê Thánh Tôn',
+      isGpsValid: true,
       isValidAttendance: true,
     },
     {
@@ -180,10 +188,14 @@ export class PatrolService {
       teamId: 'team-2',
       teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
       assignedRoutes: ['Tuyến Tôn Đức Thắng'],
+      currentShift: 'CHIEU',
+      currentRouteName: 'Tuyến Tôn Đức Thắng - Ven sông Sài Gòn',
+      currentScheduleId: 'sch-2',
       isActive: true,
       todayAttendance: 'CHECKED_IN',
       checkInTime: '07:10 13/10/2026',
       checkInLocation: 'Ga tàu thủy Bạch Đằng (GPS: 10.7743, 106.7071)',
+      isGpsValid: true,
       isValidAttendance: true,
     },
     {
@@ -195,10 +207,14 @@ export class PatrolService {
       teamId: 'team-2',
       teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
       assignedRoutes: ['Tuyến Tôn Đức Thắng', 'Cột cờ Thủ Ngữ'],
+      currentShift: 'CHIEU',
+      currentRouteName: 'Tuyến Tôn Đức Thắng - Ven sông Sài Gòn',
+      currentScheduleId: 'sch-2',
       isActive: true,
       todayAttendance: 'LATE',
       checkInTime: '07:42 13/10/2026',
       checkInLocation: 'Công viên Cột cờ Thủ Ngữ',
+      isGpsValid: false,
       isValidAttendance: false, // Chờ Cán bộ đánh giá
     },
     {
@@ -210,6 +226,9 @@ export class PatrolService {
       teamId: 'team-3',
       teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
       assignedRoutes: ['Tuyến Nam Kỳ Khởi Nghĩa - Hàm Nghi'],
+      currentShift: 'TOI',
+      currentRouteName: 'Tuyến Trục Nam Kỳ Khởi Nghĩa - Hàm Nghi',
+      currentScheduleId: 'sch-3',
       isActive: true,
       todayAttendance: 'CHECKED_IN',
       checkInTime: '06:30 13/10/2026',
@@ -225,9 +244,211 @@ export class PatrolService {
       teamId: 'team-3',
       teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
       assignedRoutes: ['Tuyến Nam Kỳ Khởi Nghĩa'],
+      currentShift: 'TOI',
+      currentRouteName: 'Tuyến Trục Nam Kỳ Khởi Nghĩa - Hàm Nghi',
+      currentScheduleId: 'sch-3',
       isActive: true,
       todayAttendance: 'NOT_CHECKED_IN',
       isValidAttendance: false,
+    },
+    // Đội 1 (Đủ 6 nhân sự)
+    {
+      id: 'ns-7',
+      code: 'NS-007',
+      name: 'Hoàng Gia Bảo',
+      phone: '0912.334.889',
+      role: 'INSPECTOR',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      assignedRoutes: ['Tuyến Phố đi bộ Nguyễn Huệ'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:50 13/10/2026',
+      checkInLocation: 'Công viên Tượng đài Bác Hồ',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-8',
+      code: 'NS-008',
+      name: 'Bùi Thị Thu Trang',
+      phone: '0934.551.223',
+      role: 'INSPECTOR',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      assignedRoutes: ['Tuyến Lê Lợi - Nhà Hát'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '07:05 13/10/2026',
+      checkInLocation: 'Ga ngầm Metro Nhà Hát',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-9',
+      code: 'NS-009',
+      name: 'Đỗ Tuấn Kiệt',
+      phone: '0988.112.990',
+      role: 'INSPECTOR',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      assignedRoutes: ['Tuyến Nguyễn Huệ - Hải Triều'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:40 13/10/2026',
+      checkInLocation: 'Tòa nhà Bitexco - Hải Triều',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-10',
+      code: 'NS-010',
+      name: 'Phan Hoàng Anh',
+      phone: '0977.443.118',
+      role: 'SUPERVISOR',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      assignedRoutes: ['Tuyến Nguyễn Huệ', 'Tuyến Lê Lợi'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:30 13/10/2026',
+      checkInLocation: 'UBND TP (Lê Thánh Tôn)',
+      isValidAttendance: true,
+    },
+    // Đội 2 (Đủ 5 nhân sự)
+    {
+      id: 'ns-11',
+      code: 'NS-011',
+      name: 'Trương Minh Cường',
+      phone: '0907.889.001',
+      role: 'INSPECTOR',
+      teamId: 'team-2',
+      teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
+      assignedRoutes: ['Tuyến Bến Bạch Đằng - Cầu Ba Son'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '07:15 13/10/2026',
+      checkInLocation: 'Công viên Bến Bạch Đằng',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-12',
+      code: 'NS-012',
+      name: 'Nguyễn Đức Trọng',
+      phone: '0919.223.447',
+      role: 'INSPECTOR',
+      teamId: 'team-2',
+      teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
+      assignedRoutes: ['Tuyến Tôn Đức Thắng - Cầu Khánh Hội'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '07:00 13/10/2026',
+      checkInLocation: 'Cầu Khánh Hội',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-13',
+      code: 'NS-013',
+      name: 'Võ Ngọc Bích',
+      phone: '0945.667.129',
+      role: 'SUPERVISOR',
+      teamId: 'team-2',
+      teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
+      assignedRoutes: ['Dọc tuyến Tôn Đức Thắng'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:55 13/10/2026',
+      checkInLocation: 'Ga tàu thủy Bạch Đằng',
+      isValidAttendance: true,
+    },
+    // Đội 3 (Đủ 8 nhân sự)
+    {
+      id: 'ns-14',
+      code: 'NS-014',
+      name: 'Lương Văn Thắng',
+      phone: '0933.221.789',
+      role: 'INSPECTOR',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Trục Hàm Nghi - Pasteur'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:45 13/10/2026',
+      checkInLocation: 'Ngã tư Hàm Nghi - Pasteur',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-15',
+      code: 'NS-015',
+      name: 'Chu Đình Dũng',
+      phone: '0981.334.556',
+      role: 'INSPECTOR',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Trục Nam Kỳ Khởi Nghĩa'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:40 13/10/2026',
+      checkInLocation: 'Ngã tư Lê Lợi - Nam Kỳ Khởi Nghĩa',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-16',
+      code: 'NS-016',
+      name: 'Nguyễn Trọng Hưng',
+      phone: '0902.998.112',
+      role: 'INSPECTOR',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Chợ Bến Thành - Lê Lai'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:35 13/10/2026',
+      checkInLocation: 'Vòng xoay Chợ Bến Thành',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-17',
+      code: 'NS-017',
+      name: 'Đinh Thế Hải',
+      phone: '0978.114.773',
+      role: 'INSPECTOR',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Tuyến Pasteur'],
+      isActive: true,
+      todayAttendance: 'LATE',
+      checkInTime: '07:35 13/10/2026',
+      checkInLocation: 'Giao lộ Pasteur - Hàm Nghi',
+      isGpsValid: false,
+      isValidAttendance: false,
+    },
+    {
+      id: 'ns-18',
+      code: 'NS-018',
+      name: 'Trần Bảo Phúc',
+      phone: '0938.441.902',
+      role: 'INSPECTOR',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Hệ thống van ngăn triều và hố ga'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:50 13/10/2026',
+      checkInLocation: 'Cửa xả Hàm Nghi',
+      isValidAttendance: true,
+    },
+    {
+      id: 'ns-19',
+      code: 'NS-019',
+      name: 'Ngô Phương Nam',
+      phone: '0913.662.884',
+      role: 'TEAM_LEADER',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      assignedRoutes: ['Trục Nam Kỳ Khởi Nghĩa, Hàm Nghi, Pasteur'],
+      isActive: true,
+      todayAttendance: 'CHECKED_IN',
+      checkInTime: '06:25 13/10/2026',
+      checkInLocation: 'Ngã tư Nam Kỳ Khởi Nghĩa - Lê Lợi',
+      isValidAttendance: true,
     },
   ]);
 
@@ -263,12 +484,18 @@ export class PatrolService {
           name: 'Trần Đình Nam',
           phone: '0903.112.456',
           checkedIn: true,
+          checkInTime: '06:45 13/10/2026',
+          checkInLocation: 'Công viên Tượng đài Bác Hồ (GPS: 10.7762, 106.7022)',
+          isValidAttendance: true,
         },
         {
           id: 'ns-2',
           name: 'Nguyễn Văn Minh',
           phone: '0918.445.890',
           checkedIn: true,
+          checkInTime: '06:55 13/10/2026',
+          checkInLocation: 'Đầu đường Nguyễn Huệ - Lê Thánh Tôn',
+          isValidAttendance: true,
         },
       ],
       status: 'IN_PROGRESS',
@@ -299,17 +526,36 @@ export class PatrolService {
           name: 'Lê Hoàng Long',
           phone: '0937.228.991',
           checkedIn: true,
+          checkInTime: '13:05 13/10/2026',
+          checkInLocation: 'Ga tàu thủy Bạch Đằng',
+          isValidAttendance: true,
         },
         {
           id: 'ns-4',
           name: 'Phạm Thị Thúy Hằng',
           phone: '0982.551.342',
           checkedIn: true,
+          checkInTime: '13:42 13/10/2026',
+          checkInLocation: 'Bến Nhà Rồng - Quận 4 (Lệch trạm 1.2km)',
+          isValidAttendance: false,
+          invalidReason:
+            'Tọa độ GPS điểm danh lệch 1.2km so với trạm xuất phát Bến Bạch Đằng và vào ca trễ 42 phút. Cần đối soát giải trình.',
+        },
+        {
+          id: 'ns-1',
+          name: 'Trần Đình Nam',
+          phone: '0903.112.456',
+          checkedIn: true,
+          checkInTime: '13:45 13/10/2026',
+          checkInLocation: 'Bến Nhà Rồng (Lệch trạm xuất phát 1.2km)',
+          isValidAttendance: false,
+          invalidReason:
+            'Tọa độ GPS điểm danh lệch 1.2km so với trạm xuất phát Bến Bạch Đằng & vào ca trễ 45 phút. Cần đối soát giải trình.',
         },
       ],
-      status: 'PLANNED',
+      status: 'IN_PROGRESS',
       checkpointsTotal: 5,
-      checkpointsInspected: 0,
+      checkpointsInspected: 1,
       notes:
         'Kiểm tra hành lang an toàn công viên ven sông, cành cây cổ thụ đón gió sông',
     },
@@ -334,9 +580,27 @@ export class PatrolService {
           name: 'Vũ Quốc Toàn',
           phone: '0908.776.331',
           checkedIn: true,
+          checkInTime: '18:02 13/10/2026',
+          checkInLocation: 'Ngã tư Lê Lợi - Nam Kỳ Khởi Nghĩa',
+          isValidAttendance: undefined,
+        },
+        {
+          id: 'ns-1',
+          name: 'Trần Đình Nam',
+          phone: '0903.112.456',
+          checkedIn: true,
+          checkInTime: '18:05 13/10/2026',
+          checkInLocation: 'Giao lộ Lê Lợi - Nam Kỳ Khởi Nghĩa',
+          isValidAttendance: undefined,
+        },
+        {
+          id: 'ns-6',
+          name: 'Đặng Thanh Tùng',
+          phone: '0979.663.210',
+          checkedIn: false,
         },
       ],
-      status: 'PLANNED',
+      status: 'IN_PROGRESS',
       checkpointsTotal: 4,
       checkpointsInspected: 0,
       notes:
@@ -1342,11 +1606,29 @@ export class PatrolService {
     this.toast.success('Cập nhật thông tin nhân sự thành công!');
   }
 
-  evaluateAttendance(personnelId: string, isValid: boolean) {
+  evaluateAttendance(personnelId: string, isValid: boolean, invalidReason?: string) {
     this.personnel.update((list) =>
       list.map((p) =>
         p.id === personnelId ? { ...p, isValidAttendance: isValid } : p,
       ),
+    );
+    // Đồng bộ trực tiếp sang các ca tuần kiểm liên quan
+    this.schedules.update((list) =>
+      list.map((s) => ({
+        ...s,
+        assignedPersonnel: s.assignedPersonnel.map((p) =>
+          p.id === personnelId
+            ? {
+                ...p,
+                isValidAttendance: isValid,
+                invalidReason: isValid
+                  ? undefined
+                  : invalidReason ||
+                    'Tọa độ GPS điểm danh lệch >500m so với trạm xuất phát hoặc vào ca trễ quy định - Cần đối soát',
+              }
+            : p,
+        ),
+      })),
     );
     this.toast.success(
       `Đã đánh giá điểm danh: ${isValid ? 'HỢP LỆ' : 'KHÔNG HỢP LỆ'}`,
@@ -1389,9 +1671,60 @@ export class PatrolService {
 
     this.schedules.update((list) => [newSch, ...list]);
     this.selectedScheduleId.set(newSch.id);
+
+    // TỰ ĐỘNG ĐỒNG BỘ SANG BẢNG QUẢN LÝ ĐIỂM DANH:
+    // Tạo sẵn / cập nhật trạng thái chờ điểm danh cho từng nhân viên trong ca
+    newSch.assignedPersonnel.forEach((assigned) => {
+      const existing = this.personnel().find((p) => p.id === assigned.id);
+      if (existing) {
+        this.personnel.update((list) =>
+          list.map((p) => {
+            if (p.id === assigned.id) {
+              const checkedIn = assigned.checkedIn;
+              return {
+                ...p,
+                currentScheduleId: newSch.id,
+                currentShift: newSch.shift,
+                currentRouteName: newSch.routeName,
+                assignedRoutes: p.assignedRoutes.includes(newSch.routeName)
+                  ? p.assignedRoutes
+                  : [...p.assignedRoutes, newSch.routeName],
+                todayAttendance: checkedIn ? 'CHECKED_IN' : 'NOT_CHECKED_IN',
+                checkInTime: checkedIn ? p.checkInTime : undefined,
+                checkInLocation: checkedIn ? p.checkInLocation : undefined,
+                isValidAttendance: checkedIn ? p.isValidAttendance : false,
+                checkInTimestamp: checkedIn ? (p.checkInTimestamp || Date.now()) : 0,
+              };
+            }
+            return p;
+          }),
+        );
+      } else {
+        const newP: PatrolPersonnel = {
+          id: assigned.id,
+          code: 'NS-0' + (this.personnel().length + 1),
+          name: assigned.name,
+          phone: assigned.phone,
+          role: 'INSPECTOR',
+          teamId: newSch.teamId,
+          teamName: newSch.teamName,
+          assignedRoutes: [newSch.routeName],
+          isActive: true,
+          todayAttendance: assigned.checkedIn ? 'CHECKED_IN' : 'NOT_CHECKED_IN',
+          checkInTime: assigned.checkedIn ? new Date().toLocaleTimeString('vi-VN') : undefined,
+          isValidAttendance: false,
+          currentScheduleId: newSch.id,
+          currentShift: newSch.shift,
+          currentRouteName: newSch.routeName,
+          checkInTimestamp: assigned.checkedIn ? Date.now() : 0,
+        };
+        this.personnel.update((list) => [...list, newP]);
+      }
+    });
+
     this.toast.success(
       'Tạo lịch tuần kiểm thành công!',
-      `Ca trực ngày ${newSch.date} (${newSch.shift})`,
+      `Đã phân công ${newSch.assignedPersonnel.length} nhân sự vào ca (${newSch.shift}). Dữ liệu đã tự động đồng bộ sang bảng Quản lý điểm danh.`,
     );
     return newSch;
   }
@@ -1408,7 +1741,20 @@ export class PatrolService {
     this.toast.info('Thông báo', 'Đã hủy bỏ ca tuần kiểm');
   }
 
-  checkInSchedulePersonnel(scheduleId: string, personnelId: string) {
+  checkInSchedulePersonnel(scheduleId: string, personnelId: string, location?: string) {
+    const timeStr =
+      new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) +
+      ' ' +
+      new Date().toLocaleDateString('vi-VN');
+    const nowTimestamp = Date.now();
+
+    const targetSchedule = this.schedules().find((s) => s.id === scheduleId);
+    const checkLocation = location || targetSchedule?.startPointName || 'Hiện trường tuần kiểm';
+
+    // 1. Cập nhật trong schedules
     this.schedules.update((list) =>
       list.map((s) => {
         if (s.id === scheduleId) {
@@ -1420,7 +1766,41 @@ export class PatrolService {
         return s;
       }),
     );
-    this.toast.success('Điểm danh nhân viên thành công!');
+
+    // 2. Đồng bộ sang danh sách personnel (Live Attendance List) và nhảy lên đầu
+    this.personnel.update((list) =>
+      list.map((p) => {
+        if (p.id === personnelId) {
+          return {
+            ...p,
+            todayAttendance: 'CHECKED_IN',
+            checkInTime: timeStr,
+            checkInLocation: checkLocation,
+            isValidAttendance: true,
+            checkInTimestamp: nowTimestamp,
+            currentScheduleId: scheduleId,
+            currentShift: targetSchedule?.shift || p.currentShift,
+            currentRouteName: targetSchedule?.routeName || p.currentRouteName,
+          };
+        }
+        return p;
+      }),
+    );
+
+    const worker = this.personnel().find((p) => p.id === personnelId);
+    this.addLog({
+      scheduleId,
+      personnelName: worker?.name || 'Nhân viên tuần kiểm',
+      action: 'CHECK_IN',
+      title: `Điểm danh thành công: ${worker?.name}`,
+      details: `Vị trí: ${checkLocation}. Tuyến: ${targetSchedule?.routeName || 'Tuyến tuần tra'}`,
+      timestamp: timeStr,
+      lat: 10.7745,
+      lng: 106.7025,
+      status: 'SUCCESS',
+    });
+
+    this.toast.success('Điểm danh nhân viên thành công!', `[${worker?.name || personnelId}] đã vào ca và chuyển lên đầu danh sách điểm danh.`);
   }
 
   updateScheduleStatus(
@@ -1448,8 +1828,13 @@ export class PatrolService {
       }) +
       ' ' +
       new Date().toLocaleDateString('vi-VN');
+    const nowTimestamp = Date.now();
 
-    // Cập nhật attendance của nhân sự
+    const targetSchedule = scheduleId
+      ? this.schedules().find((s) => s.id === scheduleId)
+      : undefined;
+
+    // Cập nhật attendance của nhân sự (nhảy lên top)
     this.personnel.update((list) =>
       list.map((p) => {
         if (p.id === personnelId) {
@@ -1459,6 +1844,10 @@ export class PatrolService {
             checkInTime: timeStr,
             checkInLocation: location,
             isValidAttendance: true,
+            checkInTimestamp: nowTimestamp,
+            currentScheduleId: scheduleId || p.currentScheduleId,
+            currentShift: targetSchedule?.shift || p.currentShift,
+            currentRouteName: targetSchedule?.routeName || p.currentRouteName,
           };
         }
         return p;
@@ -1467,7 +1856,17 @@ export class PatrolService {
 
     // Cập nhật vào ca trực
     if (scheduleId) {
-      this.checkInSchedulePersonnel(scheduleId, personnelId);
+      this.schedules.update((list) =>
+        list.map((s) => {
+          if (s.id === scheduleId) {
+            const updatedPersonnel = s.assignedPersonnel.map((p) =>
+              p.id === personnelId ? { ...p, checkedIn: true } : p,
+            );
+            return { ...s, assignedPersonnel: updatedPersonnel };
+          }
+          return s;
+        }),
+      );
     }
 
     const worker = this.personnel().find((p) => p.id === personnelId);

@@ -444,6 +444,56 @@ export class ProjectService {
       notes: 'Khu vực tâm linh trang trọng'
     },
 
+    // ROADWAY LINEAR ASSETS (TÀI SẢN DẠNG ĐƯỜNG / TUYẾN GIAO THÔNG)
+    {
+      id: 'ast-road-01',
+      code: 'MD-LL-01',
+      name: 'Đoạn mặt đường bê tông nhựa nóng C12.5 (Từ Pasteur đến Nam Kỳ Khởi Nghĩa)',
+      layerId: 'ROADWAY',
+      layerName: 'Mặt đường & Biển báo',
+      category: 'Mặt đường bê tông nhựa nóng (Asphalt)',
+      route: 'Tuyến Lê Lợi',
+      chainage: 'Km0+100 - Km0+600',
+      geometryType: 'LINE',
+      lengthMeters: 500,
+      widthMeters: 14.5,
+      areaSquareMeters: 7250,
+      startPoint: { lat: 10.77350, lng: 106.70050, label: 'Ngã tư Pasteur - Lê Lợi' },
+      endPoint: { lat: 10.77580, lng: 106.70280, label: 'Ngã tư Nam Kỳ Khởi Nghĩa - Lê Lợi' },
+      lat: 10.77465,
+      lng: 106.70165,
+      address: 'Đoạn Km0+100 - Km0+600, Tuyến Lê Lợi, Quận 1',
+      specs: 'Cào bóc 5cm mặt đường cũ nứt rạn; thảm bù vênh BTN C19; thảm mặt BTN C12.5 dày 5cm (TCVN 8819); tưới dính bám nhũ tương 0.5kg/m2; sơn dẻo nhiệt phản quang 2mm',
+      commissioningDate: '2023-04-30',
+      managementUnit: 'Trung tâm Quản lý Hạ tầng Giao thông Đường bộ TP.HCM',
+      assignedProjectId: 'p-1',
+      notes: 'Trục đường giao thông đô thị huyết mạch, lưu lượng xe cao, yêu cầu độ nhám và độ bằng phẳng thước 3m nghiêm ngặt'
+    },
+    {
+      id: 'ast-road-02',
+      code: 'VS-NH-02',
+      name: 'Vạch sơn kẻ đường dẻo nhiệt & vạch đi bộ phố Nguyễn Huệ',
+      layerId: 'ROADWAY',
+      layerName: 'Mặt đường & Biển báo',
+      category: 'Vạch sơn tín hiệu giao thông đường bộ',
+      route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+000 - Km0+650',
+      geometryType: 'LINE',
+      lengthMeters: 650,
+      widthMeters: 12.0,
+      areaSquareMeters: 7800,
+      startPoint: { lat: 10.77660, lng: 106.70180, label: 'Trước UBND TP' },
+      endPoint: { lat: 10.77200, lng: 106.70600, label: 'Bến Bạch Đằng' },
+      lat: 10.77430,
+      lng: 106.70390,
+      address: 'Toàn tuyến phố đi bộ Nguyễn Huệ, Quận 1',
+      specs: 'Sơn dẻo nhiệt màu trắng - vàng dày 2.0mm đạt tiêu chuẩn TCVN 8791, rắc bi thủy tinh phản quang ban đêm hệ số phản quang > 200 mcd/lux/m2',
+      commissioningDate: '2022-09-02',
+      managementUnit: 'Sở Giao thông Vận tải TP.HCM',
+      assignedProjectId: 'p-1',
+      notes: 'Vạch người đi bộ qua đường và viền mép bảo vệ an toàn cho sự kiện đông người'
+    },
+
     // DRAINAGE & ROADWAY on Nam Kỳ Khởi Nghĩa & Hàm Nghi (Project 2 & Master pool)
     {
       id: 'ast-13',
@@ -874,8 +924,8 @@ export class ProjectService {
       priority: 'MEDIUM',
       deadline: '2026-03-25',
       progress: 100,
-      assetIds: ['ast-09', 'ast-10', 'ast-11'],
-      completedAssetIds: ['ast-09', 'ast-10', 'ast-11'],
+      assetIds: ['ast-09', 'ast-10', 'ast-11', 'ast-road-01'],
+      completedAssetIds: ['ast-09', 'ast-10', 'ast-11', 'ast-road-01'],
       taskAssets: [
         {
           assetId: 'ast-09',
@@ -912,6 +962,25 @@ export class ProjectService {
           notes: 'Bảo dưỡng hoàn tất, ánh sáng đạt tiêu chuẩn 100 Lux. Hoạt động rất tốt.',
           photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
           photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80'
+        },
+        {
+          assetId: 'ast-road-01',
+          assetCode: 'MD-LL-01',
+          assetName: 'Đoạn mặt đường bê tông nhựa nóng C12.5 (Từ Pasteur đến Nam Kỳ Khởi Nghĩa)',
+          layerId: 'ROADWAY',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-03-24',
+          notes: 'Đã cào bóc 5cm, thảm BTN C12.5 độ chặt K>=0.98, kiểm tra độ bằng phẳng thước 3m đạt chuẩn TCVN 8819.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=600&q=80',
+          geometryType: 'LINE',
+          lengthMeters: 500,
+          widthMeters: 14.5,
+          areaSquareMeters: 7250,
+          chainage: 'Km0+100 - Km0+600',
+          startPoint: { lat: 10.77350, lng: 106.70050, label: 'Ngã tư Pasteur - Lê Lợi' },
+          endPoint: { lat: 10.77580, lng: 106.70280, label: 'Ngã tư Nam Kỳ Khởi Nghĩa - Lê Lợi' }
         }
       ],
       fieldPhotos: [
@@ -950,6 +1019,64 @@ export class ProjectService {
         }
       ],
       createdAt: '2026-03-08'
+    },
+    {
+      id: 't-4',
+      projectId: 'p-1',
+      code: 'CV-2026-004',
+      title: 'Cào bóc, thảm bê tông nhựa nóng & duy tu vạch sơn mặt đường (2 đoạn tuyến)',
+      description: 'Duy tu định kỳ toàn diện mặt đường và vạch sơn tín hiệu giao thông bảo đảm êm thuận cho các phương tiện lưu thông.',
+      contractor: 'Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn',
+      assignedTeam: 'Đội Thi công Đường bộ & Nhựa nóng 1',
+      targetLayerId: 'ROADWAY',
+      status: 'COMPLETED',
+      priority: 'HIGH',
+      deadline: '2026-04-10',
+      progress: 100,
+      assetIds: ['ast-road-01', 'ast-road-02'],
+      completedAssetIds: ['ast-road-01', 'ast-road-02'],
+      taskAssets: [
+        {
+          assetId: 'ast-road-01',
+          assetCode: 'MD-LL-01',
+          assetName: 'Đoạn mặt đường bê tông nhựa nóng C12.5 (Từ Pasteur đến Nam Kỳ Khởi Nghĩa)',
+          layerId: 'ROADWAY',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-04-01',
+          notes: 'Đã cào bóc 5cm, thảm BTN C12.5 độ dày 5cm đầm lèn đạt K>=0.98, kiểm tra độ bằng phẳng thước 3m khe hở < 3mm đạt TCVN 8819.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=600&q=80',
+          geometryType: 'LINE',
+          lengthMeters: 500,
+          widthMeters: 14.5,
+          areaSquareMeters: 7250,
+          chainage: 'Km0+100 - Km0+600',
+          startPoint: { lat: 10.77350, lng: 106.70050, label: 'Ngã tư Pasteur - Lê Lợi' },
+          endPoint: { lat: 10.77580, lng: 106.70280, label: 'Ngã tư Nam Kỳ Khởi Nghĩa - Lê Lợi' }
+        },
+        {
+          assetId: 'ast-road-02',
+          assetCode: 'VS-NH-02',
+          assetName: 'Vạch sơn kẻ đường dẻo nhiệt & vạch đi bộ phố Nguyễn Huệ',
+          layerId: 'ROADWAY',
+          condition: 'GOOD',
+          isCompleted: true,
+          completedDate: '2026-04-02',
+          notes: 'Sơn dẻo nhiệt màu trắng và vàng dày 2.0mm, rắc bi thủy tinh phản quang phản xạ ánh sáng ban đêm đạt chuẩn TCVN 8791.',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1578874691223-a4558a07c9c7?w=600&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=600&q=80',
+          geometryType: 'LINE',
+          lengthMeters: 650,
+          widthMeters: 12.0,
+          areaSquareMeters: 7800,
+          chainage: 'Km0+000 - Km0+650',
+          startPoint: { lat: 10.77660, lng: 106.70180, label: 'Trước UBND TP' },
+          endPoint: { lat: 10.77200, lng: 106.70600, label: 'Bến Bạch Đằng' }
+        }
+      ],
+      fieldPhotos: [],
+      createdAt: '2026-03-12'
     }
   ];
 
@@ -981,6 +1108,8 @@ export class ProjectService {
           taskTitle: 'Thay thế đèn LED & bảo dưỡng tủ điện tuyến Nguyễn Huệ',
           completedDate: '2026-03-28',
           photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
           lat: 10.77584,
           lng: 106.70281,
           cost: 85000000,
@@ -997,6 +1126,8 @@ export class ProjectService {
           taskTitle: 'Thay thế đèn LED & bảo dưỡng tủ điện tuyến Nguyễn Huệ',
           completedDate: '2026-03-29',
           photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
           lat: 10.77526,
           lng: 106.70329,
           cost: 65000000,
@@ -1013,6 +1144,8 @@ export class ProjectService {
           taskTitle: 'Cắt tỉa hạ cành tán cây nguy hiểm trục Lê Lợi',
           completedDate: '2026-03-27',
           photoUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=600&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80',
           lat: 10.77382,
           lng: 106.70115,
           cost: 45000000,
@@ -1029,6 +1162,8 @@ export class ProjectService {
           taskTitle: 'Sơn phủ bảo vệ chân cột & kiểm tra hộp đầu cáp',
           completedDate: '2026-03-22',
           photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
           lat: 10.77350,
           lng: 106.70050,
           cost: 55000000,
@@ -1045,11 +1180,38 @@ export class ProjectService {
           taskTitle: 'Sơn phủ bảo vệ chân cột & kiểm tra hộp đầu cáp',
           completedDate: '2026-03-23',
           photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=500&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
           lat: 10.77240,
           lng: 106.69820,
           cost: 55000000,
           inspectorApproved: true,
           inspectorNotes: 'Đạt yêu cầu nghiệm thu'
+        },
+        {
+          assetId: 'ast-road-01',
+          assetCode: 'MD-LL-01',
+          assetName: 'Đoạn mặt đường bê tông nhựa nóng C12.5 (Từ Pasteur đến Nam Kỳ Khởi Nghĩa)',
+          layerId: 'ROADWAY',
+          layerName: 'Mặt đường & Biển báo',
+          taskId: 't-3',
+          taskTitle: 'Cào bóc & thảm bê tông nhựa nóng C12.5 hoàn trả mặt đường',
+          completedDate: '2026-03-24',
+          photoUrl: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=600&q=80',
+          photoBeforeUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=600&q=80',
+          photoAfterUrl: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=600&q=80',
+          lat: 10.77465,
+          lng: 106.70165,
+          cost: 185000000,
+          inspectorApproved: true,
+          inspectorNotes: 'Độ bằng phẳng thước 3m và độ nhám mặt đường đạt tiêu chuẩn TCVN 8819',
+          geometryType: 'LINE',
+          lengthMeters: 500,
+          widthMeters: 14.5,
+          areaSquareMeters: 7250,
+          chainage: 'Km0+100 - Km0+600',
+          startPoint: { lat: 10.77350, lng: 106.70050, label: 'Ngã tư Pasteur - Lê Lợi' },
+          endPoint: { lat: 10.77580, lng: 106.70280, label: 'Ngã tư Nam Kỳ Khởi Nghĩa - Lê Lợi' }
         }
       ]
     }
@@ -1399,7 +1561,7 @@ export class ProjectService {
   }
 
   // Cập nhật trạng thái hoàn thành và hiện trạng của 1 tài sản trong 1 task cụ thể (Độc lập, không xung đột giữa các task)
-  setTaskAssetCompletion(taskId: string, assetId: string, completed: boolean, photoUrl?: string, note?: string, condition?: AssetCondition) {
+  setTaskAssetCompletion(taskId: string, assetId: string, completed: boolean, photoUrl?: string, note?: string, condition?: AssetCondition, photoBeforeUrl?: string) {
     const asset = this.masterAssets().find(a => a.id === assetId);
     let targetProjectId = '';
 
@@ -1447,6 +1609,7 @@ export class ProjectService {
                 isCompleted: completed,
                 condition: condition || (completed ? 'GOOD' : ta.condition || 'NORMAL'),
                 completedDate: completed ? new Date().toISOString().substring(0, 10) : undefined,
+                photoBeforeUrl: photoBeforeUrl || ta.photoBeforeUrl,
                 photoAfterUrl: photoUrl || ta.photoAfterUrl,
                 notes: note !== undefined ? note : ta.notes
               };

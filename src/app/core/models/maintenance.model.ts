@@ -91,6 +91,13 @@ export interface Asset {
   assignedTaskTitle?: string; // Legacy compatibility
   beforePhotoUrl?: string; // Legacy compatibility
   completedPhotoUrl?: string; // Legacy compatibility
+  // Hỗ trợ tài sản dạng tuyến / dạng đường (Line / Polyline)
+  geometryType?: 'POINT' | 'LINE';
+  lengthMeters?: number; // Chiều dài đoạn tuyến (m)
+  widthMeters?: number;  // Chiều rộng mặt đường (m)
+  areaSquareMeters?: number; // Diện tích mặt đường / thi công (m2)
+  startPoint?: { lat: number; lng: number; label?: string };
+  endPoint?: { lat: number; lng: number; label?: string };
 }
 
 export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
@@ -121,6 +128,14 @@ export interface TaskAssetItem {
   notes?: string; // Đánh giá hiện trạng / ghi chú thi công
   photoBeforeUrl?: string; // Ảnh hiện trạng trước khi làm
   photoAfterUrl?: string; // Ảnh kết quả sau khi hoàn thành
+  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường
+  geometryType?: 'POINT' | 'LINE';
+  lengthMeters?: number;
+  widthMeters?: number;
+  areaSquareMeters?: number;
+  chainage?: string;
+  startPoint?: { lat: number; lng: number; label?: string };
+  endPoint?: { lat: number; lng: number; label?: string };
 }
 
 export interface FieldPhoto {
@@ -167,11 +182,21 @@ export interface ReportItem {
   taskTitle: string;
   completedDate: string;
   photoUrl: string;
+  photoBeforeUrl?: string; // Ảnh trước khi khắc phục / thi công do nhà thầu nộp
+  photoAfterUrl?: string;  // Ảnh sau khi khắc phục / nghiệm thu do nhà thầu nộp
   lat: number;
   lng: number;
   cost: number;
   inspectorApproved: boolean;
   inspectorNotes?: string;
+  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường
+  geometryType?: 'POINT' | 'LINE';
+  lengthMeters?: number;
+  widthMeters?: number;
+  areaSquareMeters?: number;
+  chainage?: string;
+  startPoint?: { lat: number; lng: number; label?: string };
+  endPoint?: { lat: number; lng: number; label?: string };
 }
 
 export interface ReportPayment {

@@ -165,11 +165,10 @@ import { LayerId } from '../../../../core/models/maintenance.model';
                 <tr>
                   <th style="width: 120px;">Mã cụm</th>
                   <th>Tên tổ đội tuần kiểm</th>
-                  <th style="width: 160px;">Đội trưởng</th>
                   <th>Khu vực phụ trách</th>
                   <th style="width: 180px;">Cụm nhóm quyền</th>
-                  <th style="width: 100px;" class="text-center">Quân số</th>
-                  <th style="width: 100px;" class="text-center">Thao tác</th>
+                  <th style="width: 130px;" class="text-center">Quân số</th>
+                  <th style="width: 120px;" class="text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -179,21 +178,34 @@ import { LayerId } from '../../../../core/models/maintenance.model';
                     <div class="fw-semibold">{{ team.name }}</div>
                     <div class="text-muted fs-xs">{{ team.description }}</div>
                   </td>
-                  <td>
-                    <i class="bi bi-person-fill text-primary"></i> {{ team.leaderName }}
-                  </td>
                   <td>{{ team.assignedArea }}</td>
                   <td>
                     <span class="badge" [ngClass]="getRoleBadgeClass(team.permissionGroup)">
                       {{ team.permissionGroup }}
                     </span>
                   </td>
-                  <td class="text-center fw-bold">{{ team.memberCount }} nhân sự</td>
                   <td class="text-center">
-                    <button class="btn btn-xs btn-ghost text-primary" (click)="openEditTeamModal(team)" title="Chỉnh sửa">
+                    <button
+                      class="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill fw-bold"
+                      (click)="openTeamPersonnelModal(team)"
+                      title="Nhấn để xem danh sách nhân sự của cụm này"
+                    >
+                      <i class="bi bi-people-fill"></i>
+                      <span>{{ getPersonnelCount(team.id, team.memberCount) }} nhân sự</span>
+                    </button>
+                  </td>
+                  <td class="text-center">
+                    <button
+                      class="btn btn-xs btn-ghost text-primary"
+                      (click)="openTeamPersonnelModal(team)"
+                      title="Xem danh sách nhân sự cụm"
+                    >
+                      <i class="bi bi-people-fill"></i>
+                    </button>
+                    <button class="btn btn-xs btn-ghost text-secondary ms-1" (click)="openEditTeamModal(team)" title="Chỉnh sửa thông tin cụm">
                       <i class="bi bi-pencil-square"></i>
                     </button>
-                    <button class="btn btn-xs btn-ghost text-danger ms-1" (click)="deleteTeam(team)" title="Xóa">
+                    <button class="btn btn-xs btn-ghost text-danger ms-1" (click)="deleteTeam(team)" title="Xóa cụm">
                       <i class="bi bi-trash"></i>
                     </button>
                   </td>
@@ -229,9 +241,25 @@ import { LayerId } from '../../../../core/models/maintenance.model';
               <button class="btn btn-sm btn-outline-secondary" (click)="exportPersonnelExcel()">
                 <i class="bi bi-file-earmark-excel-fill text-success"></i> Xuất Báo Cáo Điểm Danh
               </button>
-              <button class="btn btn-sm btn-primary" (click)="openAddPersonnelModal()">
-                <i class="bi bi-plus-lg"></i> Thêm Nhân Viên
-              </button>
+            </div>
+          </div>
+
+          <!-- Status Bar Điểm Danh Tập Trung -->
+          <div class="px-3 py-2 bg-light border-bottom d-flex justify-content-between align-items-center fs-xs">
+            <div>
+              <i class="bi bi-arrow-down-up text-primary me-1"></i>
+              <span class="text-secondary">Sắp xếp: <strong class="text-dark">Người mới điểm danh gần nhất lên đầu (Live Feed)</strong></span>
+            </div>
+            <div class="d-flex gap-2">
+              <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                <i class="bi bi-check-circle-fill me-1"></i> Đã vào ca: {{ countCheckedIn }}
+              </span>
+              <span class="badge bg-warning bg-opacity-10 text-warning-emphasis border border-warning border-opacity-25 px-2 py-1" *ngIf="countLate > 0">
+                <i class="bi bi-clock-history me-1"></i> Trễ: {{ countLate }}
+              </span>
+              <span class="badge bg-secondary bg-opacity-10 text-secondary border px-2 py-1">
+                <i class="bi bi-hourglass me-1"></i> Chưa vào ca: {{ countNotCheckedIn }}
+              </span>
             </div>
           </div>
 
@@ -239,28 +267,35 @@ import { LayerId } from '../../../../core/models/maintenance.model';
             <table class="table table-hover table-bordered align-middle">
               <thead>
                 <tr>
-                  <th style="width: 100px;">Mã NV</th>
                   <th>Họ và tên nhân sự</th>
                   <th style="width: 130px;">Số điện thoại</th>
                   <th>Thuộc cụm nhân sự</th>
-                  <th>Tuyến đường phụ trách</th>
+                  <th>Ca trực & Tuyến phụ trách</th>
                   <th style="width: 140px;">Trạng thái hôm nay</th>
-                  <th style="width: 180px;">Thời gian & Vị trí check-in</th>
+                  <th style="width: 210px;">Thời gian & Vị trí check-in</th>
+                  <th style="width: 155px;" class="text-center">Định vị GPS (Hệ thống)</th>
                   <th style="width: 140px;" class="text-center">Đánh giá hợp lệ (Cán bộ)</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let p of filteredPersonnel">
-                  <td class="font-monospace fw-bold text-primary">{{ p.code }}</td>
+                <tr *ngFor="let p of filteredPersonnel" [class.table-success]="p.todayAttendance === 'CHECKED_IN' && isRecentCheckIn(p)">
                   <td>
-                    <div class="fw-semibold">{{ p.name }}</div>
-                    <span class="badge bg-light text-dark fs-xs">{{ p.role === 'TEAM_LEADER' ? 'Trưởng đội' : p.role === 'SUPERVISOR' ? 'Giám sát viên' : 'Tuần tra viên' }}</span>
+                    <div class="fw-semibold text-dark">{{ p.name }}</div>
                   </td>
-                  <td class="font-monospace">{{ p.phone }}</td>
+                  <td class="font-monospace text-nowrap">
+                    <a [href]="'tel:' + p.phone" class="text-decoration-none text-dark">
+                      <i class="bi bi-telephone text-muted me-1"></i>{{ p.phone }}
+                    </a>
+                  </td>
                   <td>{{ p.teamName }}</td>
                   <td>
+                    <div *ngIf="p.currentShift || p.currentRouteName" class="mb-1">
+                      <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 fs-xs">
+                        <i class="bi bi-calendar-check me-1"></i>Ca {{ p.currentShift || 'SANG' }} • {{ p.currentRouteName || 'Tuyến được phân công' }}
+                      </span>
+                    </div>
                     <div class="d-flex flex-wrap gap-1">
-                      <span *ngFor="let r of p.assignedRoutes" class="badge bg-light text-primary border fs-xs">{{ r }}</span>
+                      <span *ngFor="let r of p.assignedRoutes" class="badge bg-light text-secondary border fs-xs">{{ r }}</span>
                     </div>
                   </td>
                   <td>
@@ -269,11 +304,44 @@ import { LayerId } from '../../../../core/models/maintenance.model';
                     </span>
                   </td>
                   <td>
-                    <div *ngIf="p.checkInTime" class="fs-xs">
-                      <div><i class="bi bi-clock"></i> {{ p.checkInTime }}</div>
-                      <div class="text-muted"><i class="bi bi-geo-alt"></i> {{ p.checkInLocation }}</div>
+                    <div *ngIf="p.todayAttendance !== 'NOT_CHECKED_IN'" class="fs-xs">
+                      <div class="fw-bold text-dark"><i class="bi bi-clock-fill text-primary me-1"></i>{{ p.checkInTime }}</div>
+                      <div class="text-muted mt-1" [title]="p.checkInLocation">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ p.checkInLocation || 'Hiện trường tuần kiểm' }}
+                      </div>
                     </div>
-                    <span *ngIf="!p.checkInTime" class="text-muted fs-xs">Chưa có dữ liệu</span>
+                    <div *ngIf="p.todayAttendance === 'NOT_CHECKED_IN'" class="d-flex align-items-center gap-2">
+                      <span class="text-muted fs-xs">Chưa vào ca</span>
+                      <button
+                        class="btn btn-xs btn-outline-primary d-inline-flex align-items-center gap-1"
+                        (click)="quickCheckInFromTable(p)"
+                        title="Xác nhận điểm danh nhanh cho nhân viên này"
+                      >
+                        <i class="bi bi-check2-circle"></i> Điểm danh ngay
+                      </button>
+                    </div>
+                  </td>
+                  <!-- CỘT ĐỊNH VỊ GPS HỆ THỐNG ĐỐI SOÁT -->
+                  <td class="text-center">
+                    <div *ngIf="p.todayAttendance !== 'NOT_CHECKED_IN'">
+                      <span
+                        *ngIf="p.isGpsValid !== false"
+                        class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1"
+                        title="Tọa độ GPS điểm danh hợp lệ trong phạm vi tuyến được giao"
+                      >
+                        <i class="bi bi-geo-alt-fill me-1"></i>Hợp lệ
+                      </span>
+                      <span
+                        *ngIf="p.isGpsValid === false"
+                        class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25 px-2 py-1"
+                        title="Tọa độ GPS điểm danh lệch so với tuyến hoặc trạm xuất phát"
+                      >
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>Không hợp lệ
+                      </span>
+                    </div>
+                    <div *ngIf="p.todayAttendance === 'NOT_CHECKED_IN'">
+                      <span class="text-muted fs-xs">Chưa có GPS</span>
+                    </div>
                   </td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm">
@@ -463,6 +531,113 @@ import { LayerId } from '../../../../core/models/maintenance.model';
         </div>
       </div>
     </div>
+
+    <!-- MODAL XEM DANH SÁCH NHÂN SỰ CỦA CỤM (UC 1) -->
+    <div class="custom-modal-backdrop" *ngIf="showTeamPersonnelModal" (click)="showTeamPersonnelModal = false">
+      <div class="custom-modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        <div class="modal-content">
+          <div class="modal-header bg-gradient-team text-white">
+            <div class="d-flex align-items-center gap-2">
+              <span class="team-modal-icon"><i class="bi bi-people-fill"></i></span>
+              <div>
+                <h5 class="modal-title m-0 fw-bold">Danh Sách Nhân Sự – {{ selectedTeamForPersonnel?.name }}</h5>
+                <p class="m-0 fs-xs opacity-75">
+                  Mã cụm: <span class="badge bg-light text-dark fw-bold me-1">{{ selectedTeamForPersonnel?.code }}</span>
+                  <span class="me-2">• Khu vực: {{ selectedTeamForPersonnel?.assignedArea }}</span>
+                  <span class="badge bg-white bg-opacity-25">{{ selectedTeamForPersonnel?.permissionGroup }}</span>
+                </p>
+              </div>
+            </div>
+            <button class="btn-close btn-close-white" (click)="showTeamPersonnelModal = false"></button>
+          </div>
+
+          <div class="modal-body p-3">
+            <!-- Search & Filter bar inside modal -->
+            <div class="d-flex justify-content-between align-items-center mb-3 gap-2">
+              <div class="search-box flex-grow-1" style="max-width: 480px; position: relative;">
+                <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-2 text-muted"></i>
+                <input
+                  type="text"
+                  class="form-control form-control-sm ps-4"
+                  placeholder="Tìm kiếm nhân sự theo tên, số điện thoại, vai trò, tuyến đường..."
+                  [(ngModel)]="teamPersonnelSearch"
+                />
+              </div>
+              <div>
+                <span class="badge bg-light text-secondary border px-3 py-2 fw-semibold">
+                  <i class="bi bi-people me-1"></i> Hiển thị {{ filteredTeamPersonnel.length }} / {{ getTeamPersonnel(selectedTeamForPersonnel?.id).length }} nhân sự
+                </span>
+              </div>
+            </div>
+
+            <!-- Table of personnel in team -->
+            <div class="team-personnel-table-container border rounded">
+              <table class="table table-hover table-sm align-middle mb-0" *ngIf="filteredTeamPersonnel.length > 0">
+                <thead class="table-light">
+                  <tr>
+                    <th>Họ và tên nhân sự</th>
+                    <th style="width: 140px;">Số điện thoại</th>
+                    <th>Tuyến đường phụ trách</th>
+                    <th style="width: 140px;" class="text-center">Hôm nay</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let p of filteredTeamPersonnel">
+                    <td>
+                      <div class="fw-semibold text-dark">{{ p.name }}</div>
+                      <div class="text-muted fs-xs" *ngIf="p.checkInLocation">
+                        <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ p.checkInLocation }}
+                      </div>
+                    </td>
+                    <td class="text-nowrap">
+                      <a [href]="'tel:' + p.phone" class="text-decoration-none text-dark">
+                        <i class="bi bi-telephone text-muted me-1"></i>{{ p.phone }}
+                      </a>
+                    </td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-1">
+                        <span *ngFor="let r of p.assignedRoutes" class="badge bg-light text-dark border fs-xs">
+                          {{ r }}
+                        </span>
+                      </div>
+                    </td>
+                    <td class="text-center">
+                      <span class="badge" [ngClass]="getAttendanceBadgeClass(p.todayAttendance)">
+                        {{ getAttendanceLabel(p.todayAttendance) }}
+                      </span>
+                      <div class="fs-xs text-muted mt-1" *ngIf="p.checkInTime">
+                        <i class="bi bi-clock me-1"></i>{{ p.checkInTime.split(' ')[0] }}
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <!-- Empty state inside modal -->
+              <div *ngIf="filteredTeamPersonnel.length === 0" class="text-center py-4 text-muted">
+                <i class="bi bi-person-x fs-2 text-warning mb-2 d-block"></i>
+                <div class="fw-semibold">Không tìm thấy nhân sự nào!</div>
+                <div class="fs-xs text-secondary mt-1" *ngIf="teamPersonnelSearch">
+                  Không có nhân viên nào trong cụm này khớp với từ khóa "{{ teamPersonnelSearch }}".
+                </div>
+                <div class="fs-xs text-secondary mt-1" *ngIf="!teamPersonnelSearch">
+                  Cụm nhân sự này hiện chưa được gán nhân viên.
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer d-flex justify-content-between align-items-center">
+            <span class="fs-xs text-muted">
+              <i class="bi bi-info-circle me-1"></i> Quản lý điểm danh chi tiết tại tab <strong>3. Quản Lý Nhân Viên & Điểm Danh</strong>
+            </span>
+            <button class="btn btn-secondary btn-sm" (click)="showTeamPersonnelModal = false">
+              Đóng
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   `,
   styles: [`
     .config-catalog-container {
@@ -639,9 +814,33 @@ import { LayerId } from '../../../../core/models/maintenance.model';
       overflow: hidden;
       box-shadow: var(--shadow-xl);
 
+      &.modal-lg {
+        max-width: 860px;
+      }
+
       .modal-header { padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; }
       .modal-body { padding: 18px; }
       .modal-footer { padding: 12px 18px; background: #f8fafc; border-top: 1px solid var(--gray-200); display: flex; justify-content: flex-end; gap: 8px; }
+    }
+
+    .bg-gradient-team {
+      background: linear-gradient(135deg, #1e3a8a, #2563eb);
+    }
+
+    .team-modal-icon {
+      width: 36px;
+      height: 36px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .team-personnel-table-container {
+      max-height: 420px;
+      overflow-y: auto;
     }
   `]
 })
@@ -692,6 +891,11 @@ export class ConfigCatalogComponent {
     routesString: 'Tuyến Nguyễn Huệ'
   };
 
+  // Modal Team Personnel (Xem danh sách nhân sự cụm)
+  showTeamPersonnelModal = false;
+  selectedTeamForPersonnel: PatrolTeam | null = null;
+  teamPersonnelSearch = '';
+
   get filteredCategories(): IssueCategory[] {
     return this.patrolService.categories().filter(c => {
       if (this.categoryLayerFilter !== 'ALL' && c.layerId !== this.categoryLayerFilter) return false;
@@ -718,8 +922,85 @@ export class ConfigCatalogComponent {
     });
   }
 
+  get countCheckedIn(): number {
+    return this.patrolService.personnel().filter(p => p.todayAttendance === 'CHECKED_IN').length;
+  }
+
+  get countNotCheckedIn(): number {
+    return this.patrolService.personnel().filter(p => p.todayAttendance === 'NOT_CHECKED_IN').length;
+  }
+
+  get countLate(): number {
+    return this.patrolService.personnel().filter(p => p.todayAttendance === 'LATE').length;
+  }
+
+  isRecentCheckIn(p: PatrolPersonnel): boolean {
+    if (!p.checkInTimestamp) return false;
+    // Check-in trong vòng 15 phút gần đây
+    return Date.now() - p.checkInTimestamp < 15 * 60 * 1000;
+  }
+
+  quickCheckInFromTable(p: PatrolPersonnel) {
+    if (p.currentScheduleId) {
+      this.patrolService.checkInSchedulePersonnel(p.currentScheduleId, p.id);
+    } else {
+      const schedule = this.patrolService.schedules().find(s => s.assignedPersonnel.some(ap => ap.id === p.id));
+      if (schedule) {
+        this.patrolService.checkInSchedulePersonnel(schedule.id, p.id);
+      } else {
+        const timeStr =
+          new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) +
+          ' ' +
+          new Date().toLocaleDateString('vi-VN');
+        const nowTs = Date.now();
+        this.patrolService.personnel.update(list =>
+          list.map(item => item.id === p.id ? {
+            ...item,
+            todayAttendance: 'CHECKED_IN',
+            checkInTime: timeStr,
+            checkInLocation: item.assignedRoutes[0] || 'Hiện trường tuần tra',
+            isValidAttendance: true,
+            checkInTimestamp: nowTs
+          } : item)
+        );
+        this.patrolService.addLog({
+          personnelName: p.name,
+          action: 'CHECK_IN',
+          title: `Cán bộ xác nhận điểm danh: ${p.name}`,
+          details: `Xác nhận trực tiếp tại bảng Quản lý điểm danh. Giờ: ${timeStr}`,
+          timestamp: timeStr,
+          lat: 10.7745,
+          lng: 106.7025,
+          status: 'SUCCESS'
+        });
+      }
+    }
+  }
+
+  private parseCheckInTimeString(str?: string): number {
+    if (!str) return 0;
+    try {
+      const parts = str.split(' ');
+      if (parts.length >= 2) {
+        const timeParts = parts[0].split(':');
+        const dateParts = parts[1].split('/');
+        if (dateParts.length === 3 && timeParts.length >= 2) {
+          const d = parseInt(dateParts[0], 10);
+          const m = parseInt(dateParts[1], 10) - 1;
+          const y = parseInt(dateParts[2], 10);
+          const h = parseInt(timeParts[0], 10);
+          const min = parseInt(timeParts[1], 10);
+          return new Date(y, m, d, h, min).getTime();
+        }
+      }
+    } catch {
+      return 0;
+    }
+    return 0;
+  }
+
   get filteredPersonnel(): PatrolPersonnel[] {
-    return this.patrolService.personnel().filter(p => {
+    const list = this.patrolService.personnel().filter(p => {
       if (this.attendanceFilter !== 'ALL' && p.todayAttendance !== this.attendanceFilter) return false;
       if (this.personnelKeyword.trim()) {
         const q = this.personnelKeyword.toLowerCase();
@@ -727,10 +1008,26 @@ export class ConfigCatalogComponent {
           p.code.toLowerCase().includes(q) ||
           p.name.toLowerCase().includes(q) ||
           p.phone.includes(q) ||
-          p.assignedRoutes.some(r => r.toLowerCase().includes(q))
+          p.assignedRoutes.some(r => r.toLowerCase().includes(q)) ||
+          (p.currentRouteName && p.currentRouteName.toLowerCase().includes(q))
         );
       }
       return true;
+    });
+
+    // Sắp xếp người mới điểm danh gần nhất lên đầu (Live Feed)
+    return list.sort((a, b) => {
+      const aChecked = a.todayAttendance === 'CHECKED_IN' || a.todayAttendance === 'LATE';
+      const bChecked = b.todayAttendance === 'CHECKED_IN' || b.todayAttendance === 'LATE';
+
+      if (aChecked && bChecked) {
+        const tA = a.checkInTimestamp || this.parseCheckInTimeString(a.checkInTime);
+        const tB = b.checkInTimestamp || this.parseCheckInTimeString(b.checkInTime);
+        return tB - tA; // Giảm dần: mới nhất lên đầu
+      }
+      if (aChecked && !bChecked) return -1;
+      if (!aChecked && bChecked) return 1;
+      return 0;
     });
   }
 
@@ -888,6 +1185,53 @@ export class ConfigCatalogComponent {
     }
   }
 
+  // --- MODAL XEM DANH SÁCH NHÂN SỰ CỦA CỤM (UC 1) ---
+  openTeamPersonnelModal(team: PatrolTeam) {
+    this.selectedTeamForPersonnel = team;
+    this.teamPersonnelSearch = '';
+    this.showTeamPersonnelModal = true;
+  }
+
+  getTeamPersonnel(teamId?: string): PatrolPersonnel[] {
+    if (!teamId) return [];
+    return this.patrolService.personnel().filter(p => p.teamId === teamId);
+  }
+
+  get filteredTeamPersonnel(): PatrolPersonnel[] {
+    if (!this.selectedTeamForPersonnel) return [];
+    const list = this.getTeamPersonnel(this.selectedTeamForPersonnel.id);
+    if (!this.teamPersonnelSearch.trim()) return list;
+    const q = this.teamPersonnelSearch.toLowerCase();
+    return list.filter(p =>
+      p.code.toLowerCase().includes(q) ||
+      p.name.toLowerCase().includes(q) ||
+      p.phone.includes(q) ||
+      this.getPersonnelRoleLabel(p.role).toLowerCase().includes(q) ||
+      p.assignedRoutes.some(r => r.toLowerCase().includes(q))
+    );
+  }
+
+  getPersonnelRoleLabel(role: string): string {
+    switch (role) {
+      case 'TEAM_LEADER': return 'Trưởng đội';
+      case 'SUPERVISOR': return 'Giám sát viên';
+      default: return 'Tuần tra viên';
+    }
+  }
+
+  getPersonnelRoleBadgeClass(role: string): string {
+    switch (role) {
+      case 'TEAM_LEADER': return 'bg-primary text-white';
+      case 'SUPERVISOR': return 'bg-warning text-dark';
+      default: return 'bg-secondary text-white';
+    }
+  }
+
+  getPersonnelCount(teamId: string, fallbackCount: number = 0): number {
+    const list = this.getTeamPersonnel(teamId);
+    return list.length > 0 ? list.length : fallbackCount;
+  }
+
   // CRUD Personnel & Attendance
   openAddPersonnelModal() {
     this.personnelForm = {
@@ -923,20 +1267,20 @@ export class ConfigCatalogComponent {
 
   exportPersonnelExcel() {
     const rows = this.filteredPersonnel.map(p => [
-      p.code,
       p.name,
       p.phone,
       p.teamName,
-      p.assignedRoutes.join('; '),
+      p.currentShift ? `Ca ${p.currentShift} - ${p.currentRouteName || ''}` : p.assignedRoutes.join('; '),
       this.getAttendanceLabel(p.todayAttendance),
       p.checkInTime || 'Chưa điểm danh',
       p.checkInLocation || 'N/A',
+      p.todayAttendance === 'NOT_CHECKED_IN' ? 'Chưa có GPS' : (p.isGpsValid !== false ? 'Hợp lệ' : 'Không hợp lệ'),
       p.isValidAttendance ? 'Hợp lệ' : p.isValidAttendance === false ? 'Không hợp lệ' : 'Chưa đánh giá'
     ]);
 
     this.patrolService.exportToCsv(
       'Bao_Cao_Diem_Danh_Nhan_Su',
-      ['Mã NV', 'Họ Và Tên', 'Số Điện Thoại', 'Tổ Đội', 'Tuyến Phụ Trách', 'Trạng Thái Hôm Nay', 'Giờ Điểm Danh', 'Vị Trí Check-in GPS', 'Cán Bộ Đánh Giá'],
+      ['Họ Và Tên', 'Số Điện Thoại', 'Tổ Đội', 'Ca & Tuyến Phụ Trách', 'Trạng Thái Hôm Nay', 'Giờ Điểm Danh', 'Vị Trí Check-in', 'Định Vị GPS (Hệ Thống)', 'Cán Bộ Đánh Giá'],
       rows
     );
   }

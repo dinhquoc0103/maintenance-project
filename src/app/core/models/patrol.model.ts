@@ -66,7 +66,12 @@ export interface PatrolPersonnel {
   todayAttendance: AttendanceStatus;
   checkInTime?: string;
   checkInLocation?: string;
+  isGpsValid?: boolean; // Hệ thống tự động đối soát tọa độ GPS với tuyến
   isValidAttendance?: boolean; // Cán bộ đánh giá hợp lệ
+  checkInTimestamp?: number; // Timestamp để sort mới nhất lên đầu
+  currentShift?: ShiftType; // Ca trực được phân công
+  currentScheduleId?: string; // ID ca trực liên kết
+  currentRouteName?: string; // Tên tuyến đường của ca trực
 }
 
 /**
@@ -128,6 +133,10 @@ export interface PatrolSchedule {
     name: string;
     phone: string;
     checkedIn: boolean;
+    checkInTime?: string;
+    checkInLocation?: string;
+    isValidAttendance?: boolean;
+    invalidReason?: string;
   }[];
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   checkpointsTotal: number;

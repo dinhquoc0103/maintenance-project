@@ -58,7 +58,13 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                 (ngModelChange)="onPersonaChange()"
               >
                 <option value="TUAN_NAM">
-                  👮‍♂️ Trần Đình Nam (Nhân Viên Tuần Kiểm Tuyến)
+                  👮‍♂️ Trần Đình Nam (Đội 1 • Đủ 4 trạng thái ca trực)
+                </option>
+                <option value="TUAN_HANG">
+                  👩‍💼 Phạm Thị Thúy Hằng (Đội 2 • Điểm danh KHÔNG HỢP LỆ)
+                </option>
+                <option value="TUAN_TUNG">
+                  👷 Đặng Thanh Tùng (Đội 3 • CHƯA ĐIỂM DANH)
                 </option>
                 <option value="THO_HAI">
                   👨‍🔧 Nguyễn Văn Hải (Thợ Khắc Phục Sự Cố Nhanh)
@@ -89,7 +95,9 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
               [ngClass]="
                 currentPersona === 'THO_HAI'
                   ? 'bi-tools text-warning'
-                  : 'bi-shield-check text-primary'
+                  : currentPersona === 'TUAN_HANG'
+                    ? 'bi-exclamation-triangle-fill text-danger'
+                    : 'bi-shield-check text-primary'
               "
             ></i>
             <div>
@@ -97,7 +105,11 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                 {{
                   currentPersona === 'THO_HAI'
                     ? 'Tài khoản: Nguyễn Văn Hải • Đội Phản ứng nhanh Duy tu Quận 1'
-                    : 'Tài khoản: Trần Đình Nam • Đội Tuần kiểm Trung tâm Quận 1'
+                    : currentPersona === 'TUAN_HANG'
+                      ? 'Tài khoản: Phạm Thị Thúy Hằng • Đội Tuần kiểm Ven Sông (Bị đánh giá Không hợp lệ)'
+                      : currentPersona === 'TUAN_TUNG'
+                        ? 'Tài khoản: Đặng Thanh Tùng • Tổ Phản ứng nhanh Thoát nước (Chưa điểm danh)'
+                        : 'Tài khoản: Trần Đình Nam • Đội Tuần kiểm Trung tâm Quận 1'
                 }}
               </strong>
               <span class="fs-xs text-muted">
@@ -111,28 +123,20 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
           </div>
 
           <div class="quick-status-chip">
-            <span
-              class="badge"
-              [ngClass]="
-                isCurrentWorkerCheckedInForSchedule(currentSchedule)
-                  ? 'bg-success'
-                  : 'bg-warning text-dark'
-              "
-            >
-              <i
-                class="bi"
-                [ngClass]="
-                  isCurrentWorkerCheckedInForSchedule(currentSchedule)
-                    ? 'bi-check-circle-fill'
-                    : 'bi-clock'
-                "
-              ></i>
-              {{
-                isCurrentWorkerCheckedInForSchedule(currentSchedule)
-                  ? 'Đã điểm danh ca hiện tại'
-                  : 'Chưa điểm danh ca trực này'
-              }}
-            </span>
+            <ng-container [ngSwitch]="getAttendanceEvaluation(currentSchedule)">
+              <span *ngSwitchCase="'VALID'" class="badge bg-success">
+                <i class="bi bi-check-circle-fill me-1"></i> Điểm danh Hợp lệ
+              </span>
+              <span *ngSwitchCase="'INVALID'" class="badge bg-danger">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> Điểm danh K.Hợp lệ (Cần giải trình)
+              </span>
+              <span *ngSwitchCase="'PENDING'" class="badge bg-info text-dark">
+                <i class="bi bi-clock-history me-1"></i> Đã check-in (Chờ Cán bộ duyệt)
+              </span>
+              <span *ngSwitchDefault class="badge bg-warning text-dark">
+                <i class="bi bi-clock me-1"></i> Chưa điểm danh ca trực này
+              </span>
+            </ng-container>
           </div>
         </div>
 
@@ -387,28 +391,33 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                                 : 'Đã hoàn thành'
                           }}
                         </span>
-                        <span
-                          class="badge fs-xxxs py-1 px-2 d-block"
-                          [ngClass]="
-                            isCurrentWorkerCheckedInForSchedule(sch)
-                              ? 'bg-success-subtle text-success border border-success-subtle'
-                              : 'bg-warning-subtle text-warning-emphasis border border-warning-subtle'
-                          "
-                        >
-                          <i
-                            class="bi"
-                            [ngClass]="
-                              isCurrentWorkerCheckedInForSchedule(sch)
-                                ? 'bi-check-circle-fill'
-                                : 'bi-clock'
-                            "
-                          ></i>
-                          {{
-                            isCurrentWorkerCheckedInForSchedule(sch)
-                              ? 'Đã Điểm Danh'
-                              : 'Chưa Điểm Danh'
-                          }}
-                        </span>
+                        <!-- BADGE TRẠNG THÁI ĐIỂM DANH ĐỦ 4 TRƯỜNG HỢP -->
+                        <ng-container [ngSwitch]="getAttendanceEvaluation(sch)">
+                          <span
+                            *ngSwitchCase="'VALID'"
+                            class="badge fs-xxxs py-1 px-2 d-block bg-success-subtle text-success border border-success-subtle"
+                          >
+                            <i class="bi bi-check-circle-fill me-1"></i>Đã Điểm Danh • Hợp Lệ
+                          </span>
+                          <span
+                            *ngSwitchCase="'INVALID'"
+                            class="badge fs-xxxs py-1 px-2 d-block bg-danger-subtle text-danger border border-danger-subtle"
+                          >
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Điểm Danh K.Hợp Lệ (Giải trình)
+                          </span>
+                          <span
+                            *ngSwitchCase="'PENDING'"
+                            class="badge fs-xxxs py-1 px-2 d-block bg-info-subtle text-info-emphasis border border-info-subtle"
+                          >
+                            <i class="bi bi-clock-history me-1"></i>Đã Check-in • Chờ Duyệt
+                          </span>
+                          <span
+                            *ngSwitchDefault
+                            class="badge fs-xxxs py-1 px-2 d-block bg-warning-subtle text-warning-emphasis border border-warning-subtle"
+                          >
+                            <i class="bi bi-clock me-1"></i>Chưa Điểm Danh
+                          </span>
+                        </ng-container>
                       </div>
 
                       <div>
@@ -666,11 +675,23 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                           class="badge ms-1"
                           [ngClass]="
                             p.checkedIn
-                              ? 'bg-success-subtle text-success'
+                              ? (p.isValidAttendance === false
+                                  ? 'bg-danger-subtle text-danger border border-danger-subtle'
+                                  : p.isValidAttendance
+                                    ? 'bg-success-subtle text-success'
+                                    : 'bg-info-subtle text-info-emphasis')
                               : 'bg-secondary-subtle text-secondary'
                           "
                         >
-                          {{ p.checkedIn ? 'Đã Check-in' : 'Chưa Check-in' }}
+                          {{
+                            p.checkedIn
+                              ? (p.isValidAttendance === false
+                                  ? 'K.Hợp Lệ'
+                                  : p.isValidAttendance
+                                    ? 'Đã duyệt'
+                                    : 'Chờ duyệt')
+                              : 'Chưa Check-in'
+                          }}
                         </span>
                       </div>
                     </div>
@@ -719,11 +740,12 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                   </div>
                 </div>
 
-                <!-- CARD 2: BƯỚC 1: ĐIỂM DANH NHẬN CA (UC 8) -->
-                <!-- KHI CHƯA CHECK-IN -->
+                <!-- CARD 2: BƯỚC 1: ĐIỂM DANH NHẬN CA (UC 8) - ĐỦ 4 TRẠNG THÁI RÕ RÀNG -->
+                
+                <!-- TRƯỜNG HỢP 1: CHƯA ĐIỂM DANH (NOT_CHECKED_IN) -->
                 <div
                   class="shift-step-box step-checkin-pending p-3 rounded mb-3"
-                  *ngIf="!isCurrentWorkerCheckedInForSchedule(currentSchedule)"
+                  *ngIf="getAttendanceEvaluation(currentSchedule) === 'NOT_CHECKED_IN'"
                 >
                   <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-2"
@@ -734,8 +756,7 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                       >
                         <i class="bi bi-geo-alt-fill text-warning fs-5"></i>
                         <span
-                          >BƯỚC 1: ĐIỂM DANH NHẬN CA TẠI HIỆN TRƯỜNG (UC
-                          8)</span
+                          >BƯỚC 1: ĐIỂM DANH NHẬN CA TẠI HIỆN TRƯỜNG (UC 8)</span
                         >
                       </div>
                       <div class="fs-xs text-muted mt-1">
@@ -758,30 +779,107 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                   </div>
                 </div>
 
-                <!-- KHI ĐÃ CHECK-IN -->
+                <!-- TRƯỜNG HỢP 2: ĐÃ ĐIỂM DANH & CÁN BỘ DUYỆT HỢP LỆ (VALID) -->
                 <div
-                  class="shift-step-box step-checkin-done p-3 rounded mb-3"
-                  *ngIf="isCurrentWorkerCheckedInForSchedule(currentSchedule)"
+                  class="shift-step-box step-checkin-done p-3 rounded mb-3 border border-success bg-success bg-opacity-10"
+                  *ngIf="getAttendanceEvaluation(currentSchedule) === 'VALID'"
                 >
                   <div
                     class="d-flex justify-content-between align-items-center flex-wrap gap-2"
                   >
-                    <div class="d-flex align-items-center gap-2">
-                      <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="bi bi-check-circle-fill text-success fs-3"></i>
                       <div>
-                        <div class="fw-bold text-success fs-xs">
-                          BẠN ĐÃ ĐIỂM DANH CA TRỰC NÀY THÀNH CÔNG
+                        <div class="fw-bold text-success fs-xs d-flex align-items-center gap-2">
+                          <span>BẠN ĐÃ ĐIỂM DANH CA TRỰC NÀY THÀNH CÔNG</span>
+                          <span class="badge bg-success">Hợp lệ</span>
                         </div>
-                        <div class="fs-xxs text-muted">
-                          Địa điểm: {{ checkInForm.location }} • Thời gian:
-                          {{
-                            selectedPersonnelRecord?.checkInTime ||
-                              '06:45 13/10/2026'
-                          }}
+                        <div class="fs-xxs text-muted mt-1">
+                          Địa điểm: <strong>{{ getCheckInLocationForSchedule(currentSchedule) }}</strong> • 
+                          Thời gian: <strong>{{ getCheckInTimeForSchedule(currentSchedule) }}</strong>
                         </div>
                       </div>
                     </div>
-                    <span class="badge bg-success">Đã xác thực GPS</span>
+                    <div class="d-flex gap-2 align-items-center">
+                      <span class="badge bg-success bg-opacity-25 text-success border border-success">
+                        <i class="bi bi-geo-alt-fill me-1"></i>Đã xác thực GPS
+                      </span>
+                      <span class="badge bg-success text-white">
+                        <i class="bi bi-shield-check me-1"></i>Cán bộ đã duyệt
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- TRƯỜNG HỢP 3: ĐIỂM DANH BỊ ĐÁNH GIÁ KHÔNG HỢP LỆ (INVALID - CẦN GIẢI TRÌNH) -->
+                <div
+                  class="shift-step-box p-3 rounded mb-3 border border-danger bg-danger bg-opacity-10"
+                  *ngIf="getAttendanceEvaluation(currentSchedule) === 'INVALID'"
+                >
+                  <div class="d-flex align-items-start gap-3">
+                    <div class="p-2 bg-danger bg-opacity-25 rounded-circle text-danger flex-shrink-0 mt-1">
+                      <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                    </div>
+                    <div class="flex-grow-1">
+                      <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div class="fw-bold text-danger fs-sm">
+                          ĐIỂM DANH BỊ ĐÁNH GIÁ KHÔNG HỢP LỆ (CẦN GIẢI TRÌNH)
+                        </div>
+                        <span class="badge bg-danger text-white px-2 py-1">
+                          <i class="bi bi-x-circle me-1"></i>Chưa duyệt chấm công
+                        </span>
+                      </div>
+                      
+                      <div class="fs-xs text-secondary mt-1">
+                        <i class="bi bi-clock me-1"></i>Thời gian: <strong>{{ getCheckInTimeForSchedule(currentSchedule) }}</strong> • 
+                        <i class="bi bi-geo-alt me-1"></i>Vị trí: <strong>{{ getCheckInLocationForSchedule(currentSchedule) }}</strong>
+                      </div>
+
+                      <!-- Hộp chi tiết lý do Cán bộ đánh giá không hợp lệ -->
+                      <div class="p-2 px-3 mt-2 rounded bg-white border border-danger border-opacity-25 fs-xs text-danger">
+                        <div class="fw-bold mb-1">
+                          <i class="bi bi-chat-left-dots-fill me-1"></i>Lý do từ Cán bộ quản lý:
+                        </div>
+                        <div>{{ getInvalidReasonForSchedule(currentSchedule) }}</div>
+                      </div>
+
+                      <!-- Thông điệp làm rõ quyền nghiệp vụ tuần tra & báo cáo sự cố vẫn bảo lưu -->
+                      <div class="d-flex align-items-center gap-2 p-2 mt-2 rounded bg-white bg-opacity-75 border border-warning text-dark fs-xxs">
+                        <i class="bi bi-info-circle-fill text-primary fs-6 flex-shrink-0"></i>
+                        <span>
+                          <strong>Lưu ý nghiệp vụ:</strong> Việc điểm danh chưa hợp lệ <u>không chặn</u> quyền tác nghiệp hiện trường. 
+                          Bạn vẫn đi tuần và bấm nút <strong>"+ BÁO CÁO SỰ CỐ TRONG CA"</strong> ở Bước 3 bình thường để ghi nhận sự cố. 
+                          Cán bộ sẽ xem xét đối soát lại kết quả điểm danh sau ca trực.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- TRƯỜNG HỢP 4: ĐÃ CHECK-IN • ĐANG CHỜ CÁN BỘ XÁC NHẬN (PENDING) -->
+                <div
+                  class="shift-step-box p-3 rounded mb-3 border border-info bg-info bg-opacity-10"
+                  *ngIf="getAttendanceEvaluation(currentSchedule) === 'PENDING'"
+                >
+                  <div
+                    class="d-flex justify-content-between align-items-center flex-wrap gap-2"
+                  >
+                    <div class="d-flex align-items-center gap-3">
+                      <i class="bi bi-clock-history text-primary fs-3"></i>
+                      <div>
+                        <div class="fw-bold text-primary-emphasis fs-xs d-flex align-items-center gap-2">
+                          <span>ĐÃ GHI NHẬN CHECK-IN • ĐANG CHỜ CÁN BỘ DUYỆT</span>
+                          <span class="badge bg-info text-dark">Chờ thẩm tra</span>
+                        </div>
+                        <div class="fs-xxs text-muted mt-1">
+                          Địa điểm: <strong>{{ getCheckInLocationForSchedule(currentSchedule) }}</strong> • 
+                          Thời gian: <strong>{{ getCheckInTimeForSchedule(currentSchedule) }}</strong>
+                        </div>
+                      </div>
+                    </div>
+                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">
+                      <i class="bi bi-hourglass-split me-1"></i>Đang chờ Cán bộ duyệt
+                    </span>
                   </div>
                 </div>
 
@@ -3295,8 +3393,8 @@ export class FieldPortalComponent implements OnInit, AfterViewInit, OnDestroy {
   projectService = inject(ProjectService);
   route = inject(ActivatedRoute);
 
-  // Persona: TUAN_NAM | THO_HAI
-  currentPersona: 'TUAN_NAM' | 'THO_HAI' = 'TUAN_NAM';
+  // Persona: TUAN_NAM | TUAN_HANG | TUAN_TUNG | THO_HAI
+  currentPersona: 'TUAN_NAM' | 'TUAN_HANG' | 'TUAN_TUNG' | 'THO_HAI' = 'TUAN_NAM';
 
   // 3 Distinct Tabs: MY_SCHEDULE | MY_ISSUES | TASKS
   activeTab: 'MY_SCHEDULE' | 'MY_ISSUES' | 'TASKS' = 'MY_SCHEDULE';
@@ -3441,11 +3539,19 @@ export class FieldPortalComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onPersonaChange() {
+    this.viewingScheduleDetail = false;
+    this.showRouteMap = false;
+    this.selectedScheduleId = undefined;
+
     if (this.currentPersona === 'TUAN_NAM') {
       this.checkInForm.personnelId = 'ns-1';
       this.activeTab = 'MY_SCHEDULE';
-      this.viewingScheduleDetail = false;
-      this.showRouteMap = false;
+    } else if (this.currentPersona === 'TUAN_HANG') {
+      this.checkInForm.personnelId = 'ns-4';
+      this.activeTab = 'MY_SCHEDULE';
+    } else if (this.currentPersona === 'TUAN_TUNG') {
+      this.checkInForm.personnelId = 'ns-6';
+      this.activeTab = 'MY_SCHEDULE';
     } else {
       this.activeTab = 'TASKS';
     }
@@ -3576,6 +3682,71 @@ export class FieldPortalComponent implements OnInit, AfterViewInit, OnDestroy {
       return true;
     }
     return false;
+  }
+
+  // Đánh giá trạng thái điểm danh cho ca trực (Đủ 4 trạng thái: HỢP LỆ, KHÔNG HỢP LỆ, CHỜ DUYỆT, CHƯA ĐIỂM DANH)
+  getAttendanceEvaluation(
+    schedule?: PatrolSchedule,
+  ): 'VALID' | 'INVALID' | 'PENDING' | 'NOT_CHECKED_IN' {
+    if (!schedule) return 'NOT_CHECKED_IN';
+    if (!this.isCurrentWorkerCheckedInForSchedule(schedule)) {
+      return 'NOT_CHECKED_IN';
+    }
+    const pId = this.checkInForm.personnelId;
+    const member = schedule.assignedPersonnel?.find((p) => p.id === pId);
+
+    if (member) {
+      if (member.isValidAttendance === true) return 'VALID';
+      if (member.isValidAttendance === false) return 'INVALID';
+      if (member.isValidAttendance === undefined) {
+        if (schedule.id === this.todaySchedule?.id && this.selectedPersonnelRecord) {
+          if (this.selectedPersonnelRecord.isValidAttendance === true) return 'VALID';
+          if (this.selectedPersonnelRecord.isValidAttendance === false) return 'INVALID';
+        }
+        return 'PENDING';
+      }
+    }
+
+    if (schedule.id === this.todaySchedule?.id && this.selectedPersonnelRecord) {
+      if (this.selectedPersonnelRecord.isValidAttendance === true) return 'VALID';
+      if (this.selectedPersonnelRecord.isValidAttendance === false) return 'INVALID';
+    }
+
+    return 'PENDING';
+  }
+
+  getAssignedMemberForSchedule(schedule?: PatrolSchedule) {
+    if (!schedule) return undefined;
+    const pId = this.checkInForm.personnelId;
+    return schedule.assignedPersonnel?.find((p) => p.id === pId);
+  }
+
+  getCheckInTimeForSchedule(schedule?: PatrolSchedule): string {
+    const member = this.getAssignedMemberForSchedule(schedule);
+    return (
+      member?.checkInTime ||
+      (schedule?.id === this.todaySchedule?.id ? this.selectedPersonnelRecord?.checkInTime : undefined) ||
+      '06:45 13/10/2026'
+    );
+  }
+
+  getCheckInLocationForSchedule(schedule?: PatrolSchedule): string {
+    const member = this.getAssignedMemberForSchedule(schedule);
+    return (
+      member?.checkInLocation ||
+      (schedule?.id === this.todaySchedule?.id ? this.selectedPersonnelRecord?.checkInLocation : undefined) ||
+      this.checkInForm.location ||
+      schedule?.startPointName ||
+      'Hiện trường tuần kiểm'
+    );
+  }
+
+  getInvalidReasonForSchedule(schedule?: PatrolSchedule): string {
+    const member = this.getAssignedMemberForSchedule(schedule);
+    return (
+      member?.invalidReason ||
+      'Tọa độ GPS điểm danh lệch >500m so với trạm xuất phát hoặc vào ca trễ hơn quy định. Cần liên hệ Cán bộ / Trưởng đội để đối soát giải trình thực tế.'
+    );
   }
 
   // Điểm danh trực tiếp cho ca này (UC 8)

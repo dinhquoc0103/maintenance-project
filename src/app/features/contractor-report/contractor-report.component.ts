@@ -27,10 +27,20 @@ export interface ContractorAssetDraft {
   isCompleted: boolean;
   condition: AssetCondition;
   cost: number;
+  photoBeforeUrl: string;
+  photoAfterUrl: string;
   photoUrl: string;
   notes: string;
   completedDate: string;
   technicianName: string;
+  // Bổ sung thuộc tính hình học dạng tuyến / đoạn đường
+  geometryType?: 'POINT' | 'LINE';
+  lengthMeters?: number;
+  widthMeters?: number;
+  areaSquareMeters?: number;
+  chainage?: string;
+  startPoint?: { lat: number; lng: number; label?: string };
+  endPoint?: { lat: number; lng: number; label?: string };
 }
 
 @Component({
@@ -64,15 +74,6 @@ export class ContractorReportComponent implements OnInit {
   // Danh sách tài sản trong task đang soạn thảo
   assetDrafts: ContractorAssetDraft[] = [];
   activeAssetDraft: ContractorAssetDraft | null = null;
-
-  // Thư viện ảnh mẫu hiện trường để test nhanh
-  presetPhotos: { label: string; url: string }[] = [
-    { label: 'Đèn LED hoàn thiện', url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80' },
-    { label: 'Tủ điện cách điện', url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=600&q=80' },
-    { label: 'Cắt tỉa an toàn', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80' },
-    { label: 'Bồn hoa xanh tốt', url: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80' },
-    { label: 'Hố ga ngăn mùi', url: 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80' }
-  ];
 
   // Modal xem chi tiết đợt báo cáo đã gửi (Split-view)
   selectedReportDetail: ReportPayment | null = null;
@@ -202,6 +203,8 @@ export class ContractorReportComponent implements OnInit {
       task.taskAssets.forEach(ta => {
         const fullAsset = projectAssets.find(a => a.id === ta.assetId);
         const cost = this.getDefaultAssetCost(fullAsset?.layerId || ta.layerId || 'LIGHTING');
+        const before = ta.photoBeforeUrl || '';
+        const after = ta.photoAfterUrl || '';
         drafts.push({
           assetId: ta.assetId,
           assetCode: ta.assetCode,
@@ -209,16 +212,25 @@ export class ContractorReportComponent implements OnInit {
           layerId: ta.layerId || fullAsset?.layerId || 'LIGHTING',
           layerName: this.getLayerName(ta.layerId || fullAsset?.layerId || 'LIGHTING'),
           address: fullAsset?.address || 'Tuyến công trình trung tâm',
-          lat: fullAsset?.lat || 10.7758,
-          lng: fullAsset?.lng || 106.7028,
+          lat: fullAsset?.lat || ta.startPoint?.lat || 10.7758,
+          lng: fullAsset?.lng || ta.startPoint?.lng || 106.7028,
           isSelected: true, // Mặc định chọn
           isCompleted: ta.isCompleted !== undefined ? ta.isCompleted : true,
           condition: ta.condition || 'GOOD',
           cost: cost,
-          photoUrl: ta.photoAfterUrl || ta.photoBeforeUrl || this.getPresetPhotoForLayer(fullAsset?.layerId || 'LIGHTING'),
-          notes: ta.notes || 'Đã hoàn thành lắp ráp, kiểm tra kỹ thuật đạt tiêu chuẩn thiết kế.',
+          photoBeforeUrl: before,
+          photoAfterUrl: after,
+          photoUrl: after || before,
+          notes: ta.notes || 'Đã hoàn thành thi công, kiểm tra kỹ thuật đạt tiêu chuẩn thiết kế.',
           completedDate: ta.completedDate || new Date().toISOString().substring(0, 10),
-          technicianName: this.technicianGeneralName
+          technicianName: this.technicianGeneralName,
+          geometryType: ta.geometryType || fullAsset?.geometryType || (ta.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
+          lengthMeters: ta.lengthMeters || fullAsset?.lengthMeters,
+          widthMeters: ta.widthMeters || fullAsset?.widthMeters,
+          areaSquareMeters: ta.areaSquareMeters || fullAsset?.areaSquareMeters,
+          chainage: ta.chainage || fullAsset?.chainage,
+          startPoint: ta.startPoint || fullAsset?.startPoint,
+          endPoint: ta.endPoint || fullAsset?.endPoint
         });
       });
     } else if (task.assetIds && task.assetIds.length > 0) {
@@ -240,10 +252,19 @@ export class ContractorReportComponent implements OnInit {
             isCompleted: isDone || true,
             condition: 'GOOD',
             cost: cost,
-            photoUrl: this.getPresetPhotoForLayer(fullAsset.layerId),
+            photoBeforeUrl: '',
+            photoAfterUrl: '',
+            photoUrl: '',
             notes: 'Đã hoàn tất thi công bảo trì hiện trường và kiểm tra vận hành an toàn.',
             completedDate: new Date().toISOString().substring(0, 10),
-            technicianName: this.technicianGeneralName
+            technicianName: this.technicianGeneralName,
+            geometryType: fullAsset.geometryType || (fullAsset.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
+            lengthMeters: fullAsset.lengthMeters,
+            widthMeters: fullAsset.widthMeters,
+            areaSquareMeters: fullAsset.areaSquareMeters,
+            chainage: fullAsset.chainage,
+            startPoint: fullAsset.startPoint,
+            endPoint: fullAsset.endPoint
           });
         }
       });
@@ -271,26 +292,57 @@ export class ContractorReportComponent implements OnInit {
     this.assetDrafts.forEach(a => a.isSelected = selectAll);
   }
 
-  // Gán ảnh mẫu nhanh
-  setPresetPhoto(photoUrl: string) {
-    if (this.activeAssetDraft) {
-      this.activeAssetDraft.photoUrl = photoUrl;
-      this.toastService.info('Đã chọn ảnh mẫu', 'Cập nhật ảnh minh chứng hiện trường thành công');
-    }
-  }
-
-  // Upload ảnh tùy chọn từ máy tính
-  onCustomPhotoUpload(event: any) {
-    const file = event.target.files[0];
+  // Upload ảnh trước khi khắc phục từ máy tính
+  onUploadPhotoBefore(event: any) {
+    const file = event.target?.files?.[0];
     if (file && this.activeAssetDraft) {
       const reader = new FileReader();
       reader.onload = (e: any) => {
         if (this.activeAssetDraft) {
-          this.activeAssetDraft.photoUrl = e.target.result;
-          this.toastService.success('Đã tải ảnh lên', `Ảnh "${file.name}" đã được gắn kèm GPS tài sản`);
+          this.activeAssetDraft.photoBeforeUrl = e.target.result;
+          if (!this.activeAssetDraft.photoUrl) {
+            this.activeAssetDraft.photoUrl = e.target.result;
+          }
+          this.toastService.success('Đã tải ảnh trước khắc phục', `Ảnh "${file.name}" đã được tải lên thành công`);
         }
       };
       reader.readAsDataURL(file);
+    }
+    if (event.target) event.target.value = '';
+  }
+
+  // Upload ảnh sau khi khắc phục / nghiệm thu từ máy tính
+  onUploadPhotoAfter(event: any) {
+    const file = event.target?.files?.[0];
+    if (file && this.activeAssetDraft) {
+      const reader = new FileReader();
+      reader.onload = (e: any) => {
+        if (this.activeAssetDraft) {
+          this.activeAssetDraft.photoAfterUrl = e.target.result;
+          this.activeAssetDraft.photoUrl = e.target.result;
+          this.toastService.success('Đã tải ảnh sau khắc phục', `Ảnh "${file.name}" đã được tải lên thành công`);
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+    if (event.target) event.target.value = '';
+  }
+
+  // Xóa ảnh trước khi khắc phục
+  removePhotoBefore() {
+    if (this.activeAssetDraft) {
+      this.activeAssetDraft.photoBeforeUrl = '';
+      this.activeAssetDraft.photoUrl = this.activeAssetDraft.photoAfterUrl || '';
+      this.toastService.info('Đã gỡ ảnh', 'Đã gỡ ảnh trước khi khắc phục');
+    }
+  }
+
+  // Xóa ảnh sau khi khắc phục
+  removePhotoAfter() {
+    if (this.activeAssetDraft) {
+      this.activeAssetDraft.photoAfterUrl = '';
+      this.activeAssetDraft.photoUrl = this.activeAssetDraft.photoBeforeUrl || '';
+      this.toastService.info('Đã gỡ ảnh', 'Đã gỡ ảnh sau khi khắc phục');
     }
   }
 
@@ -322,12 +374,21 @@ export class ContractorReportComponent implements OnInit {
       taskId: task?.id || 't-1',
       taskTitle: task?.title || 'Công việc bảo trì',
       completedDate: a.completedDate || new Date().toISOString().substring(0, 10),
-      photoUrl: a.photoUrl,
+      photoUrl: a.photoAfterUrl || a.photoBeforeUrl || '',
+      photoBeforeUrl: a.photoBeforeUrl || '',
+      photoAfterUrl: a.photoAfterUrl || '',
       lat: a.lat,
       lng: a.lng,
       cost: Number(a.cost) || 0,
       inspectorApproved: false,
-      inspectorNotes: a.notes
+      inspectorNotes: a.notes,
+      geometryType: a.geometryType,
+      lengthMeters: a.lengthMeters,
+      widthMeters: a.widthMeters,
+      areaSquareMeters: a.areaSquareMeters,
+      chainage: a.chainage,
+      startPoint: a.startPoint,
+      endPoint: a.endPoint
     }));
 
     // Cập nhật trạng thái từng tài sản trong task tương ứng
@@ -336,9 +397,10 @@ export class ContractorReportComponent implements OnInit {
         this.selectedTaskId,
         a.assetId,
         a.isCompleted,
-        a.photoUrl,
+        a.photoAfterUrl || a.photoBeforeUrl || '',
         a.notes,
-        a.condition
+        a.condition,
+        a.photoBeforeUrl || ''
       );
     });
 
@@ -383,17 +445,8 @@ export class ContractorReportComponent implements OnInit {
       case 'LIGHTING': return 65000000;
       case 'GREENERY': return 35000000;
       case 'DRAINAGE': return 45000000;
-      case 'ROADWAY': return 50000000;
+      case 'ROADWAY': return 185000000;
       default: return 40000000;
-    }
-  }
-
-  getPresetPhotoForLayer(layerId: LayerId): string {
-    switch (layerId) {
-      case 'LIGHTING': return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
-      case 'GREENERY': return 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=600&q=80';
-      case 'DRAINAGE': return 'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&q=80';
-      default: return 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80';
     }
   }
 
