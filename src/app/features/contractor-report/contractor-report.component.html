@@ -243,21 +243,22 @@
         <button
           class="btn btn-primary"
           (click)="submitContractorReport()"
-          [disabled]="selectedDraftAssets.length === 0"
+          [disabled]="selectedBillableAssets.length === 0"
         >
           <i class="bi bi-send-check-fill me-1"></i>
           <span
-            >Gửi Báo Cáo Lên Ban QLDA ({{ selectedDraftAssets.length }})</span
+            >Gửi Báo Cáo Lên Ban QLDA ({{ selectedBillableAssets.length }})</span
           >
         </button>
       </div>
     </div>
 
-    <!-- KHỐI BƯỚC 1 & BƯỚC 2: CHỌN DỰ ÁN & CHỌN TASK -->
+    <!-- KHỐI BƯỚC 1 & BƯỚC 2: CHỌN DỰ ÁN & TIÊU ĐỀ (HÀNG TRÊN) -> CHỌN ĐẦU VIỆC (HÀNG DƯỚI FULL WIDTH) -->
     <div class="app-card selection-card mb-3">
-      <div class="selection-grid">
-        <!-- BƯỚC 1: CHỌN DỰ ÁN LIÊN QUAN NHÀ THẦU -->
-        <div class="form-group flex-1">
+      <!-- HÀNG 1: CHỌN DỰ ÁN & NHẬP TIÊU ĐỀ ĐỢT NGHIỆM THU -->
+      <div class="selection-top-row">
+        <!-- BƯỚC 1: CHỌN DỰ ÁN -->
+        <div class="form-group project-select-col">
           <label class="form-label required">
             <span class="step-num">1</span> Chọn Dự Án (Dự án thuộc nhà thầu):
           </label>
@@ -277,134 +278,226 @@
           </div>
         </div>
 
-        <!-- BƯỚC 2: CHỌN TASK (CÔNG VIỆC) -->
-        <div class="form-group flex-1">
-          <label class="form-label required">
-            <span class="step-num">2</span> Chọn Đầu Việc (Task) Cần Nghiệm Thu:
+        <!-- TIÊU ĐỀ ĐỢT BÁO CÁO NGHIỆM THU & ĐỀ NGHỊ THANH TOÁN -->
+        <div class="form-group report-title-col">
+          <label class="form-label required font-semibold">
+            <i class="bi bi-file-earmark-text-fill text-primary me-1"></i> Tiêu đề đợt nghiệm thu & thanh toán:
           </label>
-          <select
-            class="form-select form-select-lg"
-            [ngModel]="selectedTaskId"
-            (ngModelChange)="onSelectTask($event)"
-            [disabled]="availableTasks.length === 0"
-          >
-            <option value="" disabled>-- Vui lòng chọn đầu việc --</option>
-            <option *ngFor="let t of availableTasks" [value]="t.id">
-              {{ t.code }} - {{ t.title }} ({{
-                t.taskAssets && t.taskAssets.length
-                  ? t.taskAssets.length
-                  : t.assetIds.length
-              }}
-              tài sản)
-            </option>
-          </select>
-          <div class="fs-xs text-primary mt-1" *ngIf="selectedTask">
-            <i class="bi bi-shield-check"></i> Hạn chót:
-            {{ selectedTask.deadline | date: "dd/MM/yyyy" }} | Tiến độ task:
-            {{ selectedTask.progress }}%
+          <input
+            type="text"
+            class="form-control form-control-lg font-medium"
+            placeholder="VD: Báo cáo nghiệm thu & Đề nghị thanh toán Đợt 1 - Tuyến Nguyễn Huệ"
+            [(ngModel)]="reportPeriodTitle"
+          />
+          <div class="fs-xs text-muted mt-1">
+            <i class="bi bi-magic text-primary me-1"></i>Tự động cập nhật theo dự án & các đầu việc được chọn, có thể tùy chỉnh tự do.
           </div>
         </div>
       </div>
 
-      <!-- Tiêu đề đợt báo cáo -->
-      <div class="form-group mt-3 pt-3 border-top">
-        <label class="form-label required font-semibold"
-          >Tiêu đề đợt nghiệm thu & thanh toán:</label
-        >
-        <input
-          type="text"
-          class="form-control"
-          placeholder="VD: Báo cáo nghiệm thu & Đề nghị thanh toán Đợt 1 - Tuyến Nguyễn Huệ"
-          [(ngModel)]="reportPeriodTitle"
-        />
+      <!-- HÀNG 2: BƯỚC 2 - CHỌN CÁC ĐẦU VIỆC CẦN NGHIỆM THU (DÀN TRẢI FULL CHIỀU RỘNG) -->
+      <div class="tasks-fullwidth-section border-top pt-3 mt-3">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+          <div>
+            <label class="form-label required m-0">
+              <span class="step-num">2</span> Chọn Các Đầu Việc Cần Nghiệm Thu (Đa chọn):
+            </label>
+            <div class="fs-xs text-muted mt-0-5">
+              Chọn một hoặc nhiều đầu việc cùng lúc để gom tài sản lập biên bản nghiệm thu tổng hợp cho đợt này.
+            </div>
+          </div>
+          <div class="task-quick-tools fs-xs" *ngIf="availableTasks.length > 0">
+            <span class="text-muted me-2">Đã chọn: <strong class="text-primary">{{ selectedTaskIds.length }}/{{ availableTasks.length }}</strong> đầu việc</span>
+            <a class="tool-link" (click)="selectAllTasks(true)">Chọn tất cả</a> |
+            <a class="tool-link" (click)="selectAllTasks(false)">Bỏ chọn</a>
+          </div>
+        </div>
+
+        <!-- Lưới thẻ đầu việc trải rộng full-width -->
+        <div class="tasks-selection-grid" *ngIf="availableTasks.length > 0">
+          <div
+            *ngFor="let t of availableTasks"
+            class="task-select-card"
+            [class.selected]="isTaskSelected(t.id)"
+            (click)="onToggleTaskSelection(t.id)"
+          >
+            <div class="task-card-check">
+              <input
+                type="checkbox"
+                class="form-check-input"
+                [checked]="isTaskSelected(t.id)"
+                (change)="onToggleTaskSelection(t.id)"
+                (click)="$event.stopPropagation()"
+              />
+            </div>
+            <div class="task-card-content">
+              <div class="task-card-header">
+                <span class="task-code-pill">{{ t.code }}</span>
+                <span class="task-progress-pill" [class.done]="t.progress === 100">
+                  {{ t.progress }}%
+                </span>
+              </div>
+              <div class="task-card-title" [title]="t.title">{{ t.title }}</div>
+              <div class="task-card-footer">
+                <span class="task-asset-count">
+                  <i class="bi bi-box-seam me-1"></i>{{ t.taskAssets?.length || t.assetIds?.length || 0 }} tài sản
+                </span>
+                <span class="task-deadline">
+                  <i class="bi bi-calendar3 me-1"></i>{{ t.deadline | date: "dd/MM/yyyy" }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="availableTasks.length === 0" class="alert alert-warning py-2 px-3 fs-xs mt-2 m-0">
+          <i class="bi bi-exclamation-triangle-fill me-1"></i> Dự án này hiện chưa có đầu việc nào được phân công.
+        </div>
+
+        <div *ngIf="availableTasks.length > 0 && selectedTaskIds.length === 0" class="alert alert-danger py-2 px-3 fs-xs mt-2 m-0">
+          <i class="bi bi-info-circle-fill me-1"></i> Vui lòng tick chọn ít nhất 1 đầu việc (task) ở trên để nạp danh sách tài sản.
+        </div>
       </div>
     </div>
 
-    <!-- KHỐI BƯỚC 3: GIAO DIỆN TÁCH 2 BÊN (BÊN TRÁI: DANH SÁCH TÀI SẢN, BÊN PHẢI: ẢNH VÀ NHẬP KẾT QUẢ) -->
+    <!-- KHỐI BƯỚC 3: GIAO DIỆN TÁCH 2 BÊN (BÊN TRÁI: DANH SÁCH TÀI SẢN GOM THEO TASK, BÊN PHẢI: ẢNH VÀ KẾT QUẢ) -->
     <div class="workspace-split" *ngIf="assetDrafts.length > 0">
-      <!-- CỘT TRÁI: DANH SÁCH TÀI SẢN TRONG TASK -->
+      <!-- CỘT TRÁI: DANH SÁCH TÀI SẢN THEO TỪNG ĐẦU VIỆC -->
       <div class="app-card left-assets-pane">
         <div
           class="pane-header d-flex justify-content-between align-items-center mb-2"
         >
           <div>
             <h4 class="pane-title">
-              <i class="bi bi-list-check me-1"></i> Danh Sách Tài Sản Trong Task
+              <i class="bi bi-list-check me-1"></i> Danh Sách Tài Sản Theo Đầu Việc
             </h4>
-            <span class="fs-xs text-muted"
-              >Đã chọn:
-              <strong
-                >{{ selectedDraftAssets.length }} /
-                {{ assetDrafts.length }}</strong
-              >
-              tài sản</span
-            >
+            <div class="fs-xs text-muted mt-1">
+              Đề nghị nghiệm thu:
+              <strong class="text-success">{{ selectedBillableAssets.length }}</strong> / {{ assetDrafts.length }} tài sản
+              <span *ngIf="uncompletedAssets.length > 0" class="text-muted">
+                • <span class="text-warning-dark font-medium">{{ uncompletedAssets.length }} chưa HT (đợt sau)</span>
+              </span>
+            </div>
           </div>
           <div class="select-all-tools fs-xs">
-            <a class="tool-link" (click)="selectAllAssets(true)">Chọn hết</a> |
-            <a class="tool-link" (click)="selectAllAssets(false)">Bỏ chọn</a>
+            <span class="collapse-quick-tools me-2">
+              <a class="tool-link" (click)="collapseAllTaskGroups(false)">Mở hết</a> |
+              <a class="tool-link" (click)="collapseAllTaskGroups(true)">Thu gọn</a>
+            </span>
+            <span class="text-muted">•</span>
+            <span class="ms-2">
+              <a class="tool-link" (click)="selectAllAssets(true)" title="Chỉ chọn những tài sản đã hoàn thành thi công">Chọn hết HT</a> |
+              <a class="tool-link" (click)="selectAllAssets(false)">Bỏ chọn</a>
+            </span>
           </div>
         </div>
 
         <div class="assets-scroll-box">
-          <div
-            *ngFor="let item of assetDrafts"
-            class="asset-draft-card"
-            [class.active]="activeAssetDraft?.assetId === item.assetId"
-            [class.selected-for-report]="item.isSelected"
-            (click)="selectActiveAsset(item)"
-          >
-            <!-- Checkbox đưa vào báo cáo -->
-            <div class="checkbox-col" (click)="$event.stopPropagation()">
-              <input
-                type="checkbox"
-                class="form-check-input"
-                [checked]="item.isSelected"
-                (change)="toggleAssetSelection(item)"
-                title="Đưa vào báo cáo nghiệm thu"
-              />
+          <!-- TỪNG NHÓM ĐẦU VIỆC (TASK ASSET GROUP) -->
+          <div *ngFor="let group of taskAssetGroups" class="task-asset-group-block">
+            <!-- Header Nhóm Task (Click để Đóng / Mở collapse) -->
+            <div
+              class="task-group-header cursor-pointer"
+              [class.is-collapsed]="isTaskGroupCollapsed(group.taskId)"
+              (click)="toggleTaskGroupCollapse(group.taskId)"
+              title="Nhấn để đóng/mở danh sách tài sản của đầu việc này"
+            >
+              <div class="group-title-wrap">
+                <i
+                  class="bi collapse-chevron"
+                  [ngClass]="isTaskGroupCollapsed(group.taskId) ? 'bi-chevron-right' : 'bi-chevron-down'"
+                ></i>
+                <span class="group-task-code">{{ group.taskCode }}</span>
+                <span class="group-task-title" [title]="group.taskTitle">{{ group.taskTitle }}</span>
+              </div>
+              <div class="group-badge-wrap" (click)="$event.stopPropagation()">
+                <span class="badge group-stat-badge" [class.badge-done]="group.completedAssets === group.totalAssets">
+                  {{ group.completedAssets }}/{{ group.totalAssets }} HT
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-primary py-0 px-1 group-quick-btn"
+                  (click)="toggleTaskGroupSelection(group, true)"
+                  title="Chọn tất cả tài sản đã hoàn thành của đầu việc này"
+                >
+                  Chọn HT
+                </button>
+              </div>
             </div>
 
-            <!-- Nội dung tóm tắt tài sản -->
-            <div class="asset-info-col">
-              <div class="top-row">
-                <span class="asset-code-badge">{{ item.assetCode }}</span>
-                <span
-                  class="badge"
-                  [ngClass]="getLayerBadgeClass(item.layerId)"
-                  >{{ item.layerName }}</span
-                >
-                <span class="badge badge-road-line" *ngIf="item.geometryType === 'LINE' || item.layerId === 'ROADWAY'">
-                  <i class="bi bi-bezier2 me-1"></i>Tuyến • {{ item.lengthMeters }}m
-                </span>
-                <span class="status-tag" [class.done]="item.isCompleted">
-                  {{ item.isCompleted ? "✓ Hoàn thành" : "Đang xử lý" }}
-                </span>
-              </div>
-              <div class="asset-name">{{ item.assetName }}</div>
-              <div class="road-linear-meta" *ngIf="item.geometryType === 'LINE' || item.chainage">
-                <i class="bi bi-signpost-2-fill me-1"></i>Lý trình: <strong>{{ item.chainage }}</strong>
-                <span *ngIf="item.areaSquareMeters" class="ms-1">• DT: {{ item.areaSquareMeters | number }} m²</span>
-              </div>
-              <div class="asset-address text-muted fs-xs">
-                <i class="bi bi-geo-alt"></i> {{ item.address }}
-              </div>
-              <div class="bottom-row mt-1">
-                <span
-                  class="condition-badge"
-                  [class]="'cond-' + item.condition.toLowerCase()"
-                >
-                  {{
-                    item.condition === "GOOD"
-                      ? "🟢 Tốt"
-                      : item.condition === "NORMAL"
-                        ? "🔵 Bình thường"
-                        : item.condition === "DAMAGED"
-                          ? "🔴 Hư hỏng"
-                          : "🟠 Cần thay"
-                  }}
-                </span>
-                <span class="cost-tag">{{ formatMoney(item.cost) }} đ</span>
+            <!-- Danh sách tài sản trong nhóm task này (Ẩn khi bị thu gọn) -->
+            <div class="group-assets-list" *ngIf="!isTaskGroupCollapsed(group.taskId)">
+              <div
+                *ngFor="let item of group.assets"
+                class="asset-draft-card"
+                [class.active]="activeAssetDraft?.assetId === item.assetId && activeAssetDraft?.taskId === item.taskId"
+                [class.selected-for-report]="item.isSelected && item.isCompleted"
+                [class.uncompleted-card]="!item.isCompleted"
+                (click)="selectActiveAsset(item)"
+              >
+                <!-- Checkbox đưa vào báo cáo -->
+                <div class="checkbox-col" (click)="$event.stopPropagation()">
+                  <input
+                    type="checkbox"
+                    class="form-check-input"
+                    [checked]="item.isSelected && item.isCompleted"
+                    [disabled]="!item.isCompleted"
+                    (change)="toggleAssetSelection(item)"
+                    [title]="item.isCompleted ? 'Đưa vào báo cáo nghiệm thu' : 'Chưa hoàn thành thi công - không thể đưa vào nghiệm thu đợt này'"
+                  />
+                </div>
+
+                <!-- Nội dung tóm tắt tài sản -->
+                <div class="asset-info-col">
+                  <div class="top-row">
+                    <span class="asset-code-badge">{{ item.assetCode }}</span>
+                    <span
+                      class="badge"
+                      [ngClass]="getLayerBadgeClass(item.layerId)"
+                      >{{ item.layerName }}</span
+                    >
+                    <span class="badge badge-road-line" *ngIf="item.geometryType === 'LINE' || item.layerId === 'ROADWAY'">
+                      <i class="bi bi-bezier2 me-1"></i>Tuyến • {{ item.lengthMeters }}m
+                    </span>
+                    <span class="status-tag" [class.done]="item.isCompleted" [class.pending]="!item.isCompleted">
+                      {{ item.isCompleted ? "✓ Hoàn thành" : "Chưa hoàn thành" }}
+                    </span>
+                  </div>
+                  <div class="asset-name">{{ item.assetName }}</div>
+                  <div class="road-linear-meta" *ngIf="item.geometryType === 'LINE'">
+                    <i class="bi bi-bezier2 me-1"></i>Đoạn tuyến: <strong>{{ item.lengthMeters }}m</strong>
+                    <span *ngIf="item.areaSquareMeters" class="ms-1">• DT: {{ item.areaSquareMeters | number }} m²</span>
+                  </div>
+                  <div class="asset-address text-muted fs-xs">
+                    <i class="bi bi-geo-alt"></i> {{ item.address }}
+                  </div>
+                  <div class="bottom-row mt-1">
+                    <span
+                      class="condition-badge"
+                      [class]="'cond-' + item.condition.toLowerCase()"
+                    >
+                      {{
+                        item.condition === "GOOD"
+                          ? "🟢 Tốt"
+                          : item.condition === "NORMAL"
+                            ? "🔵 Bình thường"
+                            : item.condition === "DAMAGED"
+                              ? "🔴 Hư hỏng"
+                              : "🟠 Cần thay"
+                      }}
+                    </span>
+                    <span class="cost-tag" [class.text-muted]="!item.isCompleted">
+                      <ng-container *ngIf="item.isCompleted; else uncompletedCost">
+                        {{ formatMoney(item.cost) }} đ
+                      </ng-container>
+                      <ng-template #uncompletedCost>
+                        <span class="fs-xs text-muted" title="Chưa hoàn thành thi công nên không tính tiền đợt này">
+                          0 đ <span class="badge-pending-tag">(Đợt sau)</span>
+                        </span>
+                      </ng-template>
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -421,6 +514,8 @@
               <i class="bi bi-camera-fill me-1"></i> Báo Cáo Kết Quả & Ảnh Minh Chứng
             </h4>
             <div class="fs-xs text-muted d-flex align-items-center gap-2 flex-wrap">
+              <span>Thuộc đầu việc: <strong class="text-primary">{{ activeAssetDraft.taskCode }} - {{ activeAssetDraft.taskTitle }}</strong></span>
+              <span>•</span>
               <span>Tài sản: <strong>{{ activeAssetDraft.assetCode }} - {{ activeAssetDraft.assetName }}</strong></span>
               <span class="badge badge-road-line" *ngIf="activeAssetDraft.geometryType === 'LINE' || activeAssetDraft.layerId === 'ROADWAY'">
                 <i class="bi bi-bezier2 me-1"></i>Tài sản dạng tuyến đường (LineString)
@@ -428,8 +523,8 @@
             </div>
           </div>
           <div class="d-flex align-items-center gap-2">
-            <span class="badge bg-light text-primary border py-1 px-2 fs-xs" *ngIf="activeAssetDraft.chainage">
-              <i class="bi bi-signpost-split text-purple me-1"></i> {{ activeAssetDraft.chainage }}
+            <span class="badge bg-light text-primary border py-1 px-2 fs-xs" *ngIf="activeAssetDraft.geometryType === 'LINE' && activeAssetDraft.lengthMeters">
+              <i class="bi bi-bezier2 text-purple me-1"></i> Chiều dài: {{ activeAssetDraft.lengthMeters }}m
             </span>
             <span class="badge bg-light text-primary border py-1 px-2 fs-xs">
               <i class="bi bi-geo-alt-fill text-danger me-1"></i> GPS: {{ activeAssetDraft.lat }}, {{ activeAssetDraft.lng }}
@@ -438,6 +533,16 @@
         </div>
 
         <div class="detail-content-scroll">
+          <!-- Cảnh báo khi tài sản chưa hoàn thành -->
+          <div class="uncompleted-asset-alert mb-3" *ngIf="!activeAssetDraft.isCompleted">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+              <strong class="text-warning-dark">Tài sản này hiện đánh dấu "Chưa hoàn thành thi công"</strong>
+            </div>
+            <div class="fs-xs text-muted">
+              Tài sản này sẽ <strong>không được tính tiền</strong> và <strong>không nộp lên Ban QLDA</strong> trong đợt báo cáo này (để lại cho các đợt nghiệm thu tiếp theo). Nếu thực tế tại hiện trường đã thi công xong, vui lòng gạt công tắc <strong>"Đã hoàn thành thi công"</strong> ở bên dưới và tải đủ ảnh minh chứng.
+            </div>
+          </div>
           <!-- TẠM ẨN: Khối Thông Số Kỹ Thuật Đoạn Tuyến / Mặt Đường (giữ nguyên không xóa theo yêu cầu) -->
           <!--
           <div class="road-linear-specs-card mb-3" *ngIf="activeAssetDraft.geometryType === 'LINE' || activeAssetDraft.layerId === 'ROADWAY'">
@@ -496,7 +601,7 @@
                     <img [src]="activeAssetDraft.photoBeforeUrl" alt="Ảnh trước khắc phục" class="evidence-img" />
                     <div class="gps-watermark">
                       <div><i class="bi bi-clock-history"></i> Hiện trạng: Trước thi công</div>
-                      <div *ngIf="activeAssetDraft.chainage"><i class="bi bi-signpost-2"></i> Lý trình: {{ activeAssetDraft.chainage }}</div>
+                      <div *ngIf="activeAssetDraft.geometryType === 'LINE'"><i class="bi bi-bezier2"></i> Tuyến: {{ activeAssetDraft.lengthMeters }}m</div>
                       <div><i class="bi bi-geo-alt-fill"></i> Tọa độ GPS: {{ activeAssetDraft.lat }}, {{ activeAssetDraft.lng }}</div>
                       <div><i class="bi bi-tag-fill"></i> Mã tài sản: {{ activeAssetDraft.assetCode }}</div>
                       <div><i class="bi bi-building"></i> Nhà thầu: {{ selectedContractor }}</div>
@@ -594,19 +699,21 @@
                 <div class="form-check form-switch pt-1">
                   <input
                     type="checkbox"
-                    class="form-check-input"
+                    class="form-check-input cursor-pointer"
                     id="chkCompleted"
                     [(ngModel)]="activeAssetDraft.isCompleted"
+                    (ngModelChange)="onAssetCompletionToggle(activeAssetDraft)"
                   />
                   <label
-                    class="form-check-label fw-bold"
+                    class="form-check-label fw-bold cursor-pointer"
                     for="chkCompleted"
                     [class.text-success]="activeAssetDraft.isCompleted"
+                    [class.text-muted]="!activeAssetDraft.isCompleted"
                   >
                     {{
                       activeAssetDraft.isCompleted
-                        ? "✓ Đã hoàn thành thi công"
-                        : "Chưa hoàn thành"
+                        ? "✓ Đã hoàn thành thi công (Tính nghiệm thu)"
+                        : "Chưa hoàn thành (Để lại đợt sau)"
                     }}
                   </label>
                 </div>
@@ -692,26 +799,31 @@
       <i class="bi bi-arrow-up-circle fs-2 text-primary mb-2 d-block"></i>
       <h4 class="text-dark">Vui lòng chọn Dự án và Đầu việc (Task) ở trên</h4>
       <p class="text-muted">
-        Hệ thống sẽ tải danh sách các tài sản được gắn trong task để bạn báo cáo
-        kết quả và đính kèm ảnh minh chứng.
+        Hệ thống sẽ tải danh sách các tài sản được gắn trong các đầu việc để bạn kiểm tra,
+        báo cáo kết quả và đính kèm ảnh minh chứng trước khi nộp.
       </p>
     </div>
 
     <!-- THANH FOOTER TỔNG KẾT & NÚT GỬI BÁO CÁO (STICKY BOTTOM) -->
     <div class="sticky-footer-bar" *ngIf="assetDrafts.length > 0">
       <div class="footer-summary">
-        <div>
-          Số lượng tài sản đề nghị:
-          <strong class="text-primary"
-            >{{ selectedDraftAssets.length }} / {{ assetDrafts.length }}</strong
-          >
-          tài sản
-        </div>
-        <div>
-          Tổng kinh phí đề nghị thanh toán:
-          <strong class="text-danger fs-5"
-            >{{ formatMoney(totalDraftAmount) }} VNĐ</strong
-          >
+        <div class="footer-summary-items">
+          <div class="sum-item">
+            Đầu việc: <strong class="text-primary">{{ selectedTaskIds.length }}</strong> task
+          </div>
+          <div class="sum-divider"></div>
+          <div class="sum-item">
+            Tài sản nghiệm thu:
+            <strong class="text-success fs-6">{{ selectedBillableAssets.length }}</strong> / {{ assetDrafts.length }} tài sản
+            <span class="uncompleted-hint" *ngIf="uncompletedAssets.length > 0">
+              ({{ uncompletedAssets.length }} tài sản chưa HT giữ lại đợt sau)
+            </span>
+          </div>
+          <div class="sum-divider"></div>
+          <div class="sum-item">
+            Tổng kinh phí đề nghị:
+            <strong class="text-danger fs-5">{{ formatMoney(totalDraftAmount) }} VNĐ</strong>
+          </div>
         </div>
       </div>
 
@@ -721,14 +833,12 @@
         </button>
         <button
           class="btn btn-primary"
-          [disabled]="selectedDraftAssets.length === 0 || !reportPeriodTitle"
+          [disabled]="selectedBillableAssets.length === 0 || !reportPeriodTitle"
           (click)="submitContractorReport()"
         >
           <i class="bi bi-send-check-fill me-1"></i>
           <span
-            >Gửi Báo Cáo Nghiệm Thu Lên Ban QLDA ({{
-              selectedDraftAssets.length
-            }})</span
+            >Gửi Báo Cáo Nghiệm Thu Lên Ban QLDA ({{ selectedBillableAssets.length }})</span
           >
         </button>
       </div>
@@ -786,6 +896,9 @@
                   [ngClass]="getLayerBadgeClass(item.layerId)"
                   >{{ item.layerName }}</span
                 >
+                <span class="badge bg-light text-dark border fs-xs task-source-badge" *ngIf="item.taskTitle" [title]="item.taskTitle">
+                  <i class="bi bi-list-task me-1"></i>{{ item.taskTitle }}
+                </span>
                 <span
                   class="status-indicator"
                   [class.approved]="item.inspectorApproved"
@@ -842,7 +955,7 @@
                 <img [src]="activeInspectionItem.photoBeforeUrl" alt="Ảnh trước khắc phục" class="inspection-img" />
                 <div class="photo-watermark">
                   <div><i class="bi bi-clock-history"></i> Hiện trạng ban đầu</div>
-                  <div *ngIf="activeInspectionItem.chainage"><i class="bi bi-signpost-2"></i> {{ activeInspectionItem.chainage }}</div>
+                  <div *ngIf="activeInspectionItem.geometryType === 'LINE'"><i class="bi bi-bezier2"></i> Tuyến: {{ activeInspectionItem.lengthMeters }}m</div>
                   <div><i class="bi bi-geo-alt-fill"></i> GPS: {{ activeInspectionItem.lat }}, {{ activeInspectionItem.lng }}</div>
                 </div>
               </div>
@@ -876,11 +989,12 @@
               <span class="label">Tên tài sản:</span>
               <span class="val font-semibold">{{ activeInspectionItem.assetName }}</span>
             </div>
-            <div class="meta-row" *ngIf="activeInspectionItem.geometryType === 'LINE' || activeInspectionItem.chainage">
+            <div class="meta-row" *ngIf="activeInspectionItem.geometryType === 'LINE'">
               <span class="label">Thông số tuyến:</span>
               <span class="val text-primary font-bold">
-                Lý trình: {{ activeInspectionItem.chainage }} • Dài: {{ activeInspectionItem.lengthMeters }}m
-                <span *ngIf="activeInspectionItem.areaSquareMeters">• Rộng: {{ activeInspectionItem.widthMeters }}m ({{ activeInspectionItem.areaSquareMeters | number }} m²)</span>
+                Chiều dài: {{ activeInspectionItem.lengthMeters }}m
+                <span *ngIf="activeInspectionItem.widthMeters">• Rộng: {{ activeInspectionItem.widthMeters }}m</span>
+                <span *ngIf="activeInspectionItem.areaSquareMeters"> ({{ activeInspectionItem.areaSquareMeters | number }} m²)</span>
               </span>
             </div>
             <div class="meta-row">

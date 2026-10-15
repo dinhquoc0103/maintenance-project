@@ -15,6 +15,9 @@ import {
 } from '../../core/models/maintenance.model';
 
 export interface ContractorAssetDraft {
+  taskId: string;
+  taskCode: string;
+  taskTitle: string;
   assetId: string;
   assetCode: string;
   assetName: string;
@@ -43,6 +46,16 @@ export interface ContractorAssetDraft {
   endPoint?: { lat: number; lng: number; label?: string };
 }
 
+export interface TaskAssetGroup {
+  taskId: string;
+  taskCode: string;
+  taskTitle: string;
+  totalAssets: number;
+  completedAssets: number;
+  selectedAssets: number;
+  assets: ContractorAssetDraft[];
+}
+
 @Component({
   selector: 'app-contractor-report',
   standalone: true,
@@ -67,11 +80,11 @@ export class ContractorReportComponent implements OnInit {
 
   // State màn hình tạo báo cáo
   selectedProjectId: string = '';
-  selectedTaskId: string = '';
+  selectedTaskIds: string[] = []; // Hỗ trợ chọn nhiều đầu việc
   reportPeriodTitle: string = '';
   technicianGeneralName: string = 'Kỹ sư Trần Đình Nam (Tổ trưởng thi công)';
 
-  // Danh sách tài sản trong task đang soạn thảo
+  // Danh sách tài sản trong các task đang soạn thảo
   assetDrafts: ContractorAssetDraft[] = [];
   activeAssetDraft: ContractorAssetDraft | null = null;
 
@@ -124,18 +137,67 @@ export class ContractorReportComponent implements OnInit {
     return this.projectService.getProjectTasks(this.selectedProjectId);
   }
 
+  // Danh sách các task đang được chọn
+  get selectedTasks(): MaintenanceTask[] {
+    return this.availableTasks.filter(t => this.selectedTaskIds.includes(t.id));
+  }
+
+  // Task đại diện (đầu tiên nếu có)
   get selectedTask(): MaintenanceTask | undefined {
-    return this.availableTasks.find(t => t.id === this.selectedTaskId);
+    return this.selectedTasks.length > 0 ? this.selectedTasks[0] : undefined;
   }
 
-  // Các tài sản được tick chọn đưa vào báo cáo
+  // Nhóm tài sản theo từng đầu việc để hiển thị rõ ràng trên cột trái
+  get taskAssetGroups(): TaskAssetGroup[] {
+    if (this.assetDrafts.length === 0) return [];
+
+    const taskMap = new Map<string, ContractorAssetDraft[]>();
+    this.assetDrafts.forEach(draft => {
+      if (!taskMap.has(draft.taskId)) {
+        taskMap.set(draft.taskId, []);
+      }
+      taskMap.get(draft.taskId)!.push(draft);
+    });
+
+    const groups: TaskAssetGroup[] = [];
+    this.availableTasks.forEach(task => {
+      if (taskMap.has(task.id)) {
+        const assets = taskMap.get(task.id)!;
+        const completedCount = assets.filter(a => a.isCompleted).length;
+        const selectedCount = assets.filter(a => a.isSelected && a.isCompleted).length;
+        groups.push({
+          taskId: task.id,
+          taskCode: task.code,
+          taskTitle: task.title,
+          totalAssets: assets.length,
+          completedAssets: completedCount,
+          selectedAssets: selectedCount,
+          assets
+        });
+      }
+    });
+
+    return groups;
+  }
+
+  // Các tài sản hợp lệ đề nghị nghiệm thu & thanh toán (BẮT BUỘC ĐÃ HOÀN THÀNH & ĐƯỢC CHỌN)
+  get selectedBillableAssets(): ContractorAssetDraft[] {
+    return this.assetDrafts.filter(a => a.isSelected && a.isCompleted);
+  }
+
+  // Alias để tương thích an toàn nếu có chỗ nào trong code còn dùng selectedDraftAssets
   get selectedDraftAssets(): ContractorAssetDraft[] {
-    return this.assetDrafts.filter(a => a.isSelected);
+    return this.selectedBillableAssets;
   }
 
-  // Tổng kinh phí đề nghị của các tài sản được tick chọn
+  // Tổng số tài sản chưa hoàn thành (được giữ lại đợt sau)
+  get uncompletedAssets(): ContractorAssetDraft[] {
+    return this.assetDrafts.filter(a => !a.isCompleted);
+  }
+
+  // Tổng kinh phí đề nghị của các tài sản đã hoàn thành được chọn
   get totalDraftAmount(): number {
-    return this.selectedDraftAssets.reduce((sum, a) => sum + (Number(a.cost) || 0), 0);
+    return this.selectedBillableAssets.reduce((sum, a) => sum + (Number(a.cost) || 0), 0);
   }
 
   // Đổi nhà thầu đang đăng nhập/thao tác
@@ -144,9 +206,10 @@ export class ContractorReportComponent implements OnInit {
     const projects = this.contractorProjects;
     if (projects.length > 0) {
       this.selectedProjectId = projects[0].id;
-      this.selectedTaskId = '';
+      this.selectedTaskIds = this.availableTasks.map(t => t.id);
       this.assetDrafts = [];
       this.activeAssetDraft = null;
+      this.loadAssetsForSelectedTasks();
     }
   }
 
@@ -157,7 +220,8 @@ export class ContractorReportComponent implements OnInit {
       this.selectedProjectId = this.contractorProjects[0].id;
     }
     if (this.availableTasks.length > 0) {
-      this.onSelectTask(this.availableTasks[0].id);
+      this.selectedTaskIds = this.availableTasks.map(t => t.id);
+      this.loadAssetsForSelectedTasks();
     }
   }
 
@@ -165,26 +229,69 @@ export class ContractorReportComponent implements OnInit {
     this.currentView = 'LIST';
     this.assetDrafts = [];
     this.activeAssetDraft = null;
+    this.selectedTaskIds = [];
   }
 
   // Khi chọn Dự án
   onSelectProject(projectId: string) {
     this.selectedProjectId = projectId;
-    this.selectedTaskId = '';
+    this.selectedTaskIds = this.availableTasks.map(t => t.id);
     this.assetDrafts = [];
     this.activeAssetDraft = null;
+    this.loadAssetsForSelectedTasks();
+  }
 
-    if (this.availableTasks.length > 0) {
-      this.onSelectTask(this.availableTasks[0].id);
+  // Kiểm tra 1 task có đang được chọn hay không
+  isTaskSelected(taskId: string): boolean {
+    return this.selectedTaskIds.includes(taskId);
+  }
+
+  // Bật/tắt chọn 1 đầu việc
+  onToggleTaskSelection(taskId: string) {
+    if (this.selectedTaskIds.includes(taskId)) {
+      this.selectedTaskIds = this.selectedTaskIds.filter(id => id !== taskId);
+    } else {
+      this.selectedTaskIds = [...this.selectedTaskIds, taskId];
+    }
+    this.loadAssetsForSelectedTasks();
+  }
+
+  // Chọn tất cả đầu việc / Bỏ chọn tất cả
+  selectAllTasks(selectAll: boolean) {
+    if (selectAll) {
+      this.selectedTaskIds = this.availableTasks.map(t => t.id);
+    } else {
+      this.selectedTaskIds = [];
+    }
+    this.loadAssetsForSelectedTasks();
+  }
+
+  // Quản lý trạng thái đóng/mở (collapse) cho từng nhóm đầu việc
+  collapsedTaskIds: Set<string> = new Set<string>();
+
+  isTaskGroupCollapsed(taskId: string): boolean {
+    return this.collapsedTaskIds.has(taskId);
+  }
+
+  toggleTaskGroupCollapse(taskId: string) {
+    if (this.collapsedTaskIds.has(taskId)) {
+      this.collapsedTaskIds.delete(taskId);
+    } else {
+      this.collapsedTaskIds.add(taskId);
     }
   }
 
-  // Khi chọn Task
-  onSelectTask(taskId: string) {
-    this.selectedTaskId = taskId;
-    const task = this.selectedTask;
-    const project = this.selectedProject;
-    if (!task) {
+  collapseAllTaskGroups(collapse: boolean) {
+    if (collapse) {
+      this.availableTasks.forEach(t => this.collapsedTaskIds.add(t.id));
+    } else {
+      this.collapsedTaskIds.clear();
+    }
+  }
+
+  // Tải danh sách tài sản từ tất cả các task đã chọn
+  loadAssetsForSelectedTasks() {
+    if (this.selectedTaskIds.length === 0) {
       this.assetDrafts = [];
       this.activeAssetDraft = null;
       return;
@@ -192,86 +299,120 @@ export class ContractorReportComponent implements OnInit {
 
     // Tự động sinh tiêu đề đợt báo cáo mẫu
     const reportCount = this.contractorReports.length + 1;
-    this.reportPeriodTitle = `Báo cáo nghiệm thu & Đề nghị thanh toán Đợt ${reportCount} - ${task.title}`;
-
-    // Lấy danh sách tài sản từ task (TaskAssetItem hoặc assetIds)
-    const projectAssets = this.projectService.getProjectAssets(task.projectId);
-    const drafts: ContractorAssetDraft[] = [];
-
-    // Duyệt qua danh sách tài sản của task
-    if (task.taskAssets && task.taskAssets.length > 0) {
-      task.taskAssets.forEach(ta => {
-        const fullAsset = projectAssets.find(a => a.id === ta.assetId);
-        const cost = this.getDefaultAssetCost(fullAsset?.layerId || ta.layerId || 'LIGHTING');
-        const before = ta.photoBeforeUrl || '';
-        const after = ta.photoAfterUrl || '';
-        drafts.push({
-          assetId: ta.assetId,
-          assetCode: ta.assetCode,
-          assetName: ta.assetName,
-          layerId: ta.layerId || fullAsset?.layerId || 'LIGHTING',
-          layerName: this.getLayerName(ta.layerId || fullAsset?.layerId || 'LIGHTING'),
-          address: fullAsset?.address || 'Tuyến công trình trung tâm',
-          lat: fullAsset?.lat || ta.startPoint?.lat || 10.7758,
-          lng: fullAsset?.lng || ta.startPoint?.lng || 106.7028,
-          isSelected: true, // Mặc định chọn
-          isCompleted: ta.isCompleted !== undefined ? ta.isCompleted : true,
-          condition: ta.condition || 'GOOD',
-          cost: cost,
-          photoBeforeUrl: before,
-          photoAfterUrl: after,
-          photoUrl: after || before,
-          notes: ta.notes || 'Đã hoàn thành thi công, kiểm tra kỹ thuật đạt tiêu chuẩn thiết kế.',
-          completedDate: ta.completedDate || new Date().toISOString().substring(0, 10),
-          technicianName: this.technicianGeneralName,
-          geometryType: ta.geometryType || fullAsset?.geometryType || (ta.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
-          lengthMeters: ta.lengthMeters || fullAsset?.lengthMeters,
-          widthMeters: ta.widthMeters || fullAsset?.widthMeters,
-          areaSquareMeters: ta.areaSquareMeters || fullAsset?.areaSquareMeters,
-          chainage: ta.chainage || fullAsset?.chainage,
-          startPoint: ta.startPoint || fullAsset?.startPoint,
-          endPoint: ta.endPoint || fullAsset?.endPoint
-        });
-      });
-    } else if (task.assetIds && task.assetIds.length > 0) {
-      task.assetIds.forEach(aid => {
-        const fullAsset = projectAssets.find(a => a.id === aid);
-        if (fullAsset) {
-          const isDone = task.completedAssetIds.includes(aid);
-          const cost = this.getDefaultAssetCost(fullAsset.layerId);
-          drafts.push({
-            assetId: fullAsset.id,
-            assetCode: fullAsset.code,
-            assetName: fullAsset.name,
-            layerId: fullAsset.layerId,
-            layerName: fullAsset.layerName,
-            address: fullAsset.address,
-            lat: fullAsset.lat,
-            lng: fullAsset.lng,
-            isSelected: true,
-            isCompleted: isDone || true,
-            condition: 'GOOD',
-            cost: cost,
-            photoBeforeUrl: '',
-            photoAfterUrl: '',
-            photoUrl: '',
-            notes: 'Đã hoàn tất thi công bảo trì hiện trường và kiểm tra vận hành an toàn.',
-            completedDate: new Date().toISOString().substring(0, 10),
-            technicianName: this.technicianGeneralName,
-            geometryType: fullAsset.geometryType || (fullAsset.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
-            lengthMeters: fullAsset.lengthMeters,
-            widthMeters: fullAsset.widthMeters,
-            areaSquareMeters: fullAsset.areaSquareMeters,
-            chainage: fullAsset.chainage,
-            startPoint: fullAsset.startPoint,
-            endPoint: fullAsset.endPoint
-          });
-        }
-      });
+    if (this.selectedTasks.length === 1) {
+      this.reportPeriodTitle = `Báo cáo nghiệm thu & Đề nghị thanh toán Đợt ${reportCount} - ${this.selectedTasks[0].title}`;
+    } else {
+      this.reportPeriodTitle = `Báo cáo nghiệm thu & Đề nghị thanh toán Đợt ${reportCount} - Tổng hợp ${this.selectedTasks.length} đầu việc (${this.selectedProject?.name || ''})`;
     }
 
+    // Giữ lại các thay đổi đã nhập nếu tài sản đã tồn tại trong drafts
+    const existingMap = new Map<string, ContractorAssetDraft>();
+    this.assetDrafts.forEach(d => {
+      existingMap.set(`${d.taskId}_${d.assetId}`, d);
+    });
+
+    const drafts: ContractorAssetDraft[] = [];
+
+    // Duyệt qua tất cả các đầu việc được chọn
+    this.selectedTasks.forEach(task => {
+      const projectAssets = this.projectService.getProjectAssets(task.projectId);
+
+      if (task.taskAssets && task.taskAssets.length > 0) {
+        task.taskAssets.forEach(ta => {
+          const key = `${task.id}_${ta.assetId}`;
+          if (existingMap.has(key)) {
+            drafts.push(existingMap.get(key)!);
+          } else {
+            const fullAsset = projectAssets.find(a => a.id === ta.assetId);
+            const cost = this.getDefaultAssetCost(fullAsset?.layerId || ta.layerId || 'LIGHTING');
+            const before = ta.photoBeforeUrl || '';
+            const after = ta.photoAfterUrl || '';
+            const isDone = ta.isCompleted !== undefined ? ta.isCompleted : true;
+
+            drafts.push({
+              taskId: task.id,
+              taskCode: task.code,
+              taskTitle: task.title,
+              assetId: ta.assetId,
+              assetCode: ta.assetCode,
+              assetName: ta.assetName,
+              layerId: ta.layerId || fullAsset?.layerId || 'LIGHTING',
+              layerName: this.getLayerName(ta.layerId || fullAsset?.layerId || 'LIGHTING'),
+              address: fullAsset?.address || 'Tuyến công trình trung tâm',
+              lat: fullAsset?.lat || ta.startPoint?.lat || 10.7758,
+              lng: fullAsset?.lng || ta.startPoint?.lng || 106.7028,
+              isSelected: isDone, // CHỈ mặc định chọn nếu tài sản đã hoàn thành
+              isCompleted: isDone,
+              condition: ta.condition || 'GOOD',
+              cost: cost,
+              photoBeforeUrl: before,
+              photoAfterUrl: after,
+              photoUrl: after || before,
+              notes: ta.notes || 'Đã hoàn thành thi công, kiểm tra kỹ thuật đạt tiêu chuẩn thiết kế.',
+              completedDate: ta.completedDate || new Date().toISOString().substring(0, 10),
+              technicianName: this.technicianGeneralName,
+              geometryType: ta.geometryType || fullAsset?.geometryType || (ta.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
+              lengthMeters: ta.lengthMeters || fullAsset?.lengthMeters,
+              widthMeters: ta.widthMeters || fullAsset?.widthMeters,
+              areaSquareMeters: ta.areaSquareMeters || fullAsset?.areaSquareMeters,
+              chainage: ta.chainage || fullAsset?.chainage,
+              startPoint: ta.startPoint || fullAsset?.startPoint,
+              endPoint: ta.endPoint || fullAsset?.endPoint
+            });
+          }
+        });
+      } else if (task.assetIds && task.assetIds.length > 0) {
+        task.assetIds.forEach(aid => {
+          const key = `${task.id}_${aid}`;
+          if (existingMap.has(key)) {
+            drafts.push(existingMap.get(key)!);
+          } else {
+            const fullAsset = projectAssets.find(a => a.id === aid);
+            if (fullAsset) {
+              const isDone = task.completedAssetIds?.includes(aid) ?? false;
+              const cost = this.getDefaultAssetCost(fullAsset.layerId);
+              drafts.push({
+                taskId: task.id,
+                taskCode: task.code,
+                taskTitle: task.title,
+                assetId: fullAsset.id,
+                assetCode: fullAsset.code,
+                assetName: fullAsset.name,
+                layerId: fullAsset.layerId,
+                layerName: fullAsset.layerName,
+                address: fullAsset.address,
+                lat: fullAsset.lat,
+                lng: fullAsset.lng,
+                isSelected: isDone,
+                isCompleted: isDone,
+                condition: 'GOOD',
+                cost: cost,
+                photoBeforeUrl: '',
+                photoAfterUrl: '',
+                photoUrl: '',
+                notes: 'Đã hoàn tất thi công bảo trì hiện trường và kiểm tra vận hành an toàn.',
+                completedDate: new Date().toISOString().substring(0, 10),
+                technicianName: this.technicianGeneralName,
+                geometryType: fullAsset.geometryType || (fullAsset.layerId === 'ROADWAY' ? 'LINE' : 'POINT'),
+                lengthMeters: fullAsset.lengthMeters,
+                widthMeters: fullAsset.widthMeters,
+                areaSquareMeters: fullAsset.areaSquareMeters,
+                chainage: fullAsset.chainage,
+                startPoint: fullAsset.startPoint,
+                endPoint: fullAsset.endPoint
+              });
+            }
+          }
+        });
+      }
+    });
+
     this.assetDrafts = drafts;
-    this.activeAssetDraft = drafts.length > 0 ? drafts[0] : null;
+
+    // Giữ hoặc chọn active draft
+    if (!this.activeAssetDraft || !drafts.some(d => d.assetId === this.activeAssetDraft?.assetId && d.taskId === this.activeAssetDraft?.taskId)) {
+      this.activeAssetDraft = drafts.length > 0 ? drafts[0] : null;
+    }
   }
 
   // Chọn tài sản active để hiển thị chi tiết bên phải
@@ -284,12 +425,86 @@ export class ContractorReportComponent implements OnInit {
     if (event) {
       event.stopPropagation();
     }
+    if (!draft.isCompleted) {
+      this.toastService.warning(
+        'Tài sản chưa hoàn thành',
+        `Tài sản "${draft.assetCode}" chưa hoàn thành thi công. Vui lòng bật "Đã hoàn thành thi công" ở cột bên phải để đưa vào nghiệm thu đợt này.`
+      );
+      draft.isSelected = false;
+      return;
+    }
     draft.isSelected = !draft.isSelected;
   }
 
-  // Chọn tất cả / Bỏ chọn tất cả
+  // Khi nhà thầu đổi trạng thái hoàn thành ở cột bên phải
+  onAssetCompletionToggle(draft: ContractorAssetDraft) {
+    if (draft.isCompleted) {
+      draft.isSelected = true;
+      if (!draft.completedDate) {
+        draft.completedDate = new Date().toISOString().substring(0, 10);
+      }
+      this.toastService.success(
+        'Đã hoàn thành thi công',
+        `Tài sản "${draft.assetCode}" đã được chuyển sang hoàn thành và tự động đưa vào đợt nghiệm thu thanh toán.`
+      );
+    } else {
+      draft.isSelected = false;
+      this.toastService.info(
+        'Chưa hoàn thành',
+        `Tài sản "${draft.assetCode}" chuyển về chưa hoàn thành (giữ lại đợt sau, không tính tiền đợt này).`
+      );
+    }
+  }
+
+  // Chọn tất cả / Bỏ chọn tất cả (chỉ chọn những tài sản đã hoàn thành)
   selectAllAssets(selectAll: boolean) {
-    this.assetDrafts.forEach(a => a.isSelected = selectAll);
+    if (selectAll) {
+      let count = 0;
+      this.assetDrafts.forEach(a => {
+        if (a.isCompleted) {
+          a.isSelected = true;
+          count++;
+        } else {
+          a.isSelected = false;
+        }
+      });
+      const uncompletedCount = this.assetDrafts.length - count;
+      if (uncompletedCount > 0) {
+        this.toastService.info(
+          'Đã chọn tài sản hoàn thành',
+          `Đã chọn ${count} tài sản đã hoàn thành thi công. Có ${uncompletedCount} tài sản chưa xong được giữ lại đợt sau.`
+        );
+      }
+    } else {
+      this.assetDrafts.forEach(a => a.isSelected = false);
+    }
+  }
+
+  // Chọn / bỏ chọn toàn bộ tài sản hoàn thành trong 1 nhóm Task
+  toggleTaskGroupSelection(group: TaskAssetGroup, selectAll: boolean) {
+    let count = 0;
+    group.assets.forEach(a => {
+      if (selectAll) {
+        if (a.isCompleted) {
+          a.isSelected = true;
+          count++;
+        } else {
+          a.isSelected = false;
+        }
+      } else {
+        a.isSelected = false;
+      }
+    });
+
+    if (selectAll) {
+      const skipped = group.assets.length - count;
+      if (skipped > 0) {
+        this.toastService.info(
+          `Đầu việc ${group.taskCode}`,
+          `Đã chọn ${count} tài sản hoàn thành. Bỏ qua ${skipped} tài sản chưa hoàn thành.`
+        );
+      }
+    }
   }
 
   // Upload ảnh trước khi khắc phục từ máy tính
@@ -352,27 +567,27 @@ export class ContractorReportComponent implements OnInit {
       this.toastService.warning('Chưa chọn dự án', 'Vui lòng chọn dự án thực hiện');
       return;
     }
-    if (!this.selectedTaskId) {
-      this.toastService.warning('Chưa chọn task', 'Vui lòng chọn đầu việc cần nghiệm thu');
+    if (this.selectedTaskIds.length === 0) {
+      this.toastService.warning('Chưa chọn đầu việc', 'Vui lòng chọn ít nhất 1 đầu việc (task) để nghiệm thu');
       return;
     }
-    if (this.selectedDraftAssets.length === 0) {
-      this.toastService.warning('Chưa chọn tài sản', 'Vui lòng chọn ít nhất 1 tài sản để đề nghị nghiệm thu');
+    if (this.selectedBillableAssets.length === 0) {
+      this.toastService.warning(
+        'Không có tài sản hoàn thành',
+        'Vui lòng chọn ít nhất 1 tài sản đã hoàn thành thi công để đề nghị nghiệm thu thanh toán'
+      );
       return;
     }
 
-    const task = this.selectedTask;
-    const project = this.selectedProject;
-
-    // Chuyển đổi sang ReportItem[]
-    const items: ReportItem[] = this.selectedDraftAssets.map(a => ({
+    // Chuyển đổi sang ReportItem[] - CHỈ LẤY CÁC TÀI SẢN ĐÃ HOÀN THÀNH VÀ ĐƯỢC CHỌN
+    const items: ReportItem[] = this.selectedBillableAssets.map(a => ({
       assetId: a.assetId,
       assetCode: a.assetCode,
       assetName: a.assetName,
       layerId: a.layerId,
       layerName: a.layerName,
-      taskId: task?.id || 't-1',
-      taskTitle: task?.title || 'Công việc bảo trì',
+      taskId: a.taskId,
+      taskTitle: a.taskTitle,
       completedDate: a.completedDate || new Date().toISOString().substring(0, 10),
       photoUrl: a.photoAfterUrl || a.photoBeforeUrl || '',
       photoBeforeUrl: a.photoBeforeUrl || '',
@@ -391,10 +606,10 @@ export class ContractorReportComponent implements OnInit {
       endPoint: a.endPoint
     }));
 
-    // Cập nhật trạng thái từng tài sản trong task tương ứng
-    this.selectedDraftAssets.forEach(a => {
+    // Cập nhật trạng thái từng tài sản trong task tương ứng (cả hoàn thành và chưa hoàn thành)
+    this.assetDrafts.forEach(a => {
       this.projectService.setTaskAssetCompletion(
-        this.selectedTaskId,
+        a.taskId,
         a.assetId,
         a.isCompleted,
         a.photoAfterUrl || a.photoBeforeUrl || '',
@@ -407,21 +622,25 @@ export class ContractorReportComponent implements OnInit {
     // Tạo báo cáo thanh toán mới
     const newReport = this.projectService.submitContractorReport({
       projectId: this.selectedProjectId,
-      periodTitle: this.reportPeriodTitle || `Báo cáo nghiệm thu (${task?.title})`,
+      periodTitle: this.reportPeriodTitle || `Báo cáo nghiệm thu tổng hợp (${items.length} tài sản)`,
       contractor: this.selectedContractor,
       items: items,
       amountRequested: this.totalDraftAmount
     });
 
-    this.toastService.success(
-      'Gửi báo cáo thành công!',
-      `Hồ sơ ${newReport.code} đã được gửi lên Ban QLDA. Cán bộ vận hành sẽ kiểm tra đối chiếu qua màn hình Split-view.`
-    );
+    const uncompletedCount = this.assetDrafts.length - items.length;
+    let message = `Hồ sơ ${newReport.code} đã được gửi lên Ban QLDA (${items.length} tài sản hoàn thành, ${this.formatMoney(this.totalDraftAmount)} đ).`;
+    if (uncompletedCount > 0) {
+      message += ` Còn ${uncompletedCount} tài sản chưa hoàn thành được giữ lại cho các đợt tiếp theo.`;
+    }
+
+    this.toastService.success('Gửi báo cáo thành công!', message);
 
     // Chuyển về màn hình danh sách
     this.currentView = 'LIST';
     this.assetDrafts = [];
     this.activeAssetDraft = null;
+    this.selectedTaskIds = [];
   }
 
   // Xem chi tiết hồ sơ đã gửi
