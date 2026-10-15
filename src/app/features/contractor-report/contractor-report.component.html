@@ -1,46 +1,305 @@
 <div class="page-container">
-  <!-- VIEW 1: DANH SÁCH BÁO CÁO CỦA NHÀ THẦU -->
-  <ng-container *ngIf="currentView === 'LIST'">
-    <div class="page-header">
-      <div class="header-left">
-        <div class="breadcrumb">
-          <span>Hệ thống</span>
-          <i class="bi bi-chevron-right"></i>
-          <span>Phân hệ Nhà Thầu</span>
-          <i class="bi bi-chevron-right"></i>
-          <span class="active">Báo cáo Nghiệm thu & Thanh toán</span>
-        </div>
-        <h1 class="page-title">
-          <i class="bi bi-file-earmark-check-fill text-primary me-2"></i>Cổng
-          Nhà Thầu - Báo Cáo Nghiệm Thu & Khối Lượng
-        </h1>
-        <p class="page-subtitle">
-          Khởi tạo đợt nghiệm thu khối lượng thi công hoàn thành, đính kèm minh
-          chứng hiện trường GPS và gửi Ban QLDA phê duyệt giải ngân.
-        </p>
+  <!-- HEADER TỔNG QUAN PHÂN HỆ NHÀ THẦU -->
+  <div class="contractor-portal-header">
+    <div class="header-left">
+      <div class="breadcrumb">
+        <span>Hệ thống</span>
+        <i class="bi bi-chevron-right"></i>
+        <span>Phân hệ Nhà Thầu</span>
+        <i class="bi bi-chevron-right"></i>
+        <span class="active">{{ activeMainTab === 'PROJECT_TASKS' ? 'Công Việc Được Giao (Theo Dự Án)' : (currentView === 'LIST' ? 'Báo Cáo Nghiệm Thu & Thanh Toán' : 'Lập Báo Cáo Nghiệm Thu Mới') }}</span>
       </div>
+      <h1 class="portal-main-title">
+        <i class="bi bi-building-gear text-primary me-2"></i>Phân Hệ Nhà Thầu - Quản Lý Thi Công & Nghiệm Thu
+      </h1>
+      <p class="portal-subtitle">
+        Quản lý các đầu việc thi công & tài sản cần sửa chữa theo từng dự án; đánh giá hiện trạng và lập hồ sơ nghiệm thu thanh toán.
+      </p>
+    </div>
 
-      <div class="header-actions">
-        <!-- Bộ chọn nhà thầu thao tác -->
-        <div class="contractor-switcher">
-          <label>Nhà thầu đang thao tác:</label>
+    <div class="header-right">
+      <div class="contractor-switcher-card">
+        <label class="switcher-lbl">
+          <i class="bi bi-building text-primary me-1"></i>Nhà thầu đang tác nghiệp:
+        </label>
+        <select
+          class="form-select form-select-sm"
+          [ngModel]="selectedContractor"
+          (ngModelChange)="onContractorChange($event)"
+        >
+          <option *ngFor="let c of contractorList" [value]="c">
+            {{ c }}
+          </option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- THANH CHUYỂN TAB CẤP 1 (MAIN TABS NAVIGATION) -->
+  <div class="contractor-main-nav">
+    <button
+      class="main-tab-item"
+      [class.active]="activeMainTab === 'PROJECT_TASKS'"
+      (click)="selectMainTab('PROJECT_TASKS')"
+    >
+      <i class="bi bi-card-checklist"></i>
+      <span class="tab-title">1. Công Việc Được Giao (Tasks theo Dự Án)</span>
+      <span class="tab-count-pill primary">{{ contractorTasksForProject.length }}</span>
+    </button>
+
+    <button
+      class="main-tab-item"
+      [class.active]="activeMainTab === 'PAYMENT_REPORTS'"
+      (click)="selectMainTab('PAYMENT_REPORTS')"
+    >
+      <i class="bi bi-file-earmark-check-fill"></i>
+      <span class="tab-title">2. Báo Cáo Nghiệm Thu & Thanh Toán</span>
+      <span class="tab-count-pill" [class.highlight]="pendingReportsCount > 0">{{ contractorReports.length }}</span>
+    </button>
+  </div>
+
+  <!-- ================= TAB 1: CÔNG VIỆC ĐƯỢC GIAO TỪ DỰ ÁN ================= -->
+  <div class="tab-pane-tasks" *ngIf="activeMainTab === 'PROJECT_TASKS'">
+    <!-- Thanh chọn Dự án (Đi từ dự án vào) -->
+    <div class="project-selector-toolbar card border-0 shadow-sm mb-3">
+      <div class="card-body p-3 d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div class="d-flex align-items-center gap-2 flex-grow-1">
+          <label class="form-label m-0 fw-bold fs-sm text-dark text-nowrap">
+            <i class="bi bi-folder2-open text-primary me-1"></i>Chọn Dự án thi công:
+          </label>
           <select
-            class="form-select form-select-sm"
-            [ngModel]="selectedContractor"
-            (ngModelChange)="onContractorChange($event)"
+            class="form-select form-select-sm project-select-dropdown"
+            [ngModel]="selectedProjectForTasksId"
+            (ngModelChange)="onSelectProjectForTasks($event)"
+            style="max-width: 580px; font-weight: 500;"
           >
-            <option *ngFor="let c of contractorList" [value]="c">
-              {{ c }}
+            <option *ngFor="let p of contractorProjects" [value]="p.id">
+              {{ p.code }} - {{ p.name }} ({{ p.type }})
             </option>
           </select>
         </div>
 
-        <button class="btn btn-primary btn-create" (click)="openCreateReport()">
-          <i class="bi bi-plus-circle-fill"></i>
+        <div class="d-flex align-items-center gap-2">
+          <button
+            class="btn btn-sm btn-primary d-inline-flex align-items-center gap-1 shadow-sm"
+            (click)="openCreateReportFromActiveProject()"
+          >
+            <i class="bi bi-file-earmark-plus-fill"></i>
+            <span>Lập Báo Cáo Nghiệm Thu Cho Dự Án Này</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Thông tin tổng quan dự án & Mini KPI Stats -->
+    <div class="project-info-banner card border-0 shadow-sm mb-3" *ngIf="selectedProjectForTasks as proj">
+      <div class="card-body p-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
+          <div class="d-flex align-items-center gap-2">
+            <span class="project-code-tag">{{ proj.code }}</span>
+            <span class="badge badge-info">{{ proj.type }}</span>
+            <span class="badge badge-success">{{ proj.status }}</span>
+            <span class="text-muted fs-xs ms-1">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ proj.routeName }}
+            </span>
+          </div>
+          <div class="fs-xs text-muted">
+            <i class="bi bi-calendar3 me-1"></i>Thời gian: <strong>{{ proj.startDate | date:'dd/MM/yyyy' }} - {{ proj.endDate | date:'dd/MM/yyyy' }}</strong>
+          </div>
+        </div>
+
+        <h3 class="proj-title m-0 fs-6 fw-bold text-dark mb-1">{{ proj.name }}</h3>
+        <p class="proj-desc text-muted fs-xs m-0 mb-3">{{ proj.description }}</p>
+
+        <!-- KPI Mini Row -->
+        <div class="proj-kpi-summary-row">
+          <div class="kpi-mini-pill">
+            <span class="num">{{ projectTasksStats.total }}</span>
+            <span class="txt">Tổng công việc</span>
+          </div>
+          <div class="kpi-mini-pill info">
+            <span class="num">{{ projectTasksStats.inProgress }}</span>
+            <span class="txt">Đang thực hiện</span>
+          </div>
+          <div class="kpi-mini-pill success">
+            <span class="num">{{ projectTasksStats.completed }}</span>
+            <span class="txt">Đã hoàn thành</span>
+          </div>
+          <div class="kpi-mini-pill warning">
+            <span class="num">{{ projectTasksStats.totalAssets }}</span>
+            <span class="txt">Tài sản cần sửa/bảo dưỡng</span>
+          </div>
+          <div class="kpi-mini-pill emerald">
+            <span class="num">{{ projectTasksStats.completedAssets }}</span>
+            <span class="txt">Tài sản đã xong</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BẢNG CÔNG VIỆC ĐƯỢC GIAO (Y HỆT ẢNH NGƯỜI DÙNG GỬI) -->
+    <div class="app-card tasks-app-card mb-4">
+      <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div>
+          <h3 class="card-title m-0 fs-6 fw-bold text-dark d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3-fill text-primary"></i>
+            <span>Đầu Việc Thi Công & Quản Lý Hiện Trạng</span>
+          </h3>
+          <p class="card-subtitle text-muted fs-xs m-0 mt-1">
+            Chia nhỏ dự án thành các đầu việc thi công/tuần kiểm. Quản lý trạng thái công việc và lưu vết hiện trạng đánh giá cho từng tài sản.
+          </p>
+        </div>
+        <div class="fs-xs text-muted">
+          <span class="badge bg-light text-primary border py-1 px-2">
+            <i class="bi bi-info-circle me-1"></i>Nhà thầu có thể đổi trực tiếp trạng thái CV & xem chi tiết tài sản
+          </span>
+        </div>
+      </div>
+
+      <div class="custom-table-container">
+        <table class="custom-table tasks-table">
+          <thead>
+            <tr class="table-light">
+              <th style="width: 105px;">MÃ CV</th>
+              <th style="min-width: 270px;">TIÊU ĐỀ CÔNG VIỆC & MÔ TẢ</th>
+              <th style="min-width: 195px;">NHÀ THẦU</th>
+              <th style="width: 140px;">TÀI SẢN GẮN KÈM</th>
+              <th style="width: 110px;">TIẾN ĐỘ</th>
+              <th style="width: 150px;">TRẠNG THÁI CV</th>
+              <th style="width: 115px;">HẠN CHÓT</th>
+              <th style="width: 215px; text-align: center;">THAO TÁC</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let task of contractorTasksForProject">
+              <td>
+                <span class="task-code-pill">{{ task.code }}</span>
+              </td>
+              <td>
+                <div class="task-main-cell">
+                  <div class="task-title-line">
+                    <span class="title">{{ task.title }}</span>
+                    <span
+                      class="badge"
+                      [class.badge-danger]="task.priority === 'URGENT'"
+                      [class.badge-warning]="task.priority === 'HIGH'"
+                      [class.badge-secondary]="task.priority === 'MEDIUM' || task.priority === 'LOW'"
+                    >
+                      {{ task.priority }}
+                    </span>
+                  </div>
+                  <div class="task-desc">{{ task.description }}</div>
+                </div>
+              </td>
+              <td>
+                <div class="team-cell">
+                  <i class="bi bi-building text-primary"></i>
+                  <span>{{ task.contractor || selectedContractor }}</span>
+                </div>
+              </td>
+              <td>
+                <button
+                  class="btn btn-sm btn-outline-primary py-0 px-2 fs-xs d-inline-flex align-items-center"
+                  (click)="openTaskAssetsModal(task)"
+                  title="Nhấn để mở modal danh sách tài sản cần sửa/bảo dưỡng"
+                >
+                  <i class="bi bi-geo-alt me-1"></i>
+                  {{ (task.taskAssets && task.taskAssets.length) ? task.taskAssets.length : task.assetIds.length }} tài sản
+                </button>
+                <div class="text-muted fs-xs mt-1" *ngIf="task.completedAssetIds.length > 0">
+                  ({{ task.completedAssetIds.length }} đã xong)
+                </div>
+              </td>
+              <td>
+                <div class="progress-cell">
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" [style.width.%]="task.progress"></div>
+                  </div>
+                  <span class="percent-text">{{ task.progress }}%</span>
+                </div>
+              </td>
+              <td>
+                <!-- INLINE STATUS DROPDOWN FOR TASKS -->
+                <select
+                  class="form-select form-select-sm inline-select"
+                  [ngClass]="'status-' + task.status.toLowerCase()"
+                  [ngModel]="task.status"
+                  (ngModelChange)="onInlineTaskStatusChange(task, $event)"
+                >
+                  <option value="NOT_STARTED">Chưa bắt đầu</option>
+                  <option value="IN_PROGRESS">Đang thực hiện</option>
+                  <option value="PAUSED">Tạm dừng</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                </select>
+              </td>
+              <td>
+                <span class="date-text">{{ task.deadline | date:'dd/MM/yyyy' }}</span>
+              </td>
+              <td style="text-align: center;">
+                <div class="d-flex align-items-center justify-content-center gap-1 flex-wrap">
+                  <!-- Nút nhấn mở modal danh sách & đánh giá hiện trạng tài sản -->
+                  <button
+                    class="btn btn-sm btn-primary py-1 px-2 d-inline-flex align-items-center gap-1 fs-xs"
+                    title="Mở danh sách & đánh giá hiện trạng tài sản"
+                    (click)="openTaskAssetsModal(task)"
+                  >
+                    <i class="bi bi-list-check"></i>
+                    <span>Tài sản ({{ (task.taskAssets && task.taskAssets.length) ? task.taskAssets.length : task.assetIds.length }})</span>
+                  </button>
+
+                  <button
+                    class="btn btn-sm btn-outline-secondary py-1 px-2 d-inline-flex align-items-center gap-1 fs-xs"
+                    title="Mở giao diện thợ hiện trường cho task này"
+                    (click)="openMobileAppForTask(task)"
+                  >
+                    <i class="bi bi-phone"></i>
+                    <span>App Thợ</span>
+                  </button>
+
+                  <button
+                    class="btn btn-sm btn-outline-success py-1 px-2 d-inline-flex align-items-center gap-1 fs-xs"
+                    title="Lập báo cáo nghiệm thu cho công việc này"
+                    (click)="createReportFromTask(task)"
+                  >
+                    <i class="bi bi-file-earmark-check"></i>
+                    <span>Nghiệm thu</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+
+            <tr *ngIf="contractorTasksForProject.length === 0">
+              <td colspan="8" class="text-center py-5 text-muted">
+                <i class="bi bi-clipboard-x fs-1 d-block mb-2"></i>
+                <p class="m-0">Chưa có công việc nào được phân công cho nhà thầu trong dự án này.</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TAB 2: BÁO CÁO NGHIỆM THU & THANH TOÁN ================= -->
+  <div class="tab-pane-reports" *ngIf="activeMainTab === 'PAYMENT_REPORTS'">
+    <!-- VIEW 1: DANH SÁCH BÁO CÁO CỦA NHÀ THẦU -->
+    <ng-container *ngIf="currentView === 'LIST'">
+      <div class="reports-header-actions mb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <div>
+          <h2 class="fs-5 fw-bold text-dark m-0 d-flex align-items-center gap-2">
+            <i class="bi bi-file-earmark-check-fill text-primary"></i>
+            <span>Hồ Sơ Nghiệm Thu & Đề Nghị Thanh Toán</span>
+          </h2>
+          <p class="text-muted fs-xs m-0 mt-1">
+            Theo dõi tiến độ thẩm định của Ban QLDA đối với các đợt nghiệm thu khối lượng đã gửi và kiểm tra biên bản phê duyệt giải ngân.
+          </p>
+        </div>
+
+        <button class="btn btn-primary btn-create shadow-sm" (click)="openCreateReport()">
+          <i class="bi bi-plus-circle-fill me-1"></i>
           <span>Tạo Báo Cáo Nghiệm Thu Mới</span>
         </button>
       </div>
-    </div>
 
     <!-- KPI Summary Grid -->
     <div class="kpi-grid">
@@ -844,6 +1103,154 @@
       </div>
     </div>
   </ng-container>
+  </div>
+
+  <!-- MODAL XEM CHI TIẾT ĐẦU VIỆC & CÁC TÀI SẢN CẦN SỬA ĐỒ (TASK ASSETS MODAL) -->
+  <div
+    class="modal-backdrop"
+    *ngIf="isTaskAssetsModalOpen && selectedTaskForAssets"
+    (click)="closeTaskAssetsModal()"
+  >
+    <div class="modal-content modal-xl task-assets-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+            <span class="task-code-pill font-bold">{{ selectedTaskForAssets.code }}</span>
+            <h3 class="m-0 fs-5 font-bold">{{ selectedTaskForAssets.title }}</h3>
+            <span
+              class="badge"
+              [class.badge-danger]="selectedTaskForAssets.priority === 'URGENT'"
+              [class.badge-warning]="selectedTaskForAssets.priority === 'HIGH'"
+              [class.badge-secondary]="selectedTaskForAssets.priority === 'MEDIUM' || selectedTaskForAssets.priority === 'LOW'"
+            >
+              {{ selectedTaskForAssets.priority }}
+            </span>
+          </div>
+          <p class="m-0 text-muted fs-xs">
+            <i class="bi bi-diagram-3-fill text-primary me-1"></i>
+            Chi tiết các tài sản cần bảo trì / sửa chữa • Đánh giá hiện trạng kỹ thuật & kiểm soát tiến độ thi công
+          </p>
+        </div>
+        <button class="close-btn" (click)="closeTaskAssetsModal()">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body p-3">
+        <!-- Task Meta Summary Bar -->
+        <div class="d-flex align-items-center justify-content-between p-3 bg-light rounded border mb-3 flex-wrap gap-2">
+          <div class="d-flex align-items-center gap-3 flex-wrap">
+            <div class="fs-xs">
+              <span class="text-muted">Nhà thầu:</span>
+              <strong class="text-primary ms-1">
+                <i class="bi bi-building"></i> {{ selectedTaskForAssets.contractor || selectedContractor }}
+              </strong>
+            </div>
+            <div class="fs-xs">
+              <span class="text-muted">Hạn hoàn thành:</span>
+              <strong class="text-danger ms-1">{{ selectedTaskForAssets.deadline | date:'dd/MM/yyyy' }}</strong>
+            </div>
+            <div class="fs-xs">
+              <span class="text-muted">Trạng thái CV:</span>
+              <span class="badge ms-1" [ngClass]="'status-' + selectedTaskForAssets.status.toLowerCase()">
+                {{ getTaskStatusLabel(selectedTaskForAssets.status) }}
+              </span>
+            </div>
+          </div>
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-white text-primary border py-2 px-3 fs-xs shadow-sm">
+              <i class="bi bi-check2-circle text-success me-1"></i>
+              Tiến độ: <strong>{{ selectedTaskForAssets.completedAssetIds.length }} / {{ (selectedTaskForAssets.taskAssets && selectedTaskForAssets.taskAssets.length) ? selectedTaskForAssets.taskAssets.length : selectedTaskForAssets.assetIds.length }} tài sản đã xong</strong> ({{ selectedTaskForAssets.progress }}%)
+            </span>
+          </div>
+        </div>
+
+        <!-- Task Description Box -->
+        <div class="task-desc-callout mb-3 p-2 px-3 rounded bg-blue-50 border border-blue-100 fs-xs text-secondary">
+          <i class="bi bi-info-circle-fill text-primary me-1"></i>
+          <strong>Yêu cầu thi công:</strong> {{ selectedTaskForAssets.description }}
+        </div>
+
+        <!-- Bảng danh sách tài sản cần sửa/bảo trì -->
+        <div class="custom-table-container border rounded bg-white">
+          <table class="table table-hover align-middle m-0 custom-subtable">
+            <thead>
+              <tr class="table-light">
+                <th style="width: 110px;">Mã TS</th>
+                <th style="min-width: 200px;">Tên Tài Sản & Vị Trí</th>
+                <th style="width: 210px;">Hiện Trạng Đánh Giá</th>
+                <th style="width: 160px; text-align: center;">Tiến Độ Xử Lý</th>
+                <th>Yêu Cầu & Ghi Chú Sửa Chữa</th>
+                <th style="width: 110px; text-align: center;">Ảnh</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let ta of selectedTaskForAssets.taskAssets">
+                <td>
+                  <span class="asset-code-tag">{{ ta.assetCode }}</span>
+                </td>
+                <td>
+                  <div class="fw-semibold fs-xs text-dark">{{ ta.assetName }}</div>
+                  <div class="text-muted fs-xs mt-1" *ngIf="ta.lengthMeters">
+                    <i class="bi bi-arrows-expand me-1"></i>Đoạn dài {{ ta.lengthMeters }}m • Rộng {{ ta.widthMeters }}m ({{ ta.areaSquareMeters }} m²)
+                  </div>
+                </td>
+                <td>
+                  <!-- Dropdown Hiện trạng -->
+                  <select
+                    class="form-select form-select-sm condition-select py-1 w-100"
+                    [ngModel]="ta.condition"
+                    (ngModelChange)="onTaskAssetConditionChange(selectedTaskForAssets, ta, $event)"
+                  >
+                    <option value="GOOD">🟢 Hoạt động tốt</option>
+                    <option value="NORMAL">🔵 Bình thường</option>
+                    <option value="DAMAGED">🔴 Hư hỏng</option>
+                    <option value="NEEDS_REPLACEMENT">🟠 Cần thay thế</option>
+                  </select>
+                </td>
+                <td style="text-align: center;">
+                  <button
+                    class="btn btn-sm py-1 px-3 d-inline-flex align-items-center gap-1 w-100 justify-content-center"
+                    [ngClass]="ta.isCompleted ? 'btn-success' : 'btn-outline-secondary'"
+                    (click)="onToggleTaskAssetComplete(selectedTaskForAssets, ta)"
+                  >
+                    <i class="bi" [ngClass]="ta.isCompleted ? 'bi-check2-circle' : 'bi-circle'"></i>
+                    <span>{{ ta.isCompleted ? 'Đã hoàn thành' : 'Chưa xong' }}</span>
+                  </button>
+                </td>
+                <td>
+                  <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    [(ngModel)]="ta.notes"
+                    placeholder="Ghi chú kỹ thuật hư hỏng / yêu cầu sửa chữa..."
+                    (change)="onTaskAssetNotesChange(selectedTaskForAssets, ta)"
+                  />
+                </td>
+                <td style="text-align: center;">
+                  <div class="d-flex align-items-center justify-content-center gap-1" *ngIf="ta.photoAfterUrl || ta.photoBeforeUrl">
+                    <img *ngIf="ta.photoBeforeUrl" [src]="ta.photoBeforeUrl" class="rounded border" style="width: 36px; height: 36px; object-fit: cover;" title="Ảnh trước thi công" />
+                    <img *ngIf="ta.photoAfterUrl" [src]="ta.photoAfterUrl" class="rounded border" style="width: 36px; height: 36px; object-fit: cover;" title="Ảnh sau hoàn thành" />
+                  </div>
+                  <span class="text-muted fs-xs" *ngIf="!ta.photoAfterUrl && !ta.photoBeforeUrl">Chưa có</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="modal-footer d-flex justify-content-between align-items-center">
+        <button class="btn btn-outline-secondary" (click)="closeTaskAssetsModal()">
+          <i class="bi bi-x-circle me-1"></i>Đóng
+        </button>
+        <button class="btn btn-primary" (click)="createReportFromTask(selectedTaskForAssets)">
+          <i class="bi bi-file-earmark-check-fill me-1"></i>
+          <span>Lập Báo Cáo Nghiệm Thu Cho Công Việc Này</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL SPLIT-VIEW XEM LẠI BÁO CÁO ĐÃ GỬI -->
   <div

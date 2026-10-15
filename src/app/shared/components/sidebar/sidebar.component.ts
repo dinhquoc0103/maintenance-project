@@ -12,10 +12,10 @@ import { PatrolService } from '../../../core/services/patrol.service';
     <aside class="app-sidebar">
       <div class="sidebar-section-title">PHÂN HỆ NGHIỆP VỤ</div>
       <nav class="nav-menu">
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+        <!-- <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
           <i class="bi bi-grid-1x2-fill"></i>
           <span>Tổng quan (Dashboard)</span>
-        </a>
+        </a> -->
 
         <a routerLink="/patrol" routerLinkActive="active" class="nav-item">
           <i class="bi bi-shield-check"></i>
@@ -55,8 +55,8 @@ import { PatrolService } from '../../../core/services/patrol.service';
           routerLinkActive="active"
           class="nav-item"
         >
-          <i class="bi bi-file-earmark-check-fill"></i>
-          <span>Báo cáo Nghiệm thu (Nhà thầu)</span>
+          <i class="bi bi-building-gear"></i>
+          <span>Phân Hệ Nhà Thầu (Thi công & Nghiệm thu)</span>
           <span class="badge badge-primary">Mới</span>
         </a>
 
@@ -66,7 +66,7 @@ import { PatrolService } from '../../../core/services/patrol.service';
           <span class="badge badge-warning" *ngIf="pendingReportsCount > 0">{{ pendingReportsCount }}</span>
         </a> -->
 
-        <a
+        <!-- <a
           routerLink="/mobile-contractor"
           routerLinkActive="active"
           class="nav-item mobile-item"
@@ -74,10 +74,10 @@ import { PatrolService } from '../../../core/services/patrol.service';
           <i class="bi bi-phone-fill"></i>
           <span>Hiện trường Thợ (4. Mobile App)</span>
           <span class="badge badge-success">Mô phỏng</span>
-        </a>
+        </a> -->
       </nav>
 
-      <div class="sidebar-section-title">LỚP DỮ LIỆU TÀI SẢN (LAYERS)</div>
+      <!-- <div class="sidebar-section-title">LỚP DỮ LIỆU TÀI SẢN (LAYERS)</div>
       <div class="layers-summary-list">
         <div
           *ngFor="let layer of projectService.layers()"
@@ -90,7 +90,7 @@ import { PatrolService } from '../../../core/services/patrol.service';
           <span class="layer-name">{{ layer.name }}</span>
           <span class="layer-count">{{ layer.totalCount }}</span>
         </div>
-      </div>
+      </div> -->
 
       <div class="sidebar-footer">
         <div class="system-status">

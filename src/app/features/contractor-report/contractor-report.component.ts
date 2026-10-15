@@ -1,7 +1,7 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { ToastService } from '../../core/services/toast.service';
 import {
@@ -11,7 +11,9 @@ import {
   LayerId,
   AssetCondition,
   ReportPayment,
-  ReportItem
+  ReportItem,
+  TaskStatus,
+  TaskAssetItem
 } from '../../core/models/maintenance.model';
 
 export interface ContractorAssetDraft {
@@ -66,6 +68,7 @@ export interface TaskAssetGroup {
 export class ContractorReportComponent implements OnInit {
   projectService = inject(ProjectService);
   toastService = inject(ToastService);
+  router = inject(Router);
 
   // Danh sách nhà thầu & Nhà thầu hiện tại đang thao tác
   contractorList: string[] = [
@@ -75,6 +78,17 @@ export class ContractorReportComponent implements OnInit {
   ];
   selectedContractor: string = 'Công ty CP Chiếu sáng & Cây xanh Đô thị Sài Gòn';
 
+  // TAB ĐIỀU HƯỚNG CHÍNH CỦA PHÂN HỆ NHÀ THẦU:
+  // 'PROJECT_TASKS': Danh sách công việc được giao (theo dự án)
+  // 'PAYMENT_REPORTS': Báo cáo nghiệm thu & Đề nghị thanh toán
+  activeMainTab: 'PROJECT_TASKS' | 'PAYMENT_REPORTS' = 'PROJECT_TASKS';
+
+  // --- STATE TAB 1: CÔNG VIỆC THEO DỰ ÁN ---
+  selectedProjectForTasksId: string = '';
+  selectedTaskForAssets: MaintenanceTask | null = null;
+  isTaskAssetsModalOpen: boolean = false;
+
+  // --- STATE TAB 2: BÁO CÁO NGHIỆM THU ---
   // Chế độ màn hình: 'LIST' (Danh sách báo cáo đã gửi) | 'CREATE' (Màn hình lập báo cáo mới)
   currentView: 'LIST' | 'CREATE' = 'LIST';
 
@@ -97,6 +111,7 @@ export class ContractorReportComponent implements OnInit {
     const projects = this.contractorProjects;
     if (projects.length > 0) {
       this.selectedProjectId = projects[0].id;
+      this.selectedProjectForTasksId = projects[0].id;
     }
   }
 
@@ -105,6 +120,33 @@ export class ContractorReportComponent implements OnInit {
     return this.projectService.projects().filter(
       p => p.contractor === this.selectedContractor || !p.contractor
     );
+  }
+
+  // Dự án được chọn trong Tab 1
+  get selectedProjectForTasks(): Project | undefined {
+    return this.projectService.getProjectById(this.selectedProjectForTasksId);
+  }
+
+  // Danh sách công việc của dự án được chọn thuộc về nhà thầu
+  get contractorTasksForProject(): MaintenanceTask[] {
+    if (!this.selectedProjectForTasksId) return [];
+    return this.projectService.getProjectTasks(this.selectedProjectForTasksId);
+  }
+
+  // Thống kê nhanh cho Tab 1
+  get projectTasksStats() {
+    const tasks = this.contractorTasksForProject;
+    const total = tasks.length;
+    const inProgress = tasks.filter(t => t.status === 'IN_PROGRESS').length;
+    const completed = tasks.filter(t => t.status === 'COMPLETED').length;
+    const notStarted = tasks.filter(t => t.status === 'NOT_STARTED').length;
+    let totalAssets = 0;
+    let completedAssets = 0;
+    tasks.forEach(t => {
+      totalAssets += (t.taskAssets && t.taskAssets.length) ? t.taskAssets.length : t.assetIds.length;
+      completedAssets += (t.completedAssetIds ? t.completedAssetIds.length : 0);
+    });
+    return { total, inProgress, completed, notStarted, totalAssets, completedAssets };
   }
 
   // Danh sách báo cáo của nhà thầu hiện tại
@@ -206,10 +248,125 @@ export class ContractorReportComponent implements OnInit {
     const projects = this.contractorProjects;
     if (projects.length > 0) {
       this.selectedProjectId = projects[0].id;
+      this.selectedProjectForTasksId = projects[0].id;
       this.selectedTaskIds = this.availableTasks.map(t => t.id);
       this.assetDrafts = [];
       this.activeAssetDraft = null;
       this.loadAssetsForSelectedTasks();
+    }
+  }
+
+  // Chuyển đổi Tab cấp 1
+  selectMainTab(tab: 'PROJECT_TASKS' | 'PAYMENT_REPORTS') {
+    this.activeMainTab = tab;
+  }
+
+  // Khi chọn Dự án trong Tab 1
+  onSelectProjectForTasks(projectId: string) {
+    this.selectedProjectForTasksId = projectId;
+  }
+
+  // Cập nhật trạng thái công việc trực tiếp từ dropdown trong bảng
+  onInlineTaskStatusChange(task: MaintenanceTask, newStatus: TaskStatus) {
+    this.projectService.updateTaskStatus(task.id, newStatus);
+    this.toastService.success(
+      'Cập nhật trạng thái công việc',
+      `Công việc ${task.code} đã cập nhật sang: "${this.getTaskStatusLabel(newStatus)}"`
+    );
+  }
+
+  // Mở modal danh sách tài sản của task
+  openTaskAssetsModal(task: MaintenanceTask) {
+    this.selectedTaskForAssets = task;
+    this.isTaskAssetsModalOpen = true;
+  }
+
+  closeTaskAssetsModal() {
+    this.isTaskAssetsModalOpen = false;
+    this.selectedTaskForAssets = null;
+  }
+
+  // Đổi hiện trạng đánh giá tài sản trong task
+  onTaskAssetConditionChange(task: MaintenanceTask, assetItem: TaskAssetItem, newCondition: AssetCondition) {
+    this.projectService.updateTaskAssetCondition(task.id, assetItem.assetId, newCondition, assetItem.notes);
+    const updated = this.projectService.getTaskById(task.id);
+    if (updated && this.selectedTaskForAssets?.id === task.id) {
+      this.selectedTaskForAssets = updated;
+    }
+    this.toastService.success(
+      'Cập nhật hiện trạng tài sản',
+      `Tài sản ${assetItem.assetCode} đã chuyển sang: "${this.getAssetConditionLabel(newCondition)}"`
+    );
+  }
+
+  // Bật/tắt trạng thái hoàn thành của từng tài sản trong task
+  onToggleTaskAssetComplete(task: MaintenanceTask, assetItem: TaskAssetItem) {
+    const nextCompleted = !assetItem.isCompleted;
+    this.projectService.setTaskAssetCompletion(task.id, assetItem.assetId, nextCompleted);
+    const updated = this.projectService.getTaskById(task.id);
+    if (updated && this.selectedTaskForAssets?.id === task.id) {
+      this.selectedTaskForAssets = updated;
+    }
+    this.toastService.success(
+      'Cập nhật tiến độ tài sản',
+      `Tài sản ${assetItem.assetCode} đã đánh dấu: "${nextCompleted ? 'Đã hoàn thành' : 'Chưa xong'}" trong công việc ${task.code}`
+    );
+  }
+
+  // Lưu ghi chú đánh giá tài sản
+  onTaskAssetNotesChange(task: MaintenanceTask, assetItem: TaskAssetItem) {
+    this.projectService.updateTaskAssetCondition(task.id, assetItem.assetId, assetItem.condition, assetItem.notes);
+  }
+
+  // Luồng chuyển từ Task sang lập báo cáo nghiệm thu ngay
+  createReportFromTask(task: MaintenanceTask) {
+    this.closeTaskAssetsModal();
+    this.activeMainTab = 'PAYMENT_REPORTS';
+    this.currentView = 'CREATE';
+    this.selectedProjectId = task.projectId;
+    this.selectedTaskIds = [task.id];
+    this.reportPeriodTitle = `Báo cáo nghiệm thu hoàn thành - ${task.title}`;
+    this.loadAssetsForSelectedTasks();
+    this.toastService.success(
+      'Khởi tạo đợt nghiệm thu',
+      `Đã chuyển sang lập hồ sơ nghiệm thu cho công việc: ${task.code}`
+    );
+  }
+
+  // Mở lập báo cáo từ Dự án hiện tại đang xem trong Tab 1
+  openCreateReportFromActiveProject() {
+    this.activeMainTab = 'PAYMENT_REPORTS';
+    this.currentView = 'CREATE';
+    this.selectedProjectId = this.selectedProjectForTasksId;
+    this.selectedTaskIds = this.contractorTasksForProject.map(t => t.id);
+    this.reportPeriodTitle = `Nghiệm thu khối lượng thi công hoàn thành - ${this.selectedProjectForTasks?.code || ''}`;
+    this.loadAssetsForSelectedTasks();
+  }
+
+  // Mở App Thợ cho công việc này
+  openMobileAppForTask(task: MaintenanceTask) {
+    this.router.navigate(['/mobile-contractor'], {
+      queryParams: { taskId: task.id, projectId: task.projectId }
+    });
+  }
+
+  getTaskStatusLabel(status: TaskStatus): string {
+    switch (status) {
+      case 'NOT_STARTED': return 'Chưa bắt đầu';
+      case 'IN_PROGRESS': return 'Đang thực hiện';
+      case 'PAUSED': return 'Tạm dừng';
+      case 'COMPLETED': return 'Hoàn thành';
+      default: return status;
+    }
+  }
+
+  getAssetConditionLabel(condition: AssetCondition): string {
+    switch (condition) {
+      case 'GOOD': return 'Hoạt động tốt';
+      case 'NORMAL': return 'Bình thường';
+      case 'DAMAGED': return 'Hư hỏng';
+      case 'NEEDS_REPLACEMENT': return 'Cần thay thế';
+      default: return condition;
     }
   }
 
