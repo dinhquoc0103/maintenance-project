@@ -20,39 +20,57 @@ import { PatrolService } from '../../../core/services/patrol.service';
         <a routerLink="/patrol" routerLinkActive="active" class="nav-item">
           <i class="bi bi-shield-check"></i>
           <span>Tuần kiểm Hạ tầng (VII.2)</span>
-          <span class="badge badge-danger" *ngIf="newIssuesCount > 0">{{ newIssuesCount }}</span>
+          <span class="badge badge-danger" *ngIf="newIssuesCount > 0">{{
+            newIssuesCount
+          }}</span>
         </a>
 
-        <a routerLink="/field-portal" routerLinkActive="active" class="nav-item">
+        <a
+          routerLink="/field-portal"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <i class="bi bi-person-workspace"></i>
           <span>Cổng Hiện Trường (Web Thợ)</span>
-          <span class="badge badge-warning" *ngIf="pendingTasksCount > 0">{{ pendingTasksCount }}</span>
+          <span class="badge badge-warning" *ngIf="pendingTasksCount > 0">{{
+            pendingTasksCount
+          }}</span>
         </a>
 
         <a routerLink="/projects" routerLinkActive="active" class="nav-item">
           <i class="bi bi-folder2-open"></i>
           <span>Quản lý Dự án (1. Quản lý)</span>
-          <span class="badge badge-primary">{{ projectService.projects().length }}</span>
+          <span class="badge badge-primary">{{
+            projectService.projects().length
+          }}</span>
         </a>
 
-        <a routerLink="/master-map" routerLinkActive="active" class="nav-item">
+        <!-- <a routerLink="/master-map" routerLinkActive="active" class="nav-item">
           <i class="bi bi-map-fill"></i>
           <span>Bản đồ Master GIS (3. Tài sản)</span>
-        </a>
+        </a> -->
 
-        <a routerLink="/contractor-reports" routerLinkActive="active" class="nav-item">
+        <a
+          routerLink="/contractor-reports"
+          routerLinkActive="active"
+          class="nav-item"
+        >
           <i class="bi bi-file-earmark-check-fill"></i>
           <span>Báo cáo Nghiệm thu (Nhà thầu)</span>
           <span class="badge badge-primary">Mới</span>
         </a>
 
-        <a routerLink="/acceptance-center" routerLinkActive="active" class="nav-item">
+        <!-- <a routerLink="/acceptance-center" routerLinkActive="active" class="nav-item">
           <i class="bi bi-clipboard2-check-fill"></i>
           <span>Nghiệm thu & Khối lượng (5. Thanh toán)</span>
           <span class="badge badge-warning" *ngIf="pendingReportsCount > 0">{{ pendingReportsCount }}</span>
-        </a>
+        </a> -->
 
-        <a routerLink="/mobile-contractor" routerLinkActive="active" class="nav-item mobile-item">
+        <a
+          routerLink="/mobile-contractor"
+          routerLinkActive="active"
+          class="nav-item mobile-item"
+        >
           <i class="bi bi-phone-fill"></i>
           <span>Hiện trường Thợ (4. Mobile App)</span>
           <span class="badge badge-success">Mô phỏng</span>
@@ -61,8 +79,14 @@ import { PatrolService } from '../../../core/services/patrol.service';
 
       <div class="sidebar-section-title">LỚP DỮ LIỆU TÀI SẢN (LAYERS)</div>
       <div class="layers-summary-list">
-        <div *ngFor="let layer of projectService.layers()" class="layer-summary-pill">
-          <div class="layer-indicator" [style.background-color]="layer.color"></div>
+        <div
+          *ngFor="let layer of projectService.layers()"
+          class="layer-summary-pill"
+        >
+          <div
+            class="layer-indicator"
+            [style.background-color]="layer.color"
+          ></div>
           <span class="layer-name">{{ layer.name }}</span>
           <span class="layer-count">{{ layer.totalCount }}</span>
         </div>
@@ -77,173 +101,185 @@ import { PatrolService } from '../../../core/services/patrol.service';
       </div>
     </aside>
   `,
-  styles: [`
-    .app-sidebar {
-      width: 260px;
-      background: #ffffff;
-      border-right: 1px solid var(--gray-200);
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 64px);
-      position: sticky;
-      top: 64px;
-      padding: 20px 16px;
-      overflow-y: auto;
-    }
-
-    .sidebar-section-title {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--gray-400);
-      letter-spacing: 0.06em;
-      margin-bottom: 12px;
-      padding-left: 12px;
-    }
-
-    .nav-menu {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 28px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 14px;
-      border-radius: var(--radius-md);
-      color: var(--gray-600);
-      font-weight: 500;
-      font-size: 13.5px;
-      text-decoration: none;
-      transition: all 0.15s ease;
-
-      i {
-        font-size: 17px;
-        color: var(--gray-400);
-        transition: color 0.15s ease;
+  styles: [
+    `
+      .app-sidebar {
+        width: 260px;
+        background: #ffffff;
+        border-right: 1px solid var(--gray-200);
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 64px);
+        position: sticky;
+        top: 64px;
+        padding: 20px 16px;
+        overflow-y: auto;
       }
 
-      .badge {
-        margin-left: auto;
+      .sidebar-section-title {
         font-size: 11px;
-        padding: 2px 7px;
+        font-weight: 700;
+        color: var(--gray-400);
+        letter-spacing: 0.06em;
+        margin-bottom: 12px;
+        padding-left: 12px;
       }
 
-      &:hover {
-        background: var(--gray-100);
-        color: var(--gray-900);
-        i { color: var(--primary-600); }
+      .nav-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        margin-bottom: 28px;
       }
 
-      &.active {
-        background: #eff6ff;
-        color: var(--primary-700);
-        font-weight: 600;
+      .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: var(--radius-md);
+        color: var(--gray-600);
+        font-weight: 500;
+        font-size: 13.5px;
+        text-decoration: none;
+        transition: all 0.15s ease;
 
         i {
-          color: var(--primary-600);
+          font-size: 17px;
+          color: var(--gray-400);
+          transition: color 0.15s ease;
         }
-      }
 
-      &.mobile-item {
-        margin-top: 8px;
-        background: #f0fdf4;
-        color: #166534;
-        border: 1px dashed #86efac;
+        .badge {
+          margin-left: auto;
+          font-size: 11px;
+          padding: 2px 7px;
+        }
 
-        i {
-          color: #16a34a;
+        &:hover {
+          background: var(--gray-100);
+          color: var(--gray-900);
+          i {
+            color: var(--primary-600);
+          }
         }
 
         &.active {
-          background: #dcfce7;
-          border-style: solid;
+          background: #eff6ff;
+          color: var(--primary-700);
+          font-weight: 600;
+
+          i {
+            color: var(--primary-600);
+          }
+        }
+
+        &.mobile-item {
+          margin-top: 8px;
+          background: #f0fdf4;
+          color: #166534;
+          border: 1px dashed #86efac;
+
+          i {
+            color: #16a34a;
+          }
+
+          &.active {
+            background: #dcfce7;
+            border-style: solid;
+          }
         }
       }
-    }
 
-    .layers-summary-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      margin-bottom: 24px;
-      padding: 4px;
-    }
-
-    .layer-summary-pill {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 8px 12px;
-      background: var(--gray-50);
-      border-radius: 6px;
-      border: 1px solid var(--gray-200);
-      font-size: 12.5px;
-
-      .layer-indicator {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
+      .layers-summary-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 24px;
+        padding: 4px;
       }
 
-      .layer-name {
-        flex: 1;
-        font-weight: 500;
-        color: var(--gray-700);
-      }
-
-      .layer-count {
-        font-size: 11.5px;
-        color: var(--gray-500);
-        font-weight: 600;
-      }
-    }
-
-    .sidebar-footer {
-      margin-top: auto;
-      padding-top: 16px;
-      border-top: 1px solid var(--gray-200);
-
-      .system-status {
+      .layer-summary-pill {
         display: flex;
         align-items: center;
-        gap: 8px;
-        font-size: 12px;
-        color: var(--gray-600);
-        font-weight: 500;
+        gap: 10px;
+        padding: 8px 12px;
+        background: var(--gray-50);
+        border-radius: 6px;
+        border: 1px solid var(--gray-200);
+        font-size: 12.5px;
 
-        .status-dot {
-          width: 8px;
-          height: 8px;
+        .layer-indicator {
+          width: 10px;
+          height: 10px;
           border-radius: 50%;
-          background: #10b981;
-          box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+        }
+
+        .layer-name {
+          flex: 1;
+          font-weight: 500;
+          color: var(--gray-700);
+        }
+
+        .layer-count {
+          font-size: 11.5px;
+          color: var(--gray-500);
+          font-weight: 600;
         }
       }
 
-      .version-label {
-        margin-top: 4px;
-        font-size: 11px;
-        color: var(--gray-400);
+      .sidebar-footer {
+        margin-top: auto;
+        padding-top: 16px;
+        border-top: 1px solid var(--gray-200);
+
+        .system-status {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: var(--gray-600);
+          font-weight: 500;
+
+          .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+            box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+          }
+        }
+
+        .version-label {
+          margin-top: 4px;
+          font-size: 11px;
+          color: var(--gray-400);
+        }
       }
-    }
-  `]
+    `,
+  ],
 })
 export class SidebarComponent {
   projectService = inject(ProjectService);
   patrolService = inject(PatrolService);
 
   get pendingReportsCount(): number {
-    return this.projectService.reports().filter(r => r.status === 'PENDING_INSPECTION').length;
+    return this.projectService
+      .reports()
+      .filter((r) => r.status === 'PENDING_INSPECTION').length;
   }
 
   get newIssuesCount(): number {
-    return this.patrolService.issues().filter(i => i.status === 'NEW').length;
+    return this.patrolService.issues().filter((i) => i.status === 'NEW').length;
   }
 
   get pendingTasksCount(): number {
-    return this.patrolService.issues().filter(i => i.status === 'QUICK_FIXING' || (i.status === 'NEW' && i.quickFixDetails)).length;
+    return this.patrolService
+      .issues()
+      .filter(
+        (i) =>
+          i.status === 'QUICK_FIXING' ||
+          (i.status === 'NEW' && i.quickFixDetails),
+      ).length;
   }
 }
