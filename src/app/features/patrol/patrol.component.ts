@@ -7,6 +7,7 @@ import { ScheduleCoordinatorComponent } from './components/schedule-coordinator/
 import { ConfigCatalogComponent } from './components/config-catalog/config-catalog.component';
 import { MobilePatrolSimulatorComponent } from './components/mobile-patrol-simulator/mobile-patrol-simulator.component';
 import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guide-modal.component';
+import { PatrolJournalComponent } from './components/patrol-journal/patrol-journal.component';
 
 @Component({
   selector: 'app-patrol',
@@ -16,6 +17,7 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
     RouterModule,
     IssueWorkspaceComponent,
     ScheduleCoordinatorComponent,
+    PatrolJournalComponent,
     ConfigCatalogComponent,
     MobilePatrolSimulatorComponent,
     FlowGuideModalComponent
@@ -90,6 +92,14 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
               <strong class="stat-value text-primary">{{ todaySchedulesCount }} ca trực</strong>
             </div>
           </div>
+
+          <div class="stat-item" (click)="activeTab = 'JOURNAL'">
+            <div class="stat-icon icon-emerald"><i class="bi bi-journal-bookmark-fill"></i></div>
+            <div class="stat-info">
+              <span class="stat-label">Sổ nhật ký tuần kiểm</span>
+              <strong class="stat-value text-success">{{ inspectionCount }} ca hoàn tất</strong>
+            </div>
+          </div>
         </div>
 
         <!-- QUICK FLOW SUMMARY ALERT BANNER -->
@@ -131,6 +141,17 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
             <span class="tab-badge bg-primary">{{ todaySchedulesCount }} ca</span>
           </button>
 
+          <!-- TAB MỚI: NHẬT KÝ TUẦN KIỂM (KẾT QUẢ ĐI TUẦN - 6 USE CASES) -->
+          <button
+            class="tab-link"
+            [class.active]="activeTab === 'JOURNAL'"
+            (click)="activeTab = 'JOURNAL'"
+          >
+            <i class="bi bi-journal-bookmark-fill text-primary"></i>
+            <span>Nhật Ký Tuần Kiểm (Kết Quả Đi Tuần)</span>
+            <span class="tab-badge bg-info text-dark">{{ inspectionCount }} ca</span>
+          </button>
+
           <button
             class="tab-link"
             [class.active]="activeTab === 'CONFIG'"
@@ -160,10 +181,13 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
         <!-- TAB 2: ĐIỀU PHỐI & LỊCH TRÌNH (CALENDAR + MAP) -->
         <app-schedule-coordinator *ngIf="activeTab === 'SCHEDULE'"></app-schedule-coordinator>
 
-        <!-- TAB 3: DANH MỤC CẤU HÌNH (CRUD TABLES) -->
+        <!-- TAB 3: NHẬT KÝ TUẦN KIỂM (UC 1 -> UC 6) -->
+        <app-patrol-journal *ngIf="activeTab === 'JOURNAL'"></app-patrol-journal>
+
+        <!-- TAB 4: DANH MỤC CẤU HÌNH (CRUD TABLES) -->
         <app-config-catalog *ngIf="activeTab === 'CONFIG'"></app-config-catalog>
 
-        <!-- TAB 4: MÔ PHỎNG APP MOBILE -->
+        <!-- TAB 5: MÔ PHỎNG APP MOBILE -->
         <app-mobile-patrol-simulator
           *ngIf="activeTab === 'MOBILE'"
           (issueReported)="onIssueReportedFromMobile()"
@@ -240,9 +264,16 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
     /* STATS BAR */
     .patrol-stats-bar {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
       gap: 12px;
       padding-top: 8px;
+
+      @media (max-width: 1200px) {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      @media (max-width: 768px) {
+        grid-template-columns: repeat(2, 1fr);
+      }
 
       .stat-item {
         background: #f8fafc;
@@ -380,9 +411,13 @@ import { FlowGuideModalComponent } from './components/flow-guide-modal/flow-guid
 export class PatrolComponent {
   patrolService = inject(PatrolService);
 
-  activeTab: 'WORKSPACE' | 'SCHEDULE' | 'CONFIG' | 'MOBILE' = 'WORKSPACE';
+  activeTab: 'WORKSPACE' | 'SCHEDULE' | 'JOURNAL' | 'CONFIG' | 'MOBILE' = 'WORKSPACE';
   showGuideModal = false;
   showBanner = true;
+
+  get inspectionCount(): number {
+    return this.patrolService.inspectionRecords().length;
+  }
 
   get newIssuesCount(): number {
     return this.patrolService.issues().filter(i => i.status === 'NEW').length;

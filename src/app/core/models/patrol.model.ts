@@ -231,3 +231,52 @@ export interface PatrolLog {
   status: 'INFO' | 'WARNING' | 'SUCCESS' | 'DANGER';
 }
 
+// Sổ nhật ký kết quả tuần kiểm (Bản ghi ca tuần hoàn chỉnh - Inspection Journal Record)
+export interface PatrolInspectionRecord {
+  id: string;
+  code: string;
+  scheduleId?: string;
+  date: string;
+  shift: ShiftType;
+  routeName: string;
+  teamId: string;
+  teamName: string;
+  leadInspector: string;
+  members: string[];
+  startTime: string;
+  endTime: string;
+  distanceKm: number;
+  gpsTrackStatus: 'VALID' | 'PARTIAL' | 'OFFLINE';
+  totalAssetsChecked: number;
+  normalAssetsCount: number;
+  issueAssetsCount: number;
+  issuesFoundCount: number;
+  issueCodes: string[];
+  issues?: {
+    id: string;
+    code: string;
+    title: string;
+    priority: IssuePriority;
+    status: IssueStatus;
+    layerName: string;
+    photoUrl?: string;
+    location: string;
+  }[];
+  checkedAssets?: {
+    assetCode: string;
+    assetName: string;
+    condition: AssetCondition;
+    checkedAt: string;
+    photoUrl?: string;
+    notes?: string;
+  }[];
+  status: 'COMPLETED' | 'VERIFIED' | 'NEEDS_REVIEW' | 'CANCELLED';
+  evaluationGrade: 'DAT_YEU_CAU' | 'DAT_CO_SU_CO' | 'VI_PHAM_LO_TRINH' | 'CHUA_THAM_DINH';
+  operationalNotes: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  updatedAt?: string;
+  weatherCondition?: string;
+  vehiclePlate?: string;
+}
+

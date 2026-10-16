@@ -8,6 +8,7 @@ import {
   PatrolSchedule,
   PatrolIssue,
   PatrolLog,
+  PatrolInspectionRecord,
   IssuePriority,
   IssueStatus,
   ShiftType,
@@ -987,6 +988,272 @@ export class PatrolService {
       lng: 106.7036,
       status: 'WARNING',
     },
+  ]);
+
+  // --- 7. SỔ NHẬT KÝ KẾT QUẢ TUẦN KIỂM (UC 1 -> UC 6) ---
+  readonly inspectionRecords = signal<PatrolInspectionRecord[]>([
+    {
+      id: 'rec-1',
+      code: 'NK-2026-088',
+      scheduleId: 'sch-1',
+      date: '16/10/2026',
+      shift: 'SANG',
+      routeName: 'Đại lộ Võ Văn Kiệt (Km0+000 -> Km8+500)',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      leadInspector: 'KS. Trần Đình Nam',
+      members: ['KS. Trần Đình Nam', 'KTV. Nguyễn Văn Minh', 'Lái xe Lê Quốc Tuấn'],
+      startTime: '06:45',
+      endTime: '11:30',
+      distanceKm: 12.5,
+      gpsTrackStatus: 'VALID',
+      totalAssetsChecked: 24,
+      normalAssetsCount: 22,
+      issueAssetsCount: 2,
+      issuesFoundCount: 2,
+      issueCodes: ['SC-2026-001', 'SC-2026-002'],
+      issues: [
+        {
+          id: 'iss-1',
+          code: 'SC-2026-001',
+          title: 'Đèn âm sàn lối đi vỡ kính & chập cáp',
+          priority: 'HIGH',
+          status: 'QUICK_FIXING',
+          layerName: 'Chiếu sáng',
+          photoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+          location: 'Cột Km4+200, Dải phân cách giữa'
+        },
+        {
+          id: 'iss-2',
+          code: 'SC-2026-002',
+          title: 'Cành xà cừ sà thấp có nguy cơ gãy đổ',
+          priority: 'URGENT',
+          status: 'NEW',
+          layerName: 'Cây xanh',
+          photoUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+          location: 'Km3+400 lề trái hướng Q1 đi Q5'
+        }
+      ],
+      checkedAssets: [
+        {
+          assetCode: 'CS-VK-040',
+          assetName: 'Trụ đèn chiếu sáng nhánh phụ CS-040',
+          condition: 'NORMAL',
+          checkedAt: '07:15 16/10/2026',
+          photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          notes: 'Đèn hoạt động ổn định, kính sạch sẽ'
+        },
+        {
+          assetCode: 'CS-VK-042',
+          assetName: 'Trụ đèn LED chiếu sáng 150W đôi',
+          condition: 'DAMAGED',
+          checkedAt: '07:35 16/10/2026',
+          photoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+          notes: 'Phát hiện chập cáp âm sàn chân cột, đã lập phiếu sự cố SC-2026-001'
+        },
+        {
+          assetCode: 'TN-VK-088',
+          assetName: 'Hố ga thu nước mặt composite',
+          condition: 'GOOD',
+          checkedAt: '08:20 16/10/2026',
+          photoUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80',
+          notes: 'Lưới thu nước thông thoáng, không bị tắc rác'
+        },
+        {
+          assetCode: 'CX-VK-018',
+          assetName: 'Cây Xà Cừ cổ thụ loại 3',
+          condition: 'NEEDS_REPLACEMENT',
+          checkedAt: '09:05 16/10/2026',
+          photoUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+          notes: 'Nhánh cây lớn bị mục thân đe dọa giao thông, đã phát phiếu SC-2026-002'
+        }
+      ],
+      status: 'VERIFIED',
+      evaluationGrade: 'DAT_CO_SU_CO',
+      operationalNotes: 'Đội tuần tra đúng tuyến và đúng giờ quy định. Đã ghi nhận 2 sự cố và phân công khắc phục ngay trong ca sáng.',
+      verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
+      verifiedAt: '16/10/2026 13:45',
+      weatherCondition: 'Trời nắng ráo, nhiệt độ 31°C, tầm nhìn trên 10km',
+      vehiclePlate: '51A-892.44 (Xe bán tải tuần kiểm Ban QLDA)'
+    },
+    {
+      id: 'rec-2',
+      code: 'NK-2026-087',
+      scheduleId: 'sch-2',
+      date: '16/10/2026',
+      shift: 'SANG',
+      routeName: 'Tuyến Phố đi bộ Nguyễn Huệ & Lê Lợi',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      leadInspector: 'KTV. Nguyễn Văn Minh',
+      members: ['KTV. Nguyễn Văn Minh', 'Trần Đình Nam'],
+      startTime: '07:00',
+      endTime: '10:30',
+      distanceKm: 4.8,
+      gpsTrackStatus: 'VALID',
+      totalAssetsChecked: 18,
+      normalAssetsCount: 18,
+      issueAssetsCount: 0,
+      issuesFoundCount: 0,
+      issueCodes: [],
+      issues: [],
+      checkedAssets: [
+        {
+          assetCode: 'CS-NH-001',
+          assetName: 'Đèn trang trí cảnh quan Phố đi bộ',
+          condition: 'GOOD',
+          checkedAt: '07:25 16/10/2026',
+          notes: 'Đèn sạch sẽ, hệ thống dây ngầm nguyên vẹn'
+        },
+        {
+          assetCode: 'CX-NH-012',
+          assetName: 'Cây lộc vừng bồn hoa trung tâm',
+          condition: 'NORMAL',
+          checkedAt: '08:10 16/10/2026',
+          notes: 'Cây phát triển bình thường, đã tỉa lá úa'
+        }
+      ],
+      status: 'VERIFIED',
+      evaluationGrade: 'DAT_YEU_CAU',
+      operationalNotes: 'Tuyến phố trung tâm bảo đảm mỹ quan đô thị, không phát sinh sự cố hạ tầng.',
+      verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
+      verifiedAt: '16/10/2026 11:45',
+      weatherCondition: 'Nắng nhẹ, gió nhẹ, lưu lượng người đi bộ vừa phải',
+      vehiclePlate: 'Đi tuần bộ và xe đạp tuần tra đô thị'
+    },
+    {
+      id: 'rec-3',
+      code: 'NK-2026-085',
+      scheduleId: 'sch-3',
+      date: '15/10/2026',
+      shift: 'CHIEU',
+      routeName: 'Tuyến Bến Bạch Đằng & Tôn Đức Thắng',
+      teamId: 'team-2',
+      teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
+      leadInspector: 'Lê Hoàng Long',
+      members: ['Lê Hoàng Long', 'Phạm Thị Thúy Hằng'],
+      startTime: '13:30',
+      endTime: '17:15',
+      distanceKm: 7.2,
+      gpsTrackStatus: 'VALID',
+      totalAssetsChecked: 20,
+      normalAssetsCount: 19,
+      issueAssetsCount: 1,
+      issuesFoundCount: 1,
+      issueCodes: ['SC-2026-003'],
+      issues: [
+        {
+          id: 'iss-3',
+          code: 'SC-2026-003',
+          title: 'Hố ga mất nắp đan gang khu vực bến tàu thủy',
+          priority: 'URGENT',
+          status: 'RESOLVED',
+          layerName: 'Thoát nước',
+          location: 'Bến ga tàu thủy Bạch Đằng'
+        }
+      ],
+      status: 'VERIFIED',
+      evaluationGrade: 'DAT_CO_SU_CO',
+      operationalNotes: 'Phát hiện sự cố nắp hố ga mất đã đặt biển cảnh báo ngay lập tức và chuyển đội thoát nước thay nắp trong 45 phút.',
+      verifiedBy: 'Vũ Quốc Toàn (Phó phòng Vận hành)',
+      verifiedAt: '15/10/2026 18:00',
+      weatherCondition: 'Mây rải rác, triều cường nhẹ ven sông',
+      vehiclePlate: '51B-004.12'
+    },
+    {
+      id: 'rec-4',
+      code: 'NK-2026-082',
+      scheduleId: 'sch-4',
+      date: '15/10/2026',
+      shift: 'SANG',
+      routeName: 'Trục Nam Kỳ Khởi Nghĩa - Hàm Nghi - Pasteur',
+      teamId: 'team-3',
+      teamName: 'Tổ Phản ứng nhanh Thoát nước & Giao thông Đô thị',
+      leadInspector: 'Vũ Quốc Toàn',
+      members: ['Vũ Quốc Toàn', 'Đặng Thanh Tùng', 'Nguyễn Thế Vinh'],
+      startTime: '06:30',
+      endTime: '11:00',
+      distanceKm: 9.6,
+      gpsTrackStatus: 'VALID',
+      totalAssetsChecked: 26,
+      normalAssetsCount: 25,
+      issueAssetsCount: 1,
+      issuesFoundCount: 1,
+      issueCodes: ['SC-2026-004'],
+      issues: [
+        {
+          id: 'iss-4',
+          code: 'SC-2026-004',
+          title: 'Sụt lún vỉa hè lát đá ngã tư NKKN - Hàm Nghi',
+          priority: 'HIGH',
+          status: 'MOVED_TO_PROJECT',
+          layerName: 'Giao thông',
+          location: 'Ngã tư Nam Kỳ Khởi Nghĩa - Hàm Nghi'
+        }
+      ],
+      status: 'VERIFIED',
+      evaluationGrade: 'DAT_CO_SU_CO',
+      operationalNotes: 'Vết lún sâu 12cm có nguy cơ lan rộng, đã lập biên bản và chuyển sang dự án sửa chữa mặt đường đợt tới.',
+      verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
+      verifiedAt: '15/10/2026 14:15',
+      weatherCondition: 'Nắng ráo, giao thông đông đúc giờ cao điểm',
+      vehiclePlate: '51A-992.81'
+    },
+    {
+      id: 'rec-5',
+      code: 'NK-2026-079',
+      scheduleId: 'sch-5',
+      date: '14/10/2026',
+      shift: 'TOI',
+      routeName: 'Cầu Calmette - Bến Vân Đồn - Cầu Ông Lãnh',
+      teamId: 'team-2',
+      teamName: 'Đội Tuần kiểm Hạ tầng Ven Sông',
+      leadInspector: 'Phạm Thị Thúy Hằng',
+      members: ['Phạm Thị Thúy Hằng', 'Trần Văn Kiên'],
+      startTime: '18:30',
+      endTime: '22:00',
+      distanceKm: 5.4,
+      gpsTrackStatus: 'PARTIAL',
+      totalAssetsChecked: 15,
+      normalAssetsCount: 15,
+      issueAssetsCount: 0,
+      issuesFoundCount: 0,
+      issueCodes: [],
+      issues: [],
+      status: 'NEEDS_REVIEW',
+      evaluationGrade: 'CHUA_THAM_DINH',
+      operationalNotes: 'Có gián đoạn tín hiệu GPS khoảng 25 phút gần dốc cầu Ông Lãnh. Cán bộ vận hành đang liên hệ kiểm tra nguyên nhân thiết bị.',
+      weatherCondition: 'Có mưa rào nhỏ lúc 20h15',
+      vehiclePlate: 'Xe máy tuần tra 59P1-123.45'
+    },
+    {
+      id: 'rec-6',
+      code: 'NK-2026-075',
+      scheduleId: 'sch-6',
+      date: '13/10/2026',
+      shift: 'SANG',
+      routeName: 'Tuyến Phố đi bộ Nguyễn Huệ',
+      teamId: 'team-1',
+      teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
+      leadInspector: 'Trần Đình Nam',
+      members: ['Trần Đình Nam', 'Nguyễn Văn Minh'],
+      startTime: '06:45',
+      endTime: '10:45',
+      distanceKm: 4.5,
+      gpsTrackStatus: 'VALID',
+      totalAssetsChecked: 18,
+      normalAssetsCount: 18,
+      issueAssetsCount: 0,
+      issuesFoundCount: 0,
+      issueCodes: [],
+      issues: [],
+      status: 'VERIFIED',
+      evaluationGrade: 'DAT_YEU_CAU',
+      operationalNotes: 'Hoàn thành tốt ca tuần kiểm, chuẩn bị phục vụ sự kiện cuối tuần.',
+      verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
+      verifiedAt: '13/10/2026 11:30',
+      weatherCondition: 'Trời nắng mát'
+    }
   ]);
 
   // Selected State
@@ -2023,5 +2290,86 @@ export class PatrolService {
       'Xuất dữ liệu Excel thành công!',
       `File: ${filename}.csv đã được tải về.`,
     );
+  }
+
+  // --- THAO TÁC CẬP NHẬT KẾT QUẢ TUẦN KIỂM (UC 4) ---
+  updateInspectionRecord(id: string, updates: Partial<PatrolInspectionRecord>) {
+    const now = new Date();
+    const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+    
+    this.inspectionRecords.update((list) =>
+      list.map((item) =>
+        item.id === id
+          ? {
+              ...item,
+              ...updates,
+              updatedAt: timeStr,
+              verifiedAt: updates.status === 'VERIFIED' ? timeStr : item.verifiedAt,
+              verifiedBy: updates.status === 'VERIFIED' ? (updates.verifiedBy || 'Cán bộ Vận hành Ban QLDA') : item.verifiedBy
+            }
+          : item
+      )
+    );
+    this.toast.success(
+      'Cập nhật thông tin thành công!',
+      `Đã lưu ý kiến thẩm tra & cập nhật sổ nhật ký tuần kiểm.`
+    );
+  }
+
+  // --- THAO TÁC XÓA KẾT QUẢ TUẦN KIỂM (UC 5) ---
+  deleteInspectionRecord(id: string) {
+    const item = this.inspectionRecords().find((r) => r.id === id);
+    this.inspectionRecords.update((list) => list.filter((r) => r.id !== id));
+    this.toast.success(
+      'Xóa kết quả tuần kiểm thành công!',
+      `Đã xóa bản ghi nhật ký [${item?.code || id}] khỏi hệ thống.`
+    );
+  }
+
+  // --- XUẤT NHẬT KÝ TUẦN KIỂM (UC 6) ---
+  exportInspectionRecordsToCsv(records: PatrolInspectionRecord[]) {
+    const headers = [
+      'Mã Sổ Nhật Ký',
+      'Ngày Tuần Tra',
+      'Ca Trực',
+      'Tuyến Đường',
+      'Đội Phụ Trách',
+      'Trưởng Kíp',
+      'Thời Gian Bắt Đầu',
+      'Thời Gian Kết Thúc',
+      'Quãng Đường (km)',
+      'Tổng Tài Sản Đã Rà Soát',
+      'Tài Sản Bình Thường',
+      'Tài Sản Có Vấn Đề',
+      'Số Sự Cố Phát Hiện',
+      'Trạng Thái Thẩm Định',
+      'Xếp Loại Đánh Giá',
+      'Ý Kiến Thẩm Định Ban QLDA',
+      'Người Thẩm Định',
+      'Ngày Giờ Thẩm Định'
+    ];
+
+    const rows = records.map((r) => [
+      r.code,
+      r.date,
+      r.shift === 'SANG' ? 'Ca Sáng' : r.shift === 'CHIEU' ? 'Ca Chiều' : 'Ca Tối',
+      r.routeName,
+      r.teamName,
+      r.leadInspector,
+      r.startTime,
+      r.endTime,
+      r.distanceKm,
+      r.totalAssetsChecked,
+      r.normalAssetsCount,
+      r.issueAssetsCount,
+      r.issuesFoundCount,
+      r.status === 'VERIFIED' ? 'Đã thẩm định' : r.status === 'NEEDS_REVIEW' ? 'Chờ kiểm tra lại' : 'Hoàn thành',
+      r.evaluationGrade === 'DAT_YEU_CAU' ? 'Đạt yêu cầu' : r.evaluationGrade === 'DAT_CO_SU_CO' ? 'Đạt (kèm sự cố)' : 'Chưa thẩm định',
+      r.operationalNotes || '',
+      r.verifiedBy || '',
+      r.verifiedAt || ''
+    ]);
+
+    this.exportToCsv('So_Nhat_Ky_Tuan_Kiem_Ha_Tang', headers, rows);
   }
 }
