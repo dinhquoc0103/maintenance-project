@@ -99,8 +99,80 @@ export class MaintenanceHistoryService {
         inspectorName: 'KTV. Trần Văn Nam (Đội trưởng cơ động)',
         isGroupPhoto: true
       },
+      beforePhotos: [
+        {
+          id: 'bp-1',
+          url: 'https://images.unsplash.com/photo-1516541196182-6bdb0516ed27?w=800&q=80',
+          caption: 'Ảnh 1: Toàn cảnh đoạn tuyến Km4 mất điện chiếu sáng',
+          timestamp: '08:35 • 25/05/2025',
+          gpsCoordinates: '10.7520° N, 106.6818° E',
+          note: 'Hiện trường lúc tiếp nhận tin báo'
+        },
+        {
+          id: 'bp-2',
+          url: 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?w=800&q=80',
+          caption: 'Ảnh 2: Tủ điều khiển T-02 bị nhảy aptomat tổng',
+          timestamp: '08:40 • 25/05/2025',
+          gpsCoordinates: '10.7520° N, 106.6818° E',
+          note: 'Kiểm tra tủ nguồn T-02'
+        },
+        {
+          id: 'bp-3',
+          url: 'https://images.unsplash.com/photo-1544724569-5f546fd6f2b5?w=800&q=80',
+          caption: 'Ảnh 3: Cận cảnh vị trí cáp ngầm bị rách vỏ gây chập',
+          timestamp: '08:45 • 25/05/2025',
+          gpsCoordinates: '10.7521° N, 106.6819° E',
+          note: 'Phát hiện điểm rò điện vỏ cáp'
+        },
+        {
+          id: 'bp-4',
+          url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800&q=80',
+          caption: 'Ảnh 4: Kiểm tra thông mạch cụm cột CS-040 đến CS-043',
+          timestamp: '08:50 • 25/05/2025',
+          gpsCoordinates: '10.7522° N, 106.6820° E',
+          note: 'Đo thông mạch cách điện'
+        }
+      ],
+      afterPhotos: [
+        {
+          id: 'ap-1',
+          url: 'https://images.unsplash.com/photo-1545459720-aac8509eb02c?w=800&q=80',
+          caption: 'Ảnh 1: Cụm 4 trụ đèn CS-040 đến CS-043 sáng đồng bộ',
+          timestamp: '10:15 • 25/05/2025',
+          gpsCoordinates: '10.7520° N, 106.6818° E',
+          note: 'Đóng điện thử nghiệm toàn tuyến'
+        },
+        {
+          id: 'ap-2',
+          url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800&q=80',
+          caption: 'Ảnh 2: Đo kiểm điện áp pha đạt 228V tại tủ T-02',
+          timestamp: '10:18 • 25/05/2025',
+          gpsCoordinates: '10.7520° N, 106.6818° E',
+          note: 'Đo kiểm thông số an toàn'
+        },
+        {
+          id: 'ap-3',
+          url: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=800&q=80',
+          caption: 'Ảnh 3: Đã bọc 3 lớp băng keo trung thế và thay aptomat mới',
+          timestamp: '10:20 • 25/05/2025',
+          gpsCoordinates: '10.7521° N, 106.6819° E',
+          note: 'Hoàn thiện mối nối kỹ thuật'
+        },
+        {
+          id: 'ap-4',
+          url: 'https://images.unsplash.com/photo-1504917599217-d4dc5ebe6122?w=800&q=80',
+          caption: 'Ảnh 4: Khóa niêm phong tủ điện T-02 và thu dọn hiện trường',
+          timestamp: '10:25 • 25/05/2025',
+          gpsCoordinates: '10.7520° N, 106.6818° E',
+          note: 'Dọn dẹp trả lại mặt bằng'
+        }
+      ],
       technicalNotes:
         'Đội cơ động tiếp cận kiểm tra tủ T-02, phát hiện chuột cắn trầy xước vỏ cáp gây chạm mát vỏ tủ khi mưa. Đã bọc lại 3 lớp băng keo trung thế 3M, thay thế aptomat nhánh 32A và 2 bộ tụ kích. Kiểm tra thử tải 30 phút đạt tiêu chuẩn vận hành an toàn.',
+      managementNote:
+        'Đã xác nhận sự cố khắc phục kịp thời trong khung giờ sáng, không ảnh hưởng an toàn giao thông.',
+      managementNoteUpdatedAt: '25/05/2025 14:00',
+      managementNoteUpdatedBy: 'Cán bộ Giám sát Ban QLDA',
       internalTeamDetails: {
         incidentTicketCode: 'SC-2025-089',
         incidentSummary: 'Nhảy áp aptomat lộ 2 tủ điều khiển T-02 gây mất điện 4 trụ đèn liền kề CS-040 đến CS-043',
@@ -467,6 +539,7 @@ export class MaintenanceHistoryService {
     routeName: 'Tất cả',
     projectIdOrCode: 'ALL',
     executorType: 'ALL',
+    contractorOrTeamFilter: 'ALL',
     searchKeyword: ''
   });
 
@@ -488,6 +561,20 @@ export class MaintenanceHistoryService {
 
       // Filter by route
       if (criteria.routeName !== 'Tất cả' && !item.routeName.includes(criteria.routeName)) {
+        return false;
+      }
+
+      // Filter by Project or Incident Ticket Code
+      if (criteria.projectIdOrCode !== 'ALL' && item.projectOrIncidentCode !== criteria.projectIdOrCode) {
+        return false;
+      }
+
+      // Filter by specific Contractor or Internal Team
+      if (
+        criteria.contractorOrTeamFilter &&
+        criteria.contractorOrTeamFilter !== 'ALL' &&
+        item.executorName !== criteria.contractorOrTeamFilter
+      ) {
         return false;
       }
 
@@ -530,6 +617,81 @@ export class MaintenanceHistoryService {
     };
   });
 
+  // Specialized KPIs for Contractor tab vs Internal Team tab
+  getTabKpis(tab: 'CONTRACTOR' | 'INTERNAL_TEAM') {
+    if (tab === 'CONTRACTOR') {
+      return {
+        totalCount: 1024,
+        card1: {
+          title: 'TỔNG LƯỢT BẢO TRÌ',
+          val: 1024,
+          unit: 'lượt',
+          icon: 'bi bi-tools',
+          iconClass: 'icon-blue'
+        },
+        card2: {
+          title: 'SỐ LƯỢNG DỰ ÁN',
+          val: 4,
+          unit: 'dự án',
+          icon: 'bi bi-folder-check',
+          iconClass: 'icon-emerald',
+          subText: 'Đang triển khai duy tu'
+        },
+        card3: {
+          title: 'NHÀ THẦU DUY TU NHIỀU NHẤT',
+          entityTitle: 'CTCP Chiếu sáng Đô thị Sài Gòn',
+          val: 560,
+          unit: 'lượt',
+          icon: 'bi bi-award-fill',
+          iconClass: 'icon-amber'
+        },
+        card4: {
+          title: 'NHÀ THẦU DUY TU ÍT NHẤT',
+          entityTitle: 'Xí nghiệp Thoát nước Đô thị 1',
+          val: 180,
+          unit: 'lượt',
+          icon: 'bi bi-building',
+          iconClass: 'icon-purple'
+        }
+      };
+    } else {
+      return {
+        totalCount: 404,
+        card1: {
+          title: 'TỔNG CA SỰ CỐ ĐÃ KHẮC PHỤC',
+          val: 404,
+          unit: 'ca sự cố',
+          icon: 'bi bi-tools',
+          iconClass: 'icon-purple'
+        },
+        card2: {
+          title: 'SỐ LƯỢNG ĐỘI KHẮC PHỤC',
+          val: 2,
+          unit: 'đội trực',
+          icon: 'bi bi-people-fill',
+          iconClass: 'icon-emerald',
+          subText: 'Thường trực ứng cứu 24/7'
+        },
+        card3: {
+          title: 'ĐỘI XỬ LÝ SỰ CỐ NHIỀU NHẤT',
+          entityTitle: 'Đội Cơ động 1 - Ban QLDA',
+          val: 245,
+          unit: 'ca sự cố',
+          icon: 'bi bi-award-fill',
+          iconClass: 'icon-amber'
+        },
+        card4: {
+          title: 'ĐỘI XỬ LÝ SỰ CỐ ÍT NHẤT',
+          entityTitle: 'Đội Phản ứng nhanh Thoát nước',
+          val: 159,
+          unit: 'ca sự cố',
+          icon: 'bi bi-shield-shaded',
+          iconClass: 'icon-purple'
+        }
+      };
+    }
+  }
+
   updateFilter(criteria: Partial<HistoryFilterCriteria>) {
     this.filterCriteria.update((curr) => ({ ...curr, ...criteria }));
   }
@@ -542,6 +704,7 @@ export class MaintenanceHistoryService {
       routeName: 'Tất cả',
       projectIdOrCode: 'ALL',
       executorType: 'ALL',
+      contractorOrTeamFilter: 'ALL',
       searchKeyword: ''
     });
   }
@@ -549,6 +712,23 @@ export class MaintenanceHistoryService {
   updateTechnicalNote(id: string, newNote: string): void {
     this.records.update((list) =>
       list.map((r) => (r.id === id ? { ...r, technicalNotes: newNote } : r))
+    );
+  }
+
+  updateManagementNote(id: string, newNote: string): void {
+    const now = new Date();
+    const formatted = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    this.records.update((list) =>
+      list.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              managementNote: newNote,
+              managementNoteUpdatedAt: formatted,
+              managementNoteUpdatedBy: 'Ban QLDA Hạ tầng'
+            }
+          : r
+      )
     );
   }
 

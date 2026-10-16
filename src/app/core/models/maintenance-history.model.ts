@@ -27,6 +27,15 @@ export interface InternalTeamMaintenanceDetails {
   teamMembers?: MaintenanceTeamMember[];
 }
 
+export interface EvidencePhotoItem {
+  id?: string;
+  url: string;
+  caption: string;
+  timestamp: string;
+  gpsCoordinates?: string;
+  note?: string;
+}
+
 export interface MaintenanceHistoryItem {
   id: string;
   completedAt: string; // e.g. '20/05/2025' or '25/05/2025 10:15'
@@ -52,7 +61,7 @@ export interface MaintenanceHistoryItem {
   evidenceStatus: 'FULL_EXIF_VALID' | 'SHARED_INCIDENT_PHOTOS' | 'MISSING_AFTER';
   evidenceLabel: string; // 'Đủ 2 ảnh Trước/Sau (EXIF OK)' or 'Ảnh chung cụm sự cố (4 tài sản)'
 
-  // Detailed Evidence Photos
+  // Detailed Evidence Photos (1-1 for Contractor)
   beforePhoto: {
     url: string;
     caption: string;
@@ -74,8 +83,17 @@ export interface MaintenanceHistoryItem {
     isGroupPhoto?: boolean;
   };
 
-  // Technical Notes / Verification memo
+  // Up to 5 photos for Internal Team (Cụm sự cố)
+  beforePhotos?: EvidencePhotoItem[];
+  afterPhotos?: EvidencePhotoItem[];
+
+  // Technical Notes / Verification memo (Original from field)
   technicalNotes: string;
+
+  // Additional note from Ban QLDA / Management
+  managementNote?: string;
+  managementNoteUpdatedAt?: string;
+  managementNoteUpdatedBy?: string;
 
   // Contractor Specifics (When executorType === 'CONTRACTOR')
   contractorDetails?: {
@@ -97,5 +115,6 @@ export interface HistoryFilterCriteria {
   routeName: string;
   projectIdOrCode: string;
   executorType: 'ALL' | 'CONTRACTOR' | 'INTERNAL_TEAM';
+  contractorOrTeamFilter: string; // Filter specifically by contractor name or internal team
   searchKeyword: string;
 }

@@ -1,17 +1,20 @@
 <div class="history-page-wrapper">
-
-
+  <!-- Top Title Bar -->
   <div class="page-title-bar">
     <div class="title-left">
       <h1 class="page-main-title">
         Quản lý Lịch sử Duy tu, Bảo trì Tài sản Hạ tầng Kỹ thuật
       </h1>
+      <p class="page-subtitle">
+        Theo dõi, đối soát minh chứng hiện trường và thẩm định chất lượng duy tu
+        hạ tầng đô thị
+      </p>
     </div>
     <div class="title-actions">
-      <button class="btn btn-export-excel" (click)="exportExcel()">
+      <!-- <button class="btn btn-export-excel" (click)="exportExcel()">
         <i class="bi bi-file-earmark-arrow-down"></i>
-        <span>Xuất dữ liệu Excel (Báo cáo lịch sử)</span>
-      </button>
+        <span>Xuất dữ liệu Excel</span>
+      </button> -->
       <button class="btn btn-refresh-data" (click)="refreshData()">
         <i class="bi bi-arrow-repeat"></i>
         <span>Làm mới dữ liệu</span>
@@ -19,88 +22,165 @@
     </div>
   </div>
 
-  <!-- 4 KPI Overview Cards (Insights Động) -->
+  <!-- ============================================================== -->
+  <!-- 2 TABS LỚN: PHÂN ĐỊNH RÕ RÀNG NHÀ THẦU VS NỘI BỘ (THEO THỐNG NHẤT BE) -->
+  <!-- ============================================================== -->
+  <div class="category-tabs-container">
+    <div class="category-tabs-row">
+      <!-- Tab 1: Nhà thầu -->
+      <button
+        type="button"
+        class="cat-tab-btn"
+        [class.active]="activeTab() === 'CONTRACTOR'"
+        (click)="setActiveTab('CONTRACTOR')"
+      >
+        <div class="tab-icon-wrap icon-contractor">
+          <i class="bi bi-building-check"></i>
+        </div>
+        <div class="tab-info">
+          <div class="tab-title-line">
+            <span class="tab-title">Duy tu, bảo trì theo Dự án Nhà thầu</span>
+            <!-- <span class="tab-count-badge badge-contractor"
+              >{{ contractorCount }} tài sản</span
+            > -->
+          </div>
+          <!-- <span class="tab-desc">Nghiệm thu khối lượng 1-1 theo Hợp đồng & Ký số Token CA</span> -->
+        </div>
+      </button>
+
+      <!-- Tab 2: Đội nội bộ -->
+      <button
+        type="button"
+        class="cat-tab-btn"
+        [class.active]="activeTab() === 'INTERNAL_TEAM'"
+        (click)="setActiveTab('INTERNAL_TEAM')"
+      >
+        <div class="tab-icon-wrap icon-internal">
+          <i class="bi bi-tools"></i>
+        </div>
+        <div class="tab-info">
+          <div class="tab-title-line">
+            <span class="tab-title"
+              >Khắc phục sự cố theo Đội khắc phục Nội bộ</span
+            >
+            <!-- <span class="tab-count-badge badge-internal"
+              >{{ internalCount }} sự cố</span
+            > -->
+          </div>
+          <!-- <span class="tab-desc"
+            >Khắc phục khẩn cấp theo Phiếu sự cố, Chuẩn SLA phản ứng & Ảnh hiện
+            trường cụm</span
+          > -->
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- 4 KPI OVERVIEW CARDS (NEO LOGIC THEO TAB ĐANG CHỌN) -->
+  <!-- ============================================================== -->
   <div class="kpi-overview-grid">
-    <!-- Card 1: Tổng lượt bảo trì -->
+    <!-- Card 1 -->
     <div class="kpi-stat-card card-total">
       <div class="stat-body">
         <div class="stat-meta">
-          <span class="stat-title">TỔNG LƯỢT BẢO TRÌ</span>
+          <span class="stat-title">{{ tabKpis.card1.title }}</span>
           <div class="stat-main-number">
-            <span class="number-val">{{ stats.totalCount | number }}</span>
-            <span class="number-unit">lượt</span>
+            <span class="number-val">{{ tabKpis.card1.val | number }}</span>
+            <span class="number-unit">{{ tabKpis.card1.unit }}</span>
           </div>
         </div>
-        <div class="stat-icon-wrap icon-blue">
-          <i class="bi bi-gear-wide-connected"></i>
+        <div class="stat-icon-wrap" [ngClass]="tabKpis.card1.iconClass">
+          <i [class]="tabKpis.card1.icon"></i>
         </div>
       </div>
     </div>
 
-    <!-- Card 2: Lớp bảo trì nhiều nhất -->
-    <div class="kpi-stat-card card-most-maintained">
+    <!-- Card 2 -->
+    <div class="kpi-stat-card card-sla-cert">
       <div class="stat-body">
         <div class="stat-meta">
-          <span class="stat-title">LỚP BẢO TRÌ NHIỀU NHẤT</span>
-          <div class="stat-entity-title text-amber-700">
-            {{ stats.mostMaintainedLayer.name }}
-          </div>
+          <span class="stat-title">{{ tabKpis.card2.title }}</span>
           <div class="stat-main-number">
-            <span class="number-val">{{ stats.mostMaintainedLayer.count | number }}</span>
-            <span class="number-unit">lượt</span>
+            <span class="number-val text-emerald-700">{{
+              tabKpis.card2.val
+            }}</span>
+            <span class="number-unit">{{ tabKpis.card2.unit }}</span>
+          </div>
+          <div class="stat-subtext text-muted" *ngIf="tabKpis.card2.subText">
+            {{ tabKpis.card2.subText }}
           </div>
         </div>
-        <div class="stat-icon-wrap icon-amber">
-          <i class="bi bi-graph-up-arrow"></i>
+        <div class="stat-icon-wrap" [ngClass]="tabKpis.card2.iconClass">
+          <i [class]="tabKpis.card2.icon"></i>
         </div>
       </div>
     </div>
 
-    <!-- Card 3: Lớp bảo trì ít nhất -->
-    <div class="kpi-stat-card card-least-maintained">
+    <!-- Card 3 -->
+    <div class="kpi-stat-card card-top-executor">
       <div class="stat-body">
         <div class="stat-meta">
-          <span class="stat-title">LỚP BẢO TRÌ ÍT NHẤT</span>
-          <div class="stat-entity-title text-emerald-700">
-            {{ stats.leastMaintainedLayer.name }}
+          <span class="stat-title">{{ tabKpis.card3.title }}</span>
+          <div
+            class="stat-entity-title text-amber-700"
+            *ngIf="tabKpis.card3.entityTitle"
+            [title]="tabKpis.card3.entityTitle"
+          >
+            {{ tabKpis.card3.entityTitle }}
           </div>
           <div class="stat-main-number">
-            <span class="number-val">{{ stats.leastMaintainedLayer.count | number }}</span>
-            <span class="number-unit">lượt</span>
+            <span class="number-val">{{ tabKpis.card3.val }}</span>
+            <span class="number-unit" *ngIf="tabKpis.card3.unit">{{
+              tabKpis.card3.unit
+            }}</span>
           </div>
         </div>
-        <div class="stat-icon-wrap icon-emerald">
-          <i class="bi bi-shield-check"></i>
+        <div class="stat-icon-wrap" [ngClass]="tabKpis.card3.iconClass">
+          <i [class]="tabKpis.card3.icon"></i>
         </div>
       </div>
     </div>
 
-    <!-- Card 4: Tuyến đường bảo trì nhiều nhất -->
+    <!-- Card 4 -->
     <div class="kpi-stat-card card-top-route">
       <div class="stat-body">
         <div class="stat-meta">
-          <span class="stat-title">TUYẾN ĐƯỜNG BẢO TRÌ NHIỀU NHẤT</span>
-          <div class="stat-entity-title text-indigo-700">
-            {{ stats.topRoute.name }}
+          <span class="stat-title">{{ tabKpis.card4.title }}</span>
+          <div
+            class="stat-entity-title text-indigo-700"
+            *ngIf="tabKpis.card4.entityTitle"
+            [title]="tabKpis.card4.entityTitle"
+          >
+            {{ tabKpis.card4.entityTitle }}
           </div>
           <div class="stat-main-number">
-            <span class="number-val">{{ stats.topRoute.count | number }}</span>
-            <span class="number-unit">lượt</span>
+            <span class="number-val">{{ tabKpis.card4.val | number }}</span>
+            <span class="number-unit">{{ tabKpis.card4.unit }}</span>
           </div>
         </div>
-        <div class="stat-icon-wrap icon-purple">
-          <i class="bi bi-signpost-split"></i>
+        <div class="stat-icon-wrap" [ngClass]="tabKpis.card4.iconClass">
+          <i [class]="tabKpis.card4.icon"></i>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Advanced GIS Filter Box -->
+  <!-- ============================================================== -->
+  <!-- ADVANCED FILTER PANEL (TỰ ĐỘNG THAY ĐỔI THEO TAB ĐANG CHỌN) -->
+  <!-- ============================================================== -->
   <div class="filter-panel-card">
     <div class="filter-panel-header">
       <div class="header-tag-title">
         <i class="bi bi-funnel-fill text-primary"></i>
-        <span class="title-text">Bộ lọc Tra cứu Lịch sử Chuyên sâu</span>
+        <span class="title-text">
+          Bộ lọc dữ liệu:
+          {{
+            activeTab() === "CONTRACTOR"
+              ? "Dự án Nhà thầu"
+              : "Đội cơ động Nội bộ"
+          }}
+        </span>
       </div>
       <div class="quick-time-pills">
         <button
@@ -130,9 +210,9 @@
       </div>
     </div>
 
-    <!-- Filter form fields (4 trường cân đối, tự động lọc khi thay đổi) -->
+    <!-- 4 Filter form fields neo theo tab -->
     <div class="filter-fields-grid">
-      <!-- Lớp dữ liệu tài sản -->
+      <!-- 1. Lớp dữ liệu tài sản -->
       <div class="form-group field-layer">
         <label class="form-label">
           <span>Lớp dữ liệu tài sản</span>
@@ -151,7 +231,7 @@
         </select>
       </div>
 
-      <!-- Tuyến đường / Khu vực -->
+      <!-- 2. Tuyến đường / Khu vực -->
       <div class="form-group field-route">
         <label class="form-label">Tuyến đường / Khu vực</label>
         <select
@@ -167,48 +247,104 @@
         </select>
       </div>
 
-      <!-- Dự án / Đợt duy tu -->
+      <!-- 3. Trường thay đổi theo Tab: DỰ ÁN (Nhà thầu) vs PHIẾU SỰ CỐ (Nội bộ) -->
       <div class="form-group field-project">
-        <label class="form-label">Dự án / Đợt duy tu</label>
+        <label class="form-label">
+          <span>{{
+            activeTab() === "CONTRACTOR"
+              ? "Dự án / Đợt thanh toán"
+              : "Phiếu sự cố / Ca trực"
+          }}</span>
+        </label>
         <select
           class="form-select custom-select"
           [(ngModel)]="selectedProject"
           (ngModelChange)="applyFilter()"
         >
-          <option value="ALL">Tất cả dự án & đợt duy tu</option>
-          <option value="DT-2025-VVK-02">Dự án DT-2025-VVK-02 - Đợt 2/2025</option>
-          <option value="DT-2025-VVK-01">Dự án DT-2025-VVK-01 - Đợt 1 Cắt tỉa</option>
-          <option value="DT-2025-VVK-03">Dự án DT-2025-VVK-03 - Nạo vét Q2</option>
-          <option value="DT-2025-Q1-088">Dự án DT-2025-Q1-088 - Đợt Q1/2025</option>
+          <option value="ALL">
+            {{
+              activeTab() === "CONTRACTOR"
+                ? "Tất cả dự án & đợt thanh toán"
+                : "Tất cả phiếu sự cố & ca trực"
+            }}
+          </option>
+          <ng-container *ngIf="activeTab() === 'CONTRACTOR'">
+            <option value="DT-2025-VVK-02">
+              DT-2025-VVK-02 - Đợt 2/2025 (Chiếu sáng VVK)
+            </option>
+            <option value="DT-2025-VVK-01">
+              DT-2025-VVK-01 - Đợt 1 Cắt tỉa cây xanh
+            </option>
+            <option value="DT-2025-VVK-03">
+              DT-2025-VVK-03 - Nạo vét thoát nước Q2
+            </option>
+            <option value="DT-2025-Q1-088">
+              DT-2025-Q1-088 - Trồng thay thế cây Q1
+            </option>
+          </ng-container>
+          <ng-container *ngIf="activeTab() === 'INTERNAL_TEAM'">
+            <option value="SC-2025-089">
+              SC-2025-089 - Chập cáp ngầm mất điện nhánh Km4
+            </option>
+            <option value="SC-2025-082">
+              SC-2025-082 - Gãy nắp hố ga Km2+500 (Khẩn cấp)
+            </option>
+          </ng-container>
         </select>
       </div>
 
-      <!-- Đơn vị thực hiện (Mới thảo luận) -->
+      <!-- 4. Trường thay đổi theo Tab: NHÀ THẦU THỰC HIỆN vs ĐỘI CƠ ĐỘNG TIẾP NHẬN -->
       <div class="form-group field-executor">
         <label class="form-label">
-          <span>Đơn vị / Loại hình thực hiện</span>
-          <span class="highlight-hint">Phân định minh chứng</span>
+          <span>{{
+            activeTab() === "CONTRACTOR"
+              ? "Nhà thầu thực hiện"
+              : "Đội cơ động tiếp nhận"
+          }}</span>
         </label>
         <select
           class="form-select custom-select"
-          [(ngModel)]="selectedExecutorType"
+          [(ngModel)]="selectedContractorOrTeam"
           (ngModelChange)="applyFilter()"
         >
-          <option value="ALL">Toàn bộ đơn vị (Nhà thầu & Nội bộ)</option>
-          <option value="CONTRACTOR">🏢 Dự án Nhà thầu (Nghiệm thu 1-1 từng tài sản)</option>
-          <option value="INTERNAL_TEAM">🛠️ Đội nội bộ / Cơ động (Khắc phục theo Sự cố/Task)</option>
+          <option value="ALL">
+            {{
+              activeTab() === "CONTRACTOR"
+                ? "Tất cả đơn vị nhà thầu"
+                : "Tất cả đội cơ động / phản ứng nhanh"
+            }}
+          </option>
+          <ng-container *ngIf="activeTab() === 'CONTRACTOR'">
+            <option value="CTCP Chiếu sáng Đô thị Sài Gòn">
+              CTCP Chiếu sáng Đô thị Sài Gòn
+            </option>
+            <option value="Công ty TNHH Cây xanh Công viên TP">
+              Công ty TNHH Cây xanh Công viên TP
+            </option>
+            <option value="Xí nghiệp Thoát nước Đô thị 1">
+              Xí nghiệp Thoát nước Đô thị 1
+            </option>
+          </ng-container>
+          <ng-container *ngIf="activeTab() === 'INTERNAL_TEAM'">
+            <option value="Đội Cơ động 1 - Ban QLDA Hạ tầng">
+              Đội Cơ động 1 - Ban QLDA Hạ tầng
+            </option>
+            <option value="Đội Phản ứng nhanh Thoát nước - Ban QLDA">
+              Đội Phản ứng nhanh Thoát nước - Ban QLDA
+            </option>
+          </ng-container>
         </select>
       </div>
     </div>
 
-    <!-- Search input row & Reset button (Tự động lọc theo thời gian thực) -->
+    <!-- Search row & Reset button -->
     <div class="filter-bottom-row">
       <div class="search-input-wrap">
         <i class="bi bi-search search-icon"></i>
         <input
           type="text"
           class="form-control asset-search-input"
-          placeholder="Nhập chính xác Mã tài sản (VD: CS-VK-042, CX-VK-018, TN-VK-088...) hoặc từ khóa..."
+          placeholder="Tìm nhanh theo Mã tài sản (CS-VK-042...), Tên công việc, Tuyến đường..."
           [(ngModel)]="searchKeyword"
           (ngModelChange)="applyFilter()"
         />
@@ -222,48 +358,77 @@
     </div>
   </div>
 
-  <!-- Results Table Section -->
+  <!-- ============================================================== -->
+  <!-- RESULTS TABLE SECTION (CỘT BẢNG NEO LOGIC CHUẨN XÁC THEO TAB) -->
+  <!-- ============================================================== -->
   <div class="history-results-container">
     <div class="results-table-header">
       <div class="header-left">
-        <h2 class="results-title">Kết quả tra cứu lịch sử bảo trì tài sản</h2>
+        <h2 class="results-title">
+          {{
+            activeTab() === "CONTRACTOR"
+              ? "Danh sách nghiệm thu bảo trì Nhà thầu"
+              : "Danh sách xử lý sự cố Đội khắc phục Nội bộ"
+          }}
+        </h2>
         <span class="results-count">
-          (Hiển thị {{ filteredRecords.length }}/{{ stats.totalCount | number }} bản ghi)
+          (Hiển thị {{ filteredRecords.length }} bản ghi)
         </span>
       </div>
       <div class="header-right-gis-status">
         <span class="gis-live-dot"></span>
-        <span class="gis-text">Đồng bộ với phân hệ GIS Tuyến VVK</span>
+        <span class="gis-text">Đồng bộ bản đồ GIS Tuyến VVK</span>
       </div>
     </div>
 
     <div class="table-responsive">
       <table class="history-table">
         <thead>
-          <tr>
-            <th class="col-time">THỜI GIAN HOÀN THÀNH / NGHIỆM THU</th>
+          <!-- A. HEADER CHO TAB NHÀ THẦU -->
+          <tr *ngIf="activeTab() === 'CONTRACTOR'">
+            <th class="col-time">THỜI GIAN NGHIỆM THU</th>
             <th class="col-asset">MÃ - TÊN TÀI SẢN</th>
             <th class="col-task">NỘI DUNG BẢO TRÌ (TASK)</th>
-            <th class="col-project">THUỘC DỰ ÁN / PHIẾU CÔNG VIỆC</th>
-            <th class="col-executor">ĐƠN VỊ THỰC HIỆN</th>
+            <th class="col-project">THUỘC DỰ ÁN / GÓI THẦU</th>
+            <th class="col-executor">NHÀ THẦU THỰC HIỆN</th>
+            <th class="col-actions">HÀNH ĐỘNG</th>
+          </tr>
+
+          <!-- B. HEADER CHO TAB NỘI BỘ -->
+          <tr *ngIf="activeTab() === 'INTERNAL_TEAM'">
+            <th class="col-time">THỜI GIAN HOÀN TẤT</th>
+            <th class="col-asset">MÃ - TÊN TÀI SẢN</th>
+            <th class="col-task">NỘI DUNG KHẮC PHỤC SỰ CỐ</th>
+            <th class="col-project">PHIẾU SỰ CỐ / CÔNG VIỆC</th>
+            <th class="col-executor">ĐỘI KHẮC PHỤC THỰC HIỆN</th>
             <th class="col-actions">HÀNH ĐỘNG</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let item of filteredRecords" [class.row-internal]="item.executorType === 'INTERNAL_TEAM'">
-            <!-- 1. Thời gian hoàn thành / Nghiệm thu -->
+          <tr
+            *ngFor="let item of filteredRecords"
+            [class.row-internal]="item.executorType === 'INTERNAL_TEAM'"
+          >
+            <!-- 1. Cột Thời gian -->
             <td class="col-time">
               <div class="time-main">
                 <i
-                  [class]="item.executorType === 'CONTRACTOR' ? 'bi bi-calendar2-check text-primary me-1' : 'bi bi-clock-history text-purple me-1'"
-                  [title]="item.executorType === 'CONTRACTOR' ? 'Ngày nghiệm thu đợt thanh toán' : 'Thời gian thợ hoàn thành xử lý'"
+                  [class]="
+                    item.executorType === 'CONTRACTOR'
+                      ? 'bi bi-calendar2-check text-primary me-1'
+                      : 'bi bi-clock-history text-purple me-1'
+                  "
+                  [title]="
+                    item.executorType === 'CONTRACTOR'
+                      ? 'Ngày nghiệm thu đợt thanh toán'
+                      : 'Thời gian thợ hoàn thành xử lý'
+                  "
                 ></i>
                 <span>{{ item.completedAt }}</span>
               </div>
-              <div class="time-sub">{{ item.periodLabel }}</div>
             </td>
 
-            <!-- 2. Mã - Tên tài sản -->
+            <!-- 2. Cột Mã - Tên tài sản -->
             <td class="col-asset">
               <div class="asset-code-row">
                 <span class="asset-code">{{ item.assetCode }}</span>
@@ -273,7 +438,7 @@
                     'badge-layer-lighting': item.layerId === 'LIGHTING',
                     'badge-layer-greenery': item.layerId === 'GREENERY',
                     'badge-layer-drainage': item.layerId === 'DRAINAGE',
-                    'badge-layer-roadway': item.layerId === 'ROADWAY'
+                    'badge-layer-roadway': item.layerId === 'ROADWAY',
                   }"
                 >
                   {{ item.layerName }}
@@ -282,98 +447,97 @@
               <div class="asset-name">{{ item.assetName }}</div>
             </td>
 
-            <!-- 3. Nội dung bảo trì -->
+            <!-- 3. Cột Nội dung bảo trì / Khắc phục sự cố -->
             <td class="col-task">
               <div class="task-title-text">{{ item.taskContent }}</div>
-              <div class="task-location-text">
-                <i class="bi bi-geo-alt-fill"></i>
-                <span>{{ item.locationDetail }}</span>
-              </div>
             </td>
 
-            <!-- 4. Thuộc dự án / Phiếu công việc -->
+            <!-- 4. Cột Thuộc Dự án / Phiếu sự cố -->
             <td class="col-project">
               <div class="project-code-wrap">
-                <span
-                  class="project-type-tag"
-                  [ngClass]="item.executorType === 'CONTRACTOR' ? 'tag-contractor-proj' : 'tag-incident-ticket'"
-                >
-                  {{ item.executorType === 'CONTRACTOR' ? 'Dự án' : 'Phiếu sự cố' }}
-                </span>
-                <span class="project-code">{{ item.projectOrIncidentCode }}</span>
+                <span class="project-code">{{
+                  item.projectOrIncidentCode
+                }}</span>
               </div>
               <div class="project-name">{{ item.projectOrIncidentName }}</div>
             </td>
 
-            <!-- 5. Đơn vị thực hiện -->
+            <!-- 5. Cột Đơn vị thực hiện (Neo theo Tab) -->
             <td class="col-executor">
-              <!-- Trường hợp 1: NHÀ THẦU - Nghiệp vụ chỉ quản lý đơn vị thực hiện, không quản sâu thợ/KTV -->
+              <!-- Hiển thị phía Nhà thầu -->
               <ng-container *ngIf="item.executorType === 'CONTRACTOR'">
-                <div class="executor-row">
-                  <span class="executor-type-pill pill-contractor">
-                    <i class="bi bi-building"></i>
-                    <span>Nhà thầu</span>
-                  </span>
-                </div>
-                <div class="executor-name contractor-firm-name" [title]="item.executorName">
-                  {{ item.executorName }}
+                <div class="executor-name contractor-firm-name">
+                  <i class="bi bi-building text-primary me-1"></i>
+                  <strong>{{ item.executorName }}</strong>
                 </div>
               </ng-container>
 
-              <!-- Trường hợp 2: NỘI BỘ - Hiển thị tên cụm nhân sự, click vào hiển thị danh sách người tham gia task này -->
+              <!-- Hiển thị phía Nội bộ -->
               <ng-container *ngIf="item.executorType === 'INTERNAL_TEAM'">
-                <div class="executor-row">
-                  <span class="executor-type-pill pill-internal">
-                    <i class="bi bi-tools"></i>
-                    <span>Nội bộ</span>
-                  </span>
-                </div>
                 <div
                   class="executor-name internal-cluster-name clickable-team"
-                  [title]="'Nhấp xem danh sách nhân sự tham gia task: ' + item.executorName"
                   (click)="openTeamMembersModal(item); $event.stopPropagation()"
+                  title="Nhấp xem danh sách nhân sự tham gia ca trực này"
                 >
+                  <i class="bi bi-tools text-purple me-1"></i>
                   <span>{{ item.executorName }}</span>
                 </div>
-                <button
-                  type="button"
-                  class="btn-team-members"
-                  (click)="openTeamMembersModal(item); $event.stopPropagation()"
-                  title="Xem danh sách nhân sự tham gia bảo trì tài sản này"
-                >
-                  <i class="bi bi-people-fill"></i>
-                  <span>{{ item.internalTeamDetails?.teamMembers?.length || 3 }} nhân sự</span>
-                  <i class="bi bi-chevron-right arrow-icon"></i>
-                </button>
+                <div class="internal-team-row">
+                  <button
+                    type="button"
+                    class="btn-team-members"
+                    (click)="
+                      openTeamMembersModal(item); $event.stopPropagation()
+                    "
+                  >
+                    <i class="bi bi-people-fill"></i>
+                    <span
+                      >{{
+                        item.internalTeamDetails?.teamMembers?.length || 3
+                      }}
+                      cán bộ</span
+                    >
+                  </button>
+                </div>
               </ng-container>
             </td>
 
-            <!-- 6. Hành động -->
+            <!-- 6. Cột Hành động -->
             <td class="col-actions">
               <div class="action-buttons-group">
+                <!-- Nút đối chiếu ảnh minh chứng -->
                 <button
                   type="button"
                   class="action-icon-btn btn-view-evidence"
-                  title="Đối chiếu minh chứng ảnh Trước / Sau"
+                  [title]="
+                    item.executorType === 'CONTRACTOR'
+                      ? 'Đối chiếu ảnh 1-1 Trước / Sau'
+                      : 'Xem album ảnh hiện trường sự cố'
+                  "
                   (click)="openEvidenceModal(item)"
                 >
                   <i class="bi bi-eye"></i>
                 </button>
+
+                <!-- Nút bổ sung ghi chú chỉ đạo Ban QLDA -->
                 <button
                   type="button"
                   class="action-icon-btn btn-edit-note"
-                  title="Chỉnh sửa ghi chú kỹ thuật"
+                  [class.has-mgmt-note]="!!item.managementNote"
+                  title="Ý kiến chỉ đạo / Ghi chú bổ sung Ban QLDA"
                   (click)="openEditNote(item)"
                 >
-                  <i class="bi bi-pencil"></i>
+                  <i class="bi bi-journal-text"></i>
                 </button>
+
+                <!-- Nút xem vị trí GIS qua Modal tại chỗ (Không chuyển trang) -->
                 <button
                   type="button"
                   class="action-icon-btn btn-gis-locate"
-                  title="Xem vị trí trên bản đồ GIS"
-                  (click)="viewOnGis(item)"
+                  title="Định vị tài sản trên bản đồ GIS (Xem nhanh tại chỗ)"
+                  (click)="openGisModal(item)"
                 >
-                  <i class="bi bi-box-arrow-up-right"></i>
+                  <i class="bi bi-geo-alt"></i>
                 </button>
               </div>
             </td>
@@ -385,33 +549,30 @@
     <!-- Pagination Footer -->
     <div class="table-pagination-footer">
       <div class="pagination-info">
-        <span>Hiển thị 1 - {{ filteredRecords.length }} trong tổng số {{ stats.totalCount | number }} kết quả</span>
-        <div class="page-size-selector">
-          <span>Số dòng:</span>
-          <select class="form-select select-sm" [(ngModel)]="pageSize">
-            <option [value]="10">10</option>
-            <option [value]="25">25</option>
-            <option [value]="50">50</option>
-          </select>
-        </div>
+        <span>Hiển thị 1 - {{ filteredRecords.length }} bản ghi</span>
       </div>
       <div class="pagination-controls">
-        <button class="page-btn nav-btn disabled" disabled><i class="bi bi-chevron-left"></i></button>
+        <button class="page-btn nav-btn disabled" disabled>
+          <i class="bi bi-chevron-left"></i>
+        </button>
         <button class="page-btn active">1</button>
-        <button class="page-btn">2</button>
-        <button class="page-btn">3</button>
-        <span class="page-ellipsis">...</span>
-        <button class="page-btn">143</button>
-        <button class="page-btn nav-btn"><i class="bi bi-chevron-right"></i></button>
+        <button class="page-btn nav-btn disabled" disabled>
+          <i class="bi bi-chevron-right"></i>
+        </button>
       </div>
     </div>
   </div>
 
   <!-- ============================================================== -->
-  <!-- MODAL ĐỐI CHIẾU MINH CHỨNG HIỆN TRƯỜNG (DỰA TRÊN ẢNH MẪU CỦA USER) -->
-  <!-- Tự động thích ứng theo: NHÀ THẦU vs ĐỘI NỘI BỘ (CÂY NHÀ LÁ VƯỜN) -->
+  <!-- MODAL ĐỐI CHIẾU MINH CHỨNG HIỆN TRƯỜNG -->
+  <!-- TAB NHÀ THẦU: 1-1 ẢNH TRƯỚC/SAU -->
+  <!-- TAB NỘI BỘ: ALBUM NHIỀU ẢNH (TỐI ĐA 5 ẢNH TRƯỚC / 5 ẢNH SAU) -->
   <!-- ============================================================== -->
-  <div class="modal-backdrop" *ngIf="selectedRecord()" (click)="closeEvidenceModal()">
+  <div
+    class="modal-backdrop"
+    *ngIf="selectedRecord()"
+    (click)="closeEvidenceModal()"
+  >
     <div
       class="modal-content modal-evidence-dialog"
       (click)="$event.stopPropagation()"
@@ -421,15 +582,27 @@
         <div class="modal-header-titles">
           <div class="header-main-title">
             <span class="status-bullet">●</span>
-            <span>Đối chiếu Minh chứng Hiện trường: Tài sản {{ selectedRecord()?.assetCode }} ({{ selectedRecord()?.assetName }})</span>
-            
-            <!-- Badge phân định loại hình -->
+            <span
+              >Minh chứng Hiện trường: Tài sản
+              {{ selectedRecord()?.assetCode }} ({{
+                selectedRecord()?.assetName
+              }})</span
+            >
+
             <span
               class="modal-type-badge"
-              [class.badge-contractor-modal]="selectedRecord()?.executorType === 'CONTRACTOR'"
-              [class.badge-internal-modal]="selectedRecord()?.executorType === 'INTERNAL_TEAM'"
+              [class.badge-contractor-modal]="
+                selectedRecord()?.executorType === 'CONTRACTOR'
+              "
+              [class.badge-internal-modal]="
+                selectedRecord()?.executorType === 'INTERNAL_TEAM'
+              "
             >
-              {{ selectedRecord()?.executorType === 'CONTRACTOR' ? '🏢 DỰ ÁN NHÀ THẦU - NGHIỆM THU 1-1' : '🛠️ ĐỘI DUY TU NỘI BỘ - KHẮC PHỤC SỰ CỐ' }}
+              {{
+                selectedRecord()?.executorType === "CONTRACTOR"
+                  ? "🏢 DỰ ÁN NHÀ THẦU - NGHIỆM THU 1-1"
+                  : "🛠️ ĐỘI CƠ ĐỘNG NỘI BỘ - KHẮC PHỤC SỰ CỐ"
+              }}
             </span>
           </div>
           <div class="header-sub-meta">
@@ -437,20 +610,24 @@
             <span class="dot-sep">•</span>
             <span>{{ selectedRecord()?.periodLabel }}</span>
             <span class="dot-sep">•</span>
-            <span>Thực hiện: <strong>{{ selectedRecord()?.executorName }}</strong></span>
+            <span
+              >Đơn vị:
+              <strong>{{ selectedRecord()?.executorName }}</strong></span
+            >
           </div>
         </div>
-        <button class="close-btn" (click)="closeEvidenceModal()" title="Đóng modal">
+        <button
+          class="close-btn"
+          (click)="closeEvidenceModal()"
+          title="Đóng modal"
+        >
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
 
       <!-- Modal Body -->
       <div class="modal-body evidence-body">
-
-        <!-- ============================================================== -->
-        <!-- BANNER ĐẶC BIỆT DÀNH CHO ĐỘI NỘI BỘ (Giải thích vụ trùng ảnh) -->
-        <!-- ============================================================== -->
+        <!-- Banner cụm sự cố cho Đội Nội bộ -->
         <div
           class="internal-shared-banner"
           *ngIf="selectedRecord()?.executorType === 'INTERNAL_TEAM'"
@@ -460,124 +637,216 @@
           </div>
           <div class="banner-content">
             <div class="banner-title">
-              Minh chứng theo Phiếu sự cố #{{ selectedRecord()?.internalTeamDetails?.incidentTicketCode }} (Áp dụng cho cụm tài sản liên đới)
+              Minh chứng theo Phiếu sự cố #{{
+                selectedRecord()?.internalTeamDetails?.incidentTicketCode
+              }}
+              (Áp dụng cho cụm tài sản liên đới)
             </div>
 
-            <!-- Danh sách tài sản liên đới có thể click chuyển xem ngay -->
+            <!-- Các chip tài sản cùng đợt xử lý có thể click chuyển xem ngay -->
             <div class="linked-assets-chips">
               <span class="chips-label">Các tài sản cùng đợt xử lý:</span>
               <button
                 type="button"
-                *ngFor="let asset of selectedRecord()?.internalTeamDetails?.linkedAssets"
+                *ngFor="
+                  let asset of selectedRecord()?.internalTeamDetails
+                    ?.linkedAssets
+                "
                 class="asset-chip-btn"
                 [class.current]="asset.code === selectedRecord()?.assetCode"
                 (click)="selectLinkedAsset(asset.code)"
                 [title]="'Xem minh chứng của tài sản ' + asset.code"
               >
-                <i class="bi bi-check2-circle" *ngIf="asset.code === selectedRecord()?.assetCode"></i>
+                <i
+                  class="bi bi-check2-circle"
+                  *ngIf="asset.code === selectedRecord()?.assetCode"
+                ></i>
                 <span>{{ asset.code }}</span>
-                <span class="chip-current-indicator" *ngIf="asset.code === selectedRecord()?.assetCode">(Đang xem)</span>
+                <span
+                  class="chip-current-indicator"
+                  *ngIf="asset.code === selectedRecord()?.assetCode"
+                  >(Đang xem)</span
+                >
               </button>
             </div>
           </div>
         </div>
 
         <!-- ============================================================== -->
-        <!-- HAI CỘT ẢNH TRƯỚC / SAU (GIỐNG HỆT ẢNH MẪU CỦA USER) -->
+        <!-- HAI KHỐI ẢNH: TRƯỚC / SAU -->
         <!-- ============================================================== -->
         <div class="evidence-photos-grid">
-          <!-- Cột 1: Ảnh Trước khi bảo trì -->
+          <!-- Cột 1: Ảnh Trước khi bảo trì / Tiếp nhận sự cố -->
           <div class="photo-card photo-before-card">
             <div class="photo-card-header">
               <div class="header-photo-title title-red">
                 <span class="bullet">●</span>
-                <span>{{ selectedRecord()?.executorType === 'CONTRACTOR' ? 'ẢNH TRƯỚC KHI BẢO TRÌ' : 'ẢNH HIỆN TRƯỜNG TIẾP NHẬN SỰ CỐ' }}</span>
+                <span>
+                  {{
+                    selectedRecord()?.executorType === "CONTRACTOR"
+                      ? "ẢNH TRƯỚC KHI BẢO TRÌ (1-1)"
+                      : "ALBUM ẢNH HIỆN TRƯỜNG TIẾP NHẬN SỰ CỐ"
+                  }}
+                </span>
               </div>
-              <span class="badge-exif-pill">
+              <span
+                class="badge-photo-count"
+                *ngIf="selectedRecord()?.executorType === 'INTERNAL_TEAM'"
+              >
+                Ảnh {{ activeBeforeIndex() + 1 }}/{{
+                  getBeforePhotos(selectedRecord()!).length
+                }}
+              </span>
+              <span
+                class="badge-exif-pill"
+                *ngIf="selectedRecord()?.executorType === 'CONTRACTOR'"
+              >
                 {{ selectedRecord()?.beforePhoto?.exifStatus }}
               </span>
             </div>
 
-            <div class="photo-viewport">
+            <!-- Khung ảnh lớn đang active -->
+            <div class="photo-viewport" *ngIf="activeBeforePhoto">
               <img
-                [src]="selectedRecord()?.beforePhoto?.url"
-                [alt]="selectedRecord()?.beforePhoto?.caption"
+                [src]="activeBeforePhoto.url"
+                [alt]="activeBeforePhoto.caption"
                 class="evidence-img"
               />
               <div class="photo-geo-overlay">
                 <div class="geo-coord">
                   <i class="bi bi-geo-alt-fill"></i>
-                  <span>{{ selectedRecord()?.beforePhoto?.gpsCoordinates }}</span>
+                  <span>{{
+                    activeBeforePhoto.gpsCoordinates ||
+                      selectedRecord()?.beforePhoto?.gpsCoordinates
+                  }}</span>
                 </div>
                 <div class="geo-time">
                   <i class="bi bi-clock"></i>
-                  <span>{{ selectedRecord()?.beforePhoto?.timestamp }}</span>
+                  <span>{{ activeBeforePhoto.timestamp }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Meta bên dưới ảnh trước -->
+            <!-- Thumbnail strip tối đa 5 ảnh (Dành riêng cho Nội bộ) -->
+            <div
+              class="photo-thumbnails-strip"
+              *ngIf="
+                selectedRecord()?.executorType === 'INTERNAL_TEAM' &&
+                getBeforePhotos(selectedRecord()!).length > 1
+              "
+            >
+              <button
+                type="button"
+                class="thumb-btn"
+                *ngFor="
+                  let photo of getBeforePhotos(selectedRecord()!);
+                  let idx = index
+                "
+                [class.active]="activeBeforeIndex() === idx"
+                (click)="setActiveBeforePhoto(idx)"
+                [title]="photo.caption"
+              >
+                <img [src]="photo.url" [alt]="photo.caption" />
+                <span class="thumb-badge">#{{ idx + 1 }}</span>
+              </button>
+            </div>
+
             <div class="photo-meta-table">
               <div class="meta-row">
-                <span class="meta-label">Trạng thái ghi nhận:</span>
-                <span class="meta-val val-danger">{{ selectedRecord()?.beforePhoto?.initialStateNote }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">Thiết bị chụp:</span>
-                <span class="meta-val">{{ selectedRecord()?.beforePhoto?.deviceInfo }}</span>
+                <span class="meta-label">Mô tả góc chụp:</span>
+                <span class="meta-val">{{ activeBeforePhoto?.caption }}</span>
               </div>
             </div>
           </div>
 
-          <!-- Cột 2: Ảnh Sau khi hoàn thành -->
+          <!-- Cột 2: Ảnh Sau khi hoàn thành / Xử lý xong -->
           <div class="photo-card photo-after-card">
             <div class="photo-card-header">
               <div class="header-photo-title title-green">
                 <span class="bullet">●</span>
-                <span>{{ selectedRecord()?.executorType === 'CONTRACTOR' ? 'ẢNH SAU KHI HOÀN THÀNH' : 'ẢNH HIỆN TRƯỜNG SAU KHI XỬ LÝ' }}</span>
+                <span>
+                  {{
+                    selectedRecord()?.executorType === "CONTRACTOR"
+                      ? "ẢNH SAU KHI HOÀN THÀNH (1-1)"
+                      : "ALBUM ẢNH HIỆN TRƯỜNG SAU XỬ LÝ"
+                  }}
+                </span>
               </div>
-              <span class="badge-gps-match">
+              <span
+                class="badge-photo-count"
+                *ngIf="selectedRecord()?.executorType === 'INTERNAL_TEAM'"
+              >
+                Ảnh {{ activeAfterIndex() + 1 }}/{{
+                  getAfterPhotos(selectedRecord()!).length
+                }}
+              </span>
+              <span
+                class="badge-gps-match"
+                *ngIf="selectedRecord()?.executorType === 'CONTRACTOR'"
+              >
                 {{ selectedRecord()?.afterPhoto?.matchGpsPercent }}
               </span>
             </div>
 
-            <div class="photo-viewport">
+            <!-- Khung ảnh lớn đang active -->
+            <div class="photo-viewport" *ngIf="activeAfterPhoto">
               <img
-                [src]="selectedRecord()?.afterPhoto?.url"
-                [alt]="selectedRecord()?.afterPhoto?.caption"
+                [src]="activeAfterPhoto.url"
+                [alt]="activeAfterPhoto.caption"
                 class="evidence-img"
               />
               <div class="photo-geo-overlay">
                 <div class="geo-coord">
                   <i class="bi bi-geo-alt-fill"></i>
-                  <span>{{ selectedRecord()?.afterPhoto?.gpsCoordinates }}</span>
+                  <span>{{
+                    activeAfterPhoto.gpsCoordinates ||
+                      selectedRecord()?.afterPhoto?.gpsCoordinates
+                  }}</span>
                 </div>
                 <div class="geo-time">
                   <i class="bi bi-clock"></i>
-                  <span>{{ selectedRecord()?.afterPhoto?.timestamp }}</span>
+                  <span>{{ activeAfterPhoto.timestamp }}</span>
                 </div>
               </div>
             </div>
 
-            <!-- Meta bên dưới ảnh sau -->
+            <!-- Thumbnail strip tối đa 5 ảnh (Dành riêng cho Nội bộ) -->
+            <div
+              class="photo-thumbnails-strip"
+              *ngIf="
+                selectedRecord()?.executorType === 'INTERNAL_TEAM' &&
+                getAfterPhotos(selectedRecord()!).length > 1
+              "
+            >
+              <button
+                type="button"
+                class="thumb-btn"
+                *ngFor="
+                  let photo of getAfterPhotos(selectedRecord()!);
+                  let idx = index
+                "
+                [class.active]="activeAfterIndex() === idx"
+                (click)="setActiveAfterPhoto(idx)"
+                [title]="photo.caption"
+              >
+                <img [src]="photo.url" [alt]="photo.caption" />
+                <span class="thumb-badge">#{{ idx + 1 }}</span>
+              </button>
+            </div>
+
             <div class="photo-meta-table">
               <div class="meta-row">
                 <span class="meta-label">Kết quả kiểm định:</span>
-                <span class="meta-val val-success">{{ selectedRecord()?.afterPhoto?.inspectionResult }}</span>
-              </div>
-              <div class="meta-row">
-                <span class="meta-label">{{ selectedRecord()?.executorType === 'CONTRACTOR' ? 'Nghiệm thu thực địa:' : 'Kỹ thuật viên phụ trách:' }}</span>
-                <span class="meta-val text-primary font-semibold">{{ selectedRecord()?.afterPhoto?.inspectorName }}</span>
+                <span class="meta-val val-success">{{
+                  selectedRecord()?.afterPhoto?.inspectionResult
+                }}</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- ============================================================== -->
-        <!-- KHUNG THÔNG TIN BÊN DƯỚI (THÍCH ỨNG THEO NHÀ THẦU vs NỘI BỘ) -->
-        <!-- ============================================================== -->
-
-        <!-- A. Đối với Nhà thầu: Biên bản thẩm tra & Ghi chú kỹ thuật -->
+        <!-- Khung nhật ký kỹ thuật & Ý kiến chỉ đạo Ban QLDA -->
+        <!-- A. Nhà thầu -->
         <div
           class="technical-acceptance-box"
           *ngIf="selectedRecord()?.executorType === 'CONTRACTOR'"
@@ -586,23 +855,69 @@
             <i class="bi bi-shield-check"></i>
           </div>
           <div class="box-content">
-            <div class="box-title">Biên bản thẩm tra & Ghi chú kỹ thuật:</div>
+            <div class="box-title">
+              Biên bản thẩm tra & Ghi chú kỹ thuật nghiệm thu:
+            </div>
             <div class="box-text">
               {{ selectedRecord()?.technicalNotes }}
             </div>
             <div class="contractor-extra-info">
-              <span>Hợp đồng: <strong>{{ selectedRecord()?.contractorDetails?.contractNumber }}</strong></span>
+              <span
+                >Hợp đồng:
+                <strong>{{
+                  selectedRecord()?.contractorDetails?.contractNumber
+                }}</strong></span
+              >
               <span class="sep">•</span>
-              <span>Đơn giá thanh toán: <strong>{{ selectedRecord()?.contractorDetails?.unitPrice | number }} đ</strong></span>
+              <span
+                >Đơn giá:
+                <strong
+                  >{{
+                    selectedRecord()?.contractorDetails?.unitPrice | number
+                  }}
+                  đ</strong
+                ></span
+              >
               <span class="sep">•</span>
-              <span>Bảo hành: <strong>{{ selectedRecord()?.contractorDetails?.warrantyMonths }} tháng</strong></span>
+              <span
+                >Bảo hành:
+                <strong
+                  >{{
+                    selectedRecord()?.contractorDetails?.warrantyMonths
+                  }}
+                  tháng</strong
+                ></span
+              >
               <span class="sep">•</span>
-              <span class="text-success"><i class="bi bi-check-circle-fill"></i> {{ selectedRecord()?.contractorDetails?.digitalSignStatus }}</span>
+              <span class="text-success"
+                ><i class="bi bi-check-circle-fill"></i>
+                {{
+                  selectedRecord()?.contractorDetails?.digitalSignStatus
+                }}</span
+              >
+            </div>
+
+            <!-- Ý kiến bổ sung của Ban QLDA nếu có -->
+            <div
+              class="management-note-callout"
+              *ngIf="selectedRecord()?.managementNote"
+            >
+              <div class="callout-header">
+                <i class="bi bi-chat-quote-fill text-primary"></i>
+                <span class="callout-title"
+                  >Ý kiến chỉ đạo / Ghi chú bổ sung Ban QLDA ({{
+                    selectedRecord()?.managementNoteUpdatedAt
+                  }}):</span
+                >
+              </div>
+              <div class="callout-content">
+                {{ selectedRecord()?.managementNote }}
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- B. Đối với Đội nội bộ: Nhật ký xử lý & Vật tư kho xuất -->
+        <!-- B. Nội bộ -->
         <div
           class="internal-resolution-box"
           *ngIf="selectedRecord()?.executorType === 'INTERNAL_TEAM'"
@@ -611,29 +926,55 @@
             <i class="bi bi-clipboard2-pulse-fill"></i>
           </div>
           <div class="box-content">
-            <div class="box-title">Nhật ký xử lý nội bộ:</div>
-            
+            <div class="box-title">
+              Nhật ký xử lý nội bộ & Thời gian đáp ứng:
+            </div>
+
             <div class="internal-stats-row">
               <div class="stat-pill-item">
                 <span class="pill-label">Thời gian tiếp nhận:</span>
-                <span class="pill-value">{{ selectedRecord()?.internalTeamDetails?.reportedAt }}</span>
+                <span class="pill-value">{{
+                  selectedRecord()?.internalTeamDetails?.reportedAt
+                }}</span>
               </div>
               <div class="stat-pill-item">
                 <span class="pill-label">Hoàn thành:</span>
-                <span class="pill-value text-success font-semibold">{{ selectedRecord()?.internalTeamDetails?.resolvedAt }}</span>
+                <span class="pill-value text-success font-semibold">{{
+                  selectedRecord()?.internalTeamDetails?.resolvedAt
+                }}</span>
               </div>
               <div class="stat-pill-item">
                 <span class="pill-label">Chỉ số SLA:</span>
-                <span class="pill-value text-primary font-semibold">{{ selectedRecord()?.internalTeamDetails?.slaResponseTime }}</span>
+                <span class="pill-value text-primary font-semibold">{{
+                  selectedRecord()?.internalTeamDetails?.slaResponseTime
+                }}</span>
               </div>
             </div>
 
             <div class="box-text">
-              <strong>Ghi chú hiện trường:</strong> {{ selectedRecord()?.technicalNotes }}
+              <strong>Ghi chú hiện trường:</strong>
+              {{ selectedRecord()?.technicalNotes }}
+            </div>
+
+            <!-- Ý kiến bổ sung của Ban QLDA nếu có -->
+            <div
+              class="management-note-callout"
+              *ngIf="selectedRecord()?.managementNote"
+            >
+              <div class="callout-header">
+                <i class="bi bi-chat-quote-fill text-purple"></i>
+                <span class="callout-title"
+                  >Ý kiến chỉ đạo / Ghi chú bổ sung Ban QLDA ({{
+                    selectedRecord()?.managementNoteUpdatedAt
+                  }}):</span
+                >
+              </div>
+              <div class="callout-content">
+                {{ selectedRecord()?.managementNote }}
+              </div>
             </div>
           </div>
         </div>
-
       </div>
 
       <!-- Modal Footer -->
@@ -645,7 +986,11 @@
             (click)="downloadPdf(selectedRecord()!)"
           >
             <i class="bi bi-file-earmark-pdf"></i>
-            <span>{{ selectedRecord()?.executorType === 'CONTRACTOR' ? 'Tải biên bản ảnh (.PDF)' : 'Tải phiếu xử lý sự cố (.PDF)' }}</span>
+            <span>{{
+              selectedRecord()?.executorType === "CONTRACTOR"
+                ? "Tải biên bản ảnh (.PDF)"
+                : "Tải phiếu xử lý sự cố (.PDF)"
+            }}</span>
           </button>
         </div>
         <div class="footer-right">
@@ -655,7 +1000,7 @@
             (click)="openEditNote(selectedRecord()!)"
           >
             <i class="bi bi-pencil-square"></i>
-            <span>Chỉnh sửa ghi chú duy tu</span>
+            <span>Ghi chú bổ sung Ban QLDA</span>
           </button>
           <button
             type="button"
@@ -670,62 +1015,233 @@
   </div>
 
   <!-- ============================================================== -->
-  <!-- MODAL CHỈNH SỬA GHI CHÚ KỸ THUẬT / DUY TU -->
+  <!-- MODAL CẬP NHẬT Ý KIẾN CHỈ ĐẠO / GHI CHÚ BỔ SUNG CỦA BAN QLDA -->
+  <!-- (GIỮ NGUYÊN GHI CHÚ GỐC, KHÔNG CHO PHÉP SỬA ĐÈ) -->
   <!-- ============================================================== -->
-  <div class="modal-backdrop" *ngIf="isEditNoteModalOpen()" (click)="closeEditNote()">
+  <div
+    class="modal-backdrop"
+    *ngIf="isEditNoteModalOpen()"
+    (click)="closeEditNote()"
+  >
     <div class="modal-content modal-md" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h3>
-          <i class="bi bi-pencil-square text-primary"></i>
-          <span>Cập nhật Ghi chú Duy tu: {{ selectedRecord()?.assetCode }}</span>
+          <i class="bi bi-journal-check text-primary me-2"></i>
+          <span
+            >Ý kiến chỉ đạo & Ghi chú bổ sung:
+            {{ selectedRecord()?.assetCode }}</span
+          >
         </h3>
         <button class="close-btn" (click)="closeEditNote()">
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
       <div class="modal-body">
+        <!-- 1. Ghi chú gốc (Read-only có icon khóa) -->
+        <div class="form-group mb-3">
+          <label
+            class="form-label font-semibold text-muted d-flex align-items-center justify-content-between"
+          >
+            <span>
+              <i class="bi bi-lock-fill me-1 text-secondary"></i>
+              Ghi chú hiện trường gốc (Từ
+              {{
+                selectedRecord()?.executorType === "CONTRACTOR"
+                  ? "Nhà thầu"
+                  : "Đội cơ động"
+              }}):
+            </span>
+            <span class="badge bg-light text-secondary border"
+              >Dữ liệu gốc đối soát</span
+            >
+          </label>
+          <div class="original-note-readonly">
+            {{ originalNoteText() }}
+          </div>
+        </div>
+
+        <!-- 2. Ghi chú bổ sung của Quản lý / Giám sát (Editable) -->
         <div class="form-group">
-          <label class="form-label font-semibold mb-2">
-            Nội dung biên bản thẩm tra / Ghi chú kỹ thuật hiện trường:
+          <label class="form-label font-semibold text-primary mb-2">
+            <i class="bi bi-pencil-square me-1"></i>
+            Ý kiến chỉ đạo / Ghi chú bổ sung của Ban QLDA:
           </label>
           <textarea
-            class="form-control"
-            rows="5"
-            [(ngModel)]="editingNoteText"
-            placeholder="Nhập ghi chú kỹ thuật, thông số đo đạc, chủng loại vật tư thay thế..."
+            class="form-control management-textarea"
+            rows="4"
+            [(ngModel)]="managementNoteText"
+            placeholder="Nhập ý kiến chỉ đạo, xác nhận kiểm tra lại thực địa, hoặc ghi nhận các phản ánh bổ sung của nhà thầu..."
           ></textarea>
         </div>
-        <div class="alert alert-info mt-3 py-2 px-3 text-xs" style="background: #eff6ff; border-radius: 6px; color: #1e40af;">
-          <i class="bi bi-info-circle me-1"></i>
-          Ghi chú này sẽ được lưu vết vào lịch sử bảo dưỡng của tài sản và xuất vào biên bản PDF nghiệm thu.
+
+        <div
+          class="alert alert-info mt-3 py-2 px-3 text-xs management-hint-box"
+        >
+          <i class="bi bi-shield-check me-1 text-primary"></i>
+          Ghi chú này sẽ được lưu kèm dấu thời gian và tài khoản kiểm soát của
+          Ban QLDA vào hồ sơ tài sản.
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" (click)="closeEditNote()">Hủy bỏ</button>
-        <button class="btn btn-primary" (click)="saveNote()">
-          <i class="bi bi-save"></i>
-          <span>Lưu ghi chú</span>
+        <button class="btn btn-secondary" (click)="closeEditNote()">
+          Hủy bỏ
+        </button>
+        <button class="btn btn-primary" (click)="saveManagementNote()">
+          <i class="bi bi-check-lg me-1"></i>
+          <span>Lưu ý kiến chỉ đạo</span>
         </button>
       </div>
     </div>
   </div>
 
   <!-- ============================================================== -->
-  <!-- MODAL DANH SÁCH NHÂN SỰ NỘI BỘ THAM GIA BẢO TRÌ TÀI SẢN -->
+  <!-- MODAL BẢN ĐỒ GIS TẠI CHỖ (XEM NHANH TỌA ĐỘ TÀI SẢN KHÔNG CHUYỂN TRANG) -->
   <!-- ============================================================== -->
-  <div class="modal-backdrop" *ngIf="selectedTeamRecord()" (click)="closeTeamMembersModal()">
-    <div class="modal-content modal-team-roster" (click)="$event.stopPropagation()">
+  <div
+    class="modal-backdrop"
+    *ngIf="isGisModalOpen()"
+    (click)="closeGisModal()"
+  >
+    <div
+      class="modal-content modal-gis-dialog"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="modal-header">
+        <div class="gis-modal-header-titles">
+          <div class="gis-title-tag">
+            <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+            <span>ĐỊNH VỊ GIS TÀI SẢN HẠ TẦNG</span>
+          </div>
+          <h3 class="gis-main-title">
+            {{ gisRecord()?.assetCode }} - {{ gisRecord()?.assetName }}
+          </h3>
+          <p class="gis-subtext">
+            <span>{{ gisRecord()?.routeName }}</span>
+            <span class="dot-sep">•</span>
+            <span
+              >Tọa độ:
+              <strong>{{
+                gisRecord()?.beforePhoto?.gpsCoordinates
+              }}</strong></span
+            >
+          </p>
+        </div>
+        <button class="close-btn" (click)="closeGisModal()" title="Đóng bản đồ">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="modal-body gis-modal-body">
+        <!-- Interactive Map Mock with Radar Pulse -->
+        <div class="gis-map-viewport">
+          <!-- Background Map Mockup -->
+          <div class="gis-map-canvas">
+            <div class="map-grid-lines"></div>
+            <div class="map-route-line"></div>
+            <div class="map-route-label">
+              ĐẠI LỘ VÕ VĂN KIỆT (HƯỚNG Q1 -> Q5)
+            </div>
+
+            <!-- Pulsing Pin Marker on map -->
+            <div class="gis-pin-marker">
+              <div class="pin-radar-pulse"></div>
+              <div class="pin-radar-ring"></div>
+              <div class="pin-icon">
+                <i class="bi bi-geo-alt-fill"></i>
+              </div>
+              <div class="pin-popup-tooltip">
+                <div class="tooltip-code">{{ gisRecord()?.assetCode }}</div>
+                <div class="tooltip-status">Bảo trì hoàn tất</div>
+              </div>
+            </div>
+
+            <!-- Map Controls mock -->
+            <div class="map-zoom-controls">
+              <button class="zoom-btn"><i class="bi bi-plus-lg"></i></button>
+              <button class="zoom-btn"><i class="bi bi-dash-lg"></i></button>
+              <button class="zoom-btn" title="Về vị trí tài sản">
+                <i class="bi bi-crosshair"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Bottom Floating GIS Info Card -->
+          <div class="gis-info-floating-card">
+            <div class="info-row-grid">
+              <div class="info-cell">
+                <span class="cell-label">Lớp tài sản:</span>
+                <span class="cell-val font-semibold">{{
+                  gisRecord()?.layerName
+                }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="cell-label">Vị trí thực địa:</span>
+                <span class="cell-val">{{ gisRecord()?.locationDetail }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="cell-label">Lần bảo trì gần nhất:</span>
+                <span class="cell-val text-primary font-semibold">{{
+                  gisRecord()?.completedAt
+                }}</span>
+              </div>
+              <div class="info-cell">
+                <span class="cell-label">Đơn vị thực hiện:</span>
+                <span class="cell-val">{{ gisRecord()?.executorName }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer gis-modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-primary"
+          (click)="openFullMap(gisRecord()!)"
+        >
+          <i class="bi bi-box-arrow-up-right me-1"></i>
+          <span>Mở trên bản đồ Master GIS toàn màn hình</span>
+        </button>
+        <button type="button" class="btn btn-primary" (click)="closeGisModal()">
+          Đóng
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================== -->
+  <!-- MODAL DANH SÁCH NHÂN SỰ NỘI BỘ THAM GIA BẢO TRÌ (ĐÃ TINH GỌN) -->
+  <!-- ============================================================== -->
+  <div
+    class="modal-backdrop"
+    *ngIf="selectedTeamRecord()"
+    (click)="closeTeamMembersModal()"
+  >
+    <div
+      class="modal-content modal-team-roster"
+      (click)="$event.stopPropagation()"
+    >
       <div class="modal-header">
         <div class="header-roster-title">
           <div class="team-badge-header">
             <i class="bi bi-tools"></i>
             <span>CỤM NHÂN SỰ NỘI BỘ BAN QLDA</span>
           </div>
-          <h3 class="roster-main-title">{{ selectedTeamRecord()?.executorName }}</h3>
+          <h3 class="roster-main-title">
+            {{ selectedTeamRecord()?.executorName }}
+          </h3>
           <p class="task-subtext">
-            <span>Tài sản: <strong>{{ selectedTeamRecord()?.assetCode }}</strong> - {{ selectedTeamRecord()?.assetName }}</span>
+            <span
+              >Tài sản: <strong>{{ selectedTeamRecord()?.assetCode }}</strong> -
+              {{ selectedTeamRecord()?.assetName }}</span
+            >
             <span class="dot-separator">•</span>
-            <span>Mã sự cố/Task: <strong>{{ selectedTeamRecord()?.projectOrIncidentCode }}</strong></span>
+            <span
+              >Mã sự cố:
+              <strong>{{
+                selectedTeamRecord()?.projectOrIncidentCode
+              }}</strong></span
+            >
           </p>
         </div>
         <button class="close-btn" (click)="closeTeamMembersModal()">
@@ -737,21 +1253,39 @@
         <!-- Thông tin tóm tắt công việc xử lý -->
         <div class="task-summary-card">
           <div class="summary-top">
-            <span class="summary-label"><i class="bi bi-wrench-adjustable me-1 text-purple"></i> Nội dung xử lý tài sản:</span>
-            <div class="summary-content">{{ selectedTeamRecord()?.taskContent }}</div>
+            <span class="summary-label"
+              ><i class="bi bi-wrench-adjustable me-1 text-purple"></i> Nội dung
+              xử lý sự cố:</span
+            >
+            <div class="summary-content">
+              {{ selectedTeamRecord()?.taskContent }}
+            </div>
           </div>
           <div class="summary-meta-grid">
             <div class="meta-item">
               <i class="bi bi-geo-alt-fill text-danger"></i>
-              <span>Vị trí: <strong>{{ selectedTeamRecord()?.locationDetail }}</strong></span>
+              <span
+                >Vị trí:
+                <strong>{{
+                  selectedTeamRecord()?.locationDetail
+                }}</strong></span
+              >
             </div>
             <div class="meta-item">
               <i class="bi bi-clock-history text-purple"></i>
-              <span>Hoàn tất: <strong>{{ selectedTeamRecord()?.completedAt }}</strong></span>
+              <span
+                >Hoàn tất:
+                <strong>{{ selectedTeamRecord()?.completedAt }}</strong></span
+              >
             </div>
             <div class="meta-item">
               <i class="bi bi-stopwatch text-primary"></i>
-              <span>Thời gian xử lý: <strong>{{ selectedTeamRecord()?.internalTeamDetails?.slaResponseTime }}</strong></span>
+              <span
+                >Thời gian xử lý:
+                <strong>{{
+                  selectedTeamRecord()?.internalTeamDetails?.slaResponseTime
+                }}</strong></span
+              >
             </div>
           </div>
         </div>
@@ -760,18 +1294,28 @@
         <div class="roster-section-head">
           <div class="roster-section-title">
             <i class="bi bi-person-lines-fill text-primary"></i>
-            <span>Danh sách nhân sự trực tiếp tham gia bảo trì ({{ selectedTeamRecord()?.internalTeamDetails?.teamMembers?.length || 0 }} cán bộ/thợ)</span>
+            <span
+              >Danh sách nhân sự trực tiếp tham gia ({{
+                selectedTeamRecord()?.internalTeamDetails?.teamMembers
+                  ?.length || 0
+              }}
+              cán bộ/thợ)</span
+            >
           </div>
           <span class="roster-live-tag">
-            <i class="bi bi-check-circle-fill"></i> Ghi nhận từ Web Thợ / Điểm danh
+            <i class="bi bi-check-circle-fill"></i> Ghi nhận từ Web Thợ / Điểm
+            danh
           </span>
         </div>
 
-        <!-- Danh sách thẻ nhân sự -->
+        <!-- Danh sách thẻ nhân sự (Tinh gọn theo feedback trước: Avatar + Tên) -->
         <div class="members-cards-container">
           <div
             class="member-card"
-            *ngFor="let member of selectedTeamRecord()?.internalTeamDetails?.teamMembers"
+            *ngFor="
+              let member of selectedTeamRecord()?.internalTeamDetails
+                ?.teamMembers
+            "
           >
             <div class="member-avatar">
               <i class="bi bi-person-badge-fill"></i>
@@ -784,7 +1328,11 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-primary" (click)="closeTeamMembersModal()">
+        <button
+          type="button"
+          class="btn btn-primary"
+          (click)="closeTeamMembersModal()"
+        >
           Đóng
         </button>
       </div>

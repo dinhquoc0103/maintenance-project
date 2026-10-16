@@ -599,7 +599,7 @@
               <div class="task-card-title" [title]="t.title">{{ t.title }}</div>
               <div class="task-card-footer">
                 <span class="task-asset-count">
-                  <i class="bi bi-box-seam me-1"></i>{{ t.taskAssets?.length || t.assetIds?.length || 0 }} tài sản
+                  <i class="bi bi-box-seam me-1"></i>{{ t.taskAssets.length || t.assetIds.length || 0 }} tài sản
                 </span>
                 <span class="task-deadline">
                   <i class="bi bi-calendar3 me-1"></i>{{ t.deadline | date: "dd/MM/yyyy" }}
