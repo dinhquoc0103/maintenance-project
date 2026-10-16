@@ -60,6 +60,16 @@ import { PatrolService } from '../../../core/services/patrol.service';
           <span class="badge badge-primary">Mới</span>
         </a>
 
+        <a
+          routerLink="/asset-history"
+          routerLinkActive="active"
+          class="nav-item"
+        >
+          <i class="bi bi-clock-history"></i>
+          <span>Lịch sử Duy tu & Bảo trì</span>
+          <span class="badge badge-primary">1.428</span>
+        </a>
+
         <!-- <a routerLink="/acceptance-center" routerLinkActive="active" class="nav-item">
           <i class="bi bi-clipboard2-check-fill"></i>
           <span>Nghiệm thu & Khối lượng (5. Thanh toán)</span>
