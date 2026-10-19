@@ -127,8 +127,9 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
               <span *ngSwitchCase="'VALID'" class="badge bg-success">
                 <i class="bi bi-check-circle-fill me-1"></i> Điểm danh Hợp lệ
               </span>
-              <span *ngSwitchCase="'INVALID'" class="badge bg-danger">
-                <i class="bi bi-exclamation-triangle-fill me-1"></i> Điểm danh K.Hợp lệ (Cần giải trình)
+              <span *ngSwitchCase="'INVALID'" class="badge" [ngClass]="getAttendanceAppealStatus(currentSchedule) === 'PENDING' ? 'bg-warning text-dark' : 'bg-danger'">
+                <i class="bi" [ngClass]="getAttendanceAppealStatus(currentSchedule) === 'PENDING' ? 'bi-hourglass-split me-1' : 'bi-exclamation-triangle-fill me-1'"></i>
+                {{ getAttendanceAppealStatus(currentSchedule) === 'PENDING' ? 'Điểm danh K.Hợp lệ (Đang giải trình)' : 'Điểm danh K.Hợp lệ (Cần giải trình)' }}
               </span>
               <span *ngSwitchCase="'PENDING'" class="badge bg-info text-dark">
                 <i class="bi bi-clock-history me-1"></i> Đã check-in (Chờ Cán bộ duyệt)
@@ -401,9 +402,11 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                           </span>
                           <span
                             *ngSwitchCase="'INVALID'"
-                            class="badge fs-xxxs py-1 px-2 d-block bg-danger-subtle text-danger border border-danger-subtle"
+                            class="badge fs-xxxs py-1 px-2 d-block border"
+                            [ngClass]="getAttendanceAppealStatus(sch) === 'PENDING' ? 'bg-warning-subtle text-warning-emphasis border-warning-subtle' : 'bg-danger-subtle text-danger border-danger-subtle'"
                           >
-                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Điểm Danh K.Hợp Lệ (Giải trình)
+                            <i class="bi" [ngClass]="getAttendanceAppealStatus(sch) === 'PENDING' ? 'bi-hourglass-split me-1' : 'bi-exclamation-triangle-fill me-1'"></i>
+                            {{ getAttendanceAppealStatus(sch) === 'PENDING' ? 'Đang Chờ Duyệt Giải Trình' : 'Điểm Danh K.Hợp Lệ (Giải trình)' }}
                           </span>
                           <span
                             *ngSwitchCase="'PENDING'"
@@ -809,6 +812,21 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                       </span>
                     </div>
                   </div>
+
+                  <!-- Thông báo nếu điểm danh hợp lệ do vừa được duyệt giải trình -->
+                  <div
+                    *ngIf="getAttendanceAppealStatus(currentSchedule) === 'APPROVED'"
+                    class="p-2 px-3 mt-2 rounded bg-success bg-opacity-15 border border-success border-opacity-50 fs-xxs text-success-emphasis d-flex align-items-center justify-content-between flex-wrap gap-2"
+                  >
+                    <div>
+                      <i class="bi bi-shield-fill-check me-1 text-success fs-6"></i>
+                      <strong>Giải trình đã được phê duyệt hợp lệ:</strong>
+                      {{ getAttendanceAppealInfo(currentSchedule)?.appealReviewNote || 'Đã đối soát đạt chuẩn' }}
+                    </div>
+                    <span class="text-muted">
+                      ({{ getAttendanceAppealInfo(currentSchedule)?.appealReviewedBy }} • {{ getAttendanceAppealInfo(currentSchedule)?.appealReviewedAt }})
+                    </span>
+                  </div>
                 </div>
 
                 <!-- TRƯỜNG HỢP 3: ĐIỂM DANH BỊ ĐÁNH GIÁ KHÔNG HỢP LỆ (INVALID - CẦN GIẢI TRÌNH) -->
@@ -841,6 +859,86 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
                           <i class="bi bi-chat-left-dots-fill me-1"></i>Lý do từ Cán bộ quản lý:
                         </div>
                         <div>{{ getInvalidReasonForSchedule(currentSchedule) }}</div>
+                      </div>
+
+                      <!-- KHỐI 1: NẾU ĐÃ GỬI GIẢI TRÌNH VÀ ĐANG CHỜ DUYỆT -->
+                      <div
+                        class="p-3 mt-2 rounded-3 bg-warning bg-opacity-15 border border-warning fs-xs"
+                        *ngIf="getAttendanceAppealStatus(currentSchedule) === 'PENDING'"
+                      >
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                          <span class="badge bg-warning text-dark fw-bold px-2 py-1">
+                            <i class="bi bi-hourglass-split me-1"></i>ĐÃ GỬI GIẢI TRÌNH • ĐANG CHỜ CÁN BỘ THẨM TRA
+                          </span>
+                          <span class="fs-xxs text-muted">
+                            <i class="bi bi-clock me-1"></i>Gửi lúc: {{ getAttendanceAppealInfo(currentSchedule)?.appealSubmittedAt }}
+                          </span>
+                        </div>
+                        <div class="text-dark fs-xxs bg-white p-2 rounded border border-warning-subtle mb-2">
+                          <div class="fw-bold text-secondary mb-1">
+                            <i class="bi bi-chat-quote-fill me-1 text-warning"></i>Nội dung giải trình của bạn:
+                          </div>
+                          <div class="fst-italic text-dark">{{ getAttendanceAppealInfo(currentSchedule)?.appealNote }}</div>
+                        </div>
+                        <div *ngIf="getAttendanceAppealInfo(currentSchedule)?.appealPhotoUrl" class="mb-2">
+                          <span class="fs-xxs text-muted d-block mb-1">Ảnh minh chứng đính kèm:</span>
+                          <img
+                            [src]="getAttendanceAppealInfo(currentSchedule)?.appealPhotoUrl"
+                            class="rounded border shadow-sm"
+                            style="max-height: 80px; max-width: 140px; object-fit: cover;"
+                          />
+                        </div>
+                        <div class="text-end">
+                          <button
+                            class="btn btn-xs btn-outline-warning text-dark fw-bold"
+                            (click)="openAttendanceAppealModal(currentSchedule)"
+                          >
+                            <i class="bi bi-pencil-square me-1"></i>Chỉnh sửa / Bổ sung giải trình
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- KHỐI 2: NẾU GIẢI TRÌNH BỊ BÁC BỎ -->
+                      <div
+                        class="p-3 mt-2 rounded-3 bg-danger bg-opacity-15 border border-danger fs-xs"
+                        *ngIf="getAttendanceAppealStatus(currentSchedule) === 'REJECTED'"
+                      >
+                        <div class="d-flex justify-content-between align-items-center flex-wrap gap-1 mb-2">
+                          <span class="badge bg-danger text-white fw-bold px-2 py-1">
+                            <i class="bi bi-x-circle-fill me-1"></i>GIẢI TRÌNH BỊ BÁC BỎ
+                          </span>
+                          <span class="fs-xxs text-muted">
+                            {{ getAttendanceAppealInfo(currentSchedule)?.appealReviewedAt }} • Bởi {{ getAttendanceAppealInfo(currentSchedule)?.appealReviewedBy }}
+                          </span>
+                        </div>
+                        <div class="text-danger fs-xxs bg-white p-2 rounded border border-danger-subtle mb-2">
+                          <strong>Ý kiến chỉ đạo từ Cán bộ:</strong> {{ getAttendanceAppealInfo(currentSchedule)?.appealReviewNote }}
+                        </div>
+                        <div class="text-end">
+                          <button
+                            class="btn btn-xs btn-danger fw-bold"
+                            (click)="openAttendanceAppealModal(currentSchedule)"
+                          >
+                            <i class="bi bi-arrow-repeat me-1"></i>Gửi lại đơn giải trình mới
+                          </button>
+                        </div>
+                      </div>
+
+                      <!-- KHỐI 3: NẾU CHƯA GỬI GIẢI TRÌNH -->
+                      <div
+                        class="mt-2 pt-2 border-top border-danger border-opacity-25 d-flex justify-content-between align-items-center flex-wrap gap-2"
+                        *ngIf="!getAttendanceAppealStatus(currentSchedule)"
+                      >
+                        <span class="text-danger fs-xxs">
+                          <i class="bi bi-info-circle me-1"></i>Bạn có căn cứ thực tế về lý do vào ca trễ hoặc vị trí định vị?
+                        </span>
+                        <button
+                          class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-1 shadow-sm px-3"
+                          (click)="openAttendanceAppealModal(currentSchedule)"
+                        >
+                          <i class="bi bi-chat-square-text-fill"></i>
+                          <span>+ GỬI GIẢI TRÌNH ĐIỂM DANH</span>
+                        </button>
                       </div>
 
                       <!-- Thông điệp làm rõ quyền nghiệp vụ tuần tra & báo cáo sự cố vẫn bảo lưu -->
@@ -2097,6 +2195,151 @@ import { LayerId, Asset } from '../../../core/models/maintenance.model';
               }}
             </span>
           </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================== -->
+    <!-- MODAL: GỬI GIẢI TRÌNH ĐIỂM DANH CA TRỰC -->
+    <!-- ============================================================== -->
+    <div
+      class="custom-modal-backdrop"
+      *ngIf="showAttendanceAppealModal"
+      (click)="closeAttendanceAppealModal()"
+    >
+      <div
+        class="custom-modal-dialog"
+        style="max-width: 580px;"
+        (click)="$event.stopPropagation()"
+      >
+        <div class="modal-content shadow-lg border-0 rounded-4 overflow-hidden">
+          <div class="modal-header bg-danger text-white py-3 px-4 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-chat-square-text-fill fs-5"></i>
+              <h5 class="modal-title fw-bold m-0 fs-6">Đơn Giải Trình Điểm Danh Ca Trực</h5>
+            </div>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              (click)="closeAttendanceAppealModal()"
+            ></button>
+          </div>
+
+          <div class="modal-body p-4 bg-light">
+            <!-- Thông tin ca & lý do từ chối ban đầu -->
+            <div class="p-3 rounded-3 bg-white border border-danger-subtle mb-3">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="fw-bold text-dark fs-xs">
+                  <i class="bi bi-geo-alt-fill text-danger me-1"></i>{{ appealingSchedule?.routeName }} (Ca {{ appealingSchedule?.shift }})
+                </span>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-xxs">
+                  Không hợp lệ
+                </span>
+              </div>
+              <div class="fs-xxs text-muted mb-2">
+                Thời gian check-in: <strong>{{ getCheckInTimeForSchedule(appealingSchedule) }}</strong> • Vị trí: {{ getCheckInLocationForSchedule(appealingSchedule) }}
+              </div>
+              <div class="p-2 rounded bg-danger bg-opacity-10 text-danger fs-xxs">
+                <strong>Lý do từ Cán bộ:</strong> {{ getInvalidReasonForSchedule(appealingSchedule) }}
+              </div>
+            </div>
+
+            <!-- Mẫu giải trình nhanh (Quick Suggestions) -->
+            <div class="mb-3">
+              <label class="form-label fw-bold fs-xs text-secondary mb-1">
+                <i class="bi bi-lightning-charge-fill text-warning me-1"></i>Chọn nhanh lý do mẫu:
+              </label>
+              <div class="d-flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-secondary rounded-pill"
+                  *ngFor="let sample of quickAppealReasons"
+                  (click)="appealForm.note = sample"
+                >
+                  {{ sample }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Nhập lý do giải trình -->
+            <div class="mb-3">
+              <label class="form-label fw-bold fs-xs text-dark mb-1">
+                Nội dung giải trình chi tiết (*):
+              </label>
+              <textarea
+                class="form-control form-control-sm border-secondary-subtle"
+                rows="3"
+                [(ngModel)]="appealForm.note"
+                placeholder="Nhập chi tiết hoàn cảnh, lý do trễ hoặc vị trí định vị lệch trạm, xác nhận của Đội trưởng..."
+              ></textarea>
+            </div>
+
+            <!-- Ảnh / Tài liệu minh chứng -->
+            <div class="mb-3">
+              <label class="form-label fw-bold fs-xs text-dark mb-1">
+                Ảnh minh chứng đối soát (không bắt buộc):
+              </label>
+              <div class="d-flex gap-2 mb-2">
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-primary"
+                  *ngFor="let sampleImg of sampleProofPhotos"
+                  (click)="appealForm.photoUrl = sampleImg.url"
+                  [class.active]="appealForm.photoUrl === sampleImg.url"
+                >
+                  <i class="bi bi-image me-1"></i>{{ sampleImg.title }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-xs btn-outline-secondary"
+                  (click)="appealForm.photoUrl = ''"
+                  *ngIf="appealForm.photoUrl"
+                >
+                  Xóa ảnh
+                </button>
+              </div>
+
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                [(ngModel)]="appealForm.photoUrl"
+                placeholder="Hoặc dán URL ảnh minh chứng (chụp đồng hồ, tắc đường, trạm)..."
+              />
+
+              <!-- Preview ảnh minh chứng -->
+              <div class="mt-2" *ngIf="appealForm.photoUrl">
+                <img
+                  [src]="appealForm.photoUrl"
+                  class="rounded-3 border shadow-sm"
+                  style="max-height: 110px; width: auto; object-fit: cover;"
+                />
+              </div>
+            </div>
+
+            <div class="alert alert-info py-2 px-3 m-0 fs-xxs d-flex align-items-center gap-2">
+              <i class="bi bi-info-circle-fill text-primary fs-6 flex-shrink-0"></i>
+              <span>Sau khi bấm gửi, đơn giải trình sẽ được chuyển trực tiếp đến Cán bộ Quản lý dự án để đối soát và cập nhật kết quả thẩm tra.</span>
+            </div>
+          </div>
+
+          <div class="modal-footer bg-white py-2 px-4 border-top d-flex justify-content-between align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm btn-secondary"
+              (click)="closeAttendanceAppealModal()"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-danger fw-bold d-flex align-items-center gap-1 shadow-sm px-3"
+              [disabled]="!appealForm.note.trim()"
+              (click)="submitAttendanceAppeal()"
+            >
+              <i class="bi bi-send-fill"></i>
+              <span>GỬI ĐƠN GIẢI TRÌNH</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -3747,6 +3990,105 @@ export class FieldPortalComponent implements OnInit, AfterViewInit, OnDestroy {
       member?.invalidReason ||
       'Tọa độ GPS điểm danh lệch >500m so với trạm xuất phát hoặc vào ca trễ hơn quy định. Cần liên hệ Cán bộ / Trưởng đội để đối soát giải trình thực tế.'
     );
+  }
+
+  // --- NGHIỆP VỤ GIẢI TRÌNH ĐIỂM DANH KHI BỊ TỪ CHỐI ---
+  getAttendanceAppealStatus(
+    schedule?: PatrolSchedule,
+  ): 'PENDING' | 'APPROVED' | 'REJECTED' | undefined {
+    const member = this.getAssignedMemberForSchedule(schedule);
+    if (member?.appealStatus) return member.appealStatus;
+    if (
+      schedule?.id === this.todaySchedule?.id &&
+      this.selectedPersonnelRecord?.appealStatus
+    ) {
+      return this.selectedPersonnelRecord.appealStatus;
+    }
+    return undefined;
+  }
+
+  getAttendanceAppealInfo(schedule?: PatrolSchedule) {
+    const member = this.getAssignedMemberForSchedule(schedule);
+    if (member?.appealStatus || member?.appealNote) {
+      return {
+        appealStatus: member.appealStatus,
+        appealNote: member.appealNote,
+        appealPhotoUrl: member.appealPhotoUrl,
+        appealSubmittedAt: member.appealSubmittedAt,
+        appealReviewedBy: member.appealReviewedBy,
+        appealReviewedAt: member.appealReviewedAt,
+        appealReviewNote: member.appealReviewNote,
+      };
+    }
+    if (
+      schedule?.id === this.todaySchedule?.id &&
+      this.selectedPersonnelRecord
+    ) {
+      return {
+        appealStatus: this.selectedPersonnelRecord.appealStatus,
+        appealNote: this.selectedPersonnelRecord.appealNote,
+        appealPhotoUrl: this.selectedPersonnelRecord.appealPhotoUrl,
+        appealSubmittedAt: this.selectedPersonnelRecord.appealSubmittedAt,
+        appealReviewedBy: this.selectedPersonnelRecord.appealReviewedBy,
+        appealReviewedAt: this.selectedPersonnelRecord.appealReviewedAt,
+        appealReviewNote: this.selectedPersonnelRecord.appealReviewNote,
+      };
+    }
+    return undefined;
+  }
+
+  showAttendanceAppealModal = false;
+  appealingSchedule?: PatrolSchedule;
+  appealForm = {
+    note: '',
+    photoUrl: '',
+  };
+
+  quickAppealReasons = [
+    'Ùn tắc giao thông do sự cố mặt đường',
+    'Mất kết nối GPS khu vực hầm/cầu',
+    'Hỗ trợ Đội xử lý sự cố đột xuất',
+    'Đổi thiết bị di động cá nhân',
+  ];
+
+  sampleProofPhotos = [
+    {
+      title: 'Ảnh kẹt xe',
+      url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=700&q=80',
+    },
+    {
+      title: 'Ảnh trạm xuất phát',
+      url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=700&q=80',
+    },
+  ];
+
+  openAttendanceAppealModal(schedule?: PatrolSchedule) {
+    this.appealingSchedule = schedule || this.currentSchedule;
+    const appealInfo = this.getAttendanceAppealInfo(this.appealingSchedule);
+    this.appealForm.note = appealInfo?.appealNote || '';
+    this.appealForm.photoUrl = appealInfo?.appealPhotoUrl || '';
+    this.showAttendanceAppealModal = true;
+  }
+
+  closeAttendanceAppealModal() {
+    this.showAttendanceAppealModal = false;
+    this.appealingSchedule = undefined;
+  }
+
+  submitAttendanceAppeal() {
+    if (!this.appealForm.note.trim()) return;
+    const schId = this.appealingSchedule?.id || this.currentSchedule?.id || '';
+    const pId = this.checkInForm.personnelId;
+
+    this.patrolService.submitAttendanceAppeal(
+      pId,
+      schId,
+      this.appealForm.note.trim(),
+      this.appealForm.photoUrl?.trim() || undefined,
+    );
+
+    this.showAttendanceAppealModal = false;
+    this.appealingSchedule = undefined;
   }
 
   // Điểm danh trực tiếp cho ca này (UC 8)

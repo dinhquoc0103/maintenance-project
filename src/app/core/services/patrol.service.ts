@@ -110,6 +110,10 @@ export class PatrolService {
       leaderName: 'Trần Đình Nam',
       assignedArea: 'Phường Bến Nghé & Bến Thành, Quận 1',
       permissionGroup: 'TRƯỞNG ĐỘI TUẦN KIỂM',
+      mission: 'Tuần kiểm',
+      permissionCode: 'ROLE_PATROL',
+      domain: 'Đô thị',
+      domainCode: 'URBAN',
       description:
         'Phụ trách tuần tra thường trực trục đường phố đi bộ và khu vực quảng trường trung tâm',
       memberCount: 6,
@@ -122,6 +126,10 @@ export class PatrolService {
       leaderName: 'Lê Hoàng Long',
       assignedArea: 'Dọc tuyến Tôn Đức Thắng & Bến Bạch Đằng',
       permissionGroup: 'NHÂN VIÊN HIỆN TRƯỜNG',
+      mission: 'Tuần kiểm',
+      permissionCode: 'ROLE_PATROL',
+      domain: 'Đô thị',
+      domainCode: 'URBAN',
       description:
         'Tuần kiểm hệ thống chiếu sáng công viên cảnh quan, cây xanh ven bờ sông Sài Gòn',
       memberCount: 5,
@@ -134,6 +142,10 @@ export class PatrolService {
       leaderName: 'Vũ Quốc Toàn',
       assignedArea: 'Trục Nam Kỳ Khởi Nghĩa, Hàm Nghi, Pasteur',
       permissionGroup: 'QUẢN TRỊ VẬN HÀNH',
+      mission: 'Duy tu',
+      permissionCode: 'ROLE_MAINTENANCE',
+      domain: 'Đô thị',
+      domainCode: 'URBAN',
       description:
         'Tuần tra phát hiện sự cố hố ga, sụt lún mặt đường và biển báo chỉ dẫn giao thông',
       memberCount: 8,
@@ -217,6 +229,12 @@ export class PatrolService {
       checkInLocation: 'Công viên Cột cờ Thủ Ngữ',
       isGpsValid: false,
       isValidAttendance: false, // Chờ Cán bộ đánh giá
+      appealStatus: 'PENDING',
+      appealNote:
+        'Em đi xe buýt tuyến 03 bị sự cố ùn ứ cầu Khánh Hội, đã gọi báo Đội trưởng lúc 07:15. Kính gửi Cán bộ xem xét đối soát chấm công.',
+      appealPhotoUrl:
+        'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=700&q=80',
+      appealSubmittedAt: '07:50 13/10/2026',
     },
     {
       id: 'ns-5',
@@ -486,7 +504,8 @@ export class PatrolService {
           phone: '0903.112.456',
           checkedIn: true,
           checkInTime: '06:45 13/10/2026',
-          checkInLocation: 'Công viên Tượng đài Bác Hồ (GPS: 10.7762, 106.7022)',
+          checkInLocation:
+            'Công viên Tượng đài Bác Hồ (GPS: 10.7762, 106.7022)',
           isValidAttendance: true,
         },
         {
@@ -541,6 +560,12 @@ export class PatrolService {
           isValidAttendance: false,
           invalidReason:
             'Tọa độ GPS điểm danh lệch 1.2km so với trạm xuất phát Bến Bạch Đằng và vào ca trễ 42 phút. Cần đối soát giải trình.',
+          appealStatus: 'PENDING',
+          appealNote:
+            'Em đi xe buýt tuyến 03 bị sự cố ùn ứ cầu Khánh Hội, đã gọi báo Đội trưởng lúc 07:15. Kính gửi Cán bộ xem xét đối soát chấm công.',
+          appealPhotoUrl:
+            'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=700&q=80',
+          appealSubmittedAt: '07:50 13/10/2026',
         },
         {
           id: 'ns-1',
@@ -1002,7 +1027,11 @@ export class PatrolService {
       teamId: 'team-1',
       teamName: 'Đội Tuần kiểm Trung tâm Quận 1',
       leadInspector: 'KS. Trần Đình Nam',
-      members: ['KS. Trần Đình Nam', 'KTV. Nguyễn Văn Minh', 'Lái xe Lê Quốc Tuấn'],
+      members: [
+        'KS. Trần Đình Nam',
+        'KTV. Nguyễn Văn Minh',
+        'Lái xe Lê Quốc Tuấn',
+      ],
       startTime: '06:45',
       endTime: '11:30',
       distanceKm: 12.5,
@@ -1020,8 +1049,9 @@ export class PatrolService {
           priority: 'HIGH',
           status: 'QUICK_FIXING',
           layerName: 'Chiếu sáng',
-          photoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-          location: 'Cột Km4+200, Dải phân cách giữa'
+          photoUrl:
+            'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+          location: 'Cột Km4+200, Dải phân cách giữa',
         },
         {
           id: 'iss-2',
@@ -1030,9 +1060,10 @@ export class PatrolService {
           priority: 'URGENT',
           status: 'NEW',
           layerName: 'Cây xanh',
-          photoUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
-          location: 'Km3+400 lề trái hướng Q1 đi Q5'
-        }
+          photoUrl:
+            'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+          location: 'Km3+400 lề trái hướng Q1 đi Q5',
+        },
       ],
       checkedAssets: [
         {
@@ -1040,41 +1071,48 @@ export class PatrolService {
           assetName: 'Trụ đèn chiếu sáng nhánh phụ CS-040',
           condition: 'NORMAL',
           checkedAt: '07:15 16/10/2026',
-          photoUrl: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
-          notes: 'Đèn hoạt động ổn định, kính sạch sẽ'
+          photoUrl:
+            'https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&q=80',
+          notes: 'Đèn hoạt động ổn định, kính sạch sẽ',
         },
         {
           assetCode: 'CS-VK-042',
           assetName: 'Trụ đèn LED chiếu sáng 150W đôi',
           condition: 'DAMAGED',
           checkedAt: '07:35 16/10/2026',
-          photoUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
-          notes: 'Phát hiện chập cáp âm sàn chân cột, đã lập phiếu sự cố SC-2026-001'
+          photoUrl:
+            'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=600&q=80',
+          notes:
+            'Phát hiện chập cáp âm sàn chân cột, đã lập phiếu sự cố SC-2026-001',
         },
         {
           assetCode: 'TN-VK-088',
           assetName: 'Hố ga thu nước mặt composite',
           condition: 'GOOD',
           checkedAt: '08:20 16/10/2026',
-          photoUrl: 'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80',
-          notes: 'Lưới thu nước thông thoáng, không bị tắc rác'
+          photoUrl:
+            'https://images.unsplash.com/photo-1585320806297-9794b3e4eeae?w=600&q=80',
+          notes: 'Lưới thu nước thông thoáng, không bị tắc rác',
         },
         {
           assetCode: 'CX-VK-018',
           assetName: 'Cây Xà Cừ cổ thụ loại 3',
           condition: 'NEEDS_REPLACEMENT',
           checkedAt: '09:05 16/10/2026',
-          photoUrl: 'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
-          notes: 'Nhánh cây lớn bị mục thân đe dọa giao thông, đã phát phiếu SC-2026-002'
-        }
+          photoUrl:
+            'https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?w=600&q=80',
+          notes:
+            'Nhánh cây lớn bị mục thân đe dọa giao thông, đã phát phiếu SC-2026-002',
+        },
       ],
       status: 'VERIFIED',
       evaluationGrade: 'DAT_CO_SU_CO',
-      operationalNotes: 'Đội tuần tra đúng tuyến và đúng giờ quy định. Đã ghi nhận 2 sự cố và phân công khắc phục ngay trong ca sáng.',
+      operationalNotes:
+        'Đội tuần tra đúng tuyến và đúng giờ quy định. Đã ghi nhận 2 sự cố và phân công khắc phục ngay trong ca sáng.',
       verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
       verifiedAt: '16/10/2026 13:45',
       weatherCondition: 'Trời nắng ráo, nhiệt độ 31°C, tầm nhìn trên 10km',
-      vehiclePlate: '51A-892.44 (Xe bán tải tuần kiểm Ban QLDA)'
+      vehiclePlate: '51A-892.44 (Xe bán tải tuần kiểm Ban QLDA)',
     },
     {
       id: 'rec-2',
@@ -1103,23 +1141,24 @@ export class PatrolService {
           assetName: 'Đèn trang trí cảnh quan Phố đi bộ',
           condition: 'GOOD',
           checkedAt: '07:25 16/10/2026',
-          notes: 'Đèn sạch sẽ, hệ thống dây ngầm nguyên vẹn'
+          notes: 'Đèn sạch sẽ, hệ thống dây ngầm nguyên vẹn',
         },
         {
           assetCode: 'CX-NH-012',
           assetName: 'Cây lộc vừng bồn hoa trung tâm',
           condition: 'NORMAL',
           checkedAt: '08:10 16/10/2026',
-          notes: 'Cây phát triển bình thường, đã tỉa lá úa'
-        }
+          notes: 'Cây phát triển bình thường, đã tỉa lá úa',
+        },
       ],
       status: 'VERIFIED',
       evaluationGrade: 'DAT_YEU_CAU',
-      operationalNotes: 'Tuyến phố trung tâm bảo đảm mỹ quan đô thị, không phát sinh sự cố hạ tầng.',
+      operationalNotes:
+        'Tuyến phố trung tâm bảo đảm mỹ quan đô thị, không phát sinh sự cố hạ tầng.',
       verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
       verifiedAt: '16/10/2026 11:45',
       weatherCondition: 'Nắng nhẹ, gió nhẹ, lưu lượng người đi bộ vừa phải',
-      vehiclePlate: 'Đi tuần bộ và xe đạp tuần tra đô thị'
+      vehiclePlate: 'Đi tuần bộ và xe đạp tuần tra đô thị',
     },
     {
       id: 'rec-3',
@@ -1149,16 +1188,17 @@ export class PatrolService {
           priority: 'URGENT',
           status: 'RESOLVED',
           layerName: 'Thoát nước',
-          location: 'Bến ga tàu thủy Bạch Đằng'
-        }
+          location: 'Bến ga tàu thủy Bạch Đằng',
+        },
       ],
       status: 'VERIFIED',
       evaluationGrade: 'DAT_CO_SU_CO',
-      operationalNotes: 'Phát hiện sự cố nắp hố ga mất đã đặt biển cảnh báo ngay lập tức và chuyển đội thoát nước thay nắp trong 45 phút.',
+      operationalNotes:
+        'Phát hiện sự cố nắp hố ga mất đã đặt biển cảnh báo ngay lập tức và chuyển đội thoát nước thay nắp trong 45 phút.',
       verifiedBy: 'Vũ Quốc Toàn (Phó phòng Vận hành)',
       verifiedAt: '15/10/2026 18:00',
       weatherCondition: 'Mây rải rác, triều cường nhẹ ven sông',
-      vehiclePlate: '51B-004.12'
+      vehiclePlate: '51B-004.12',
     },
     {
       id: 'rec-4',
@@ -1188,16 +1228,17 @@ export class PatrolService {
           priority: 'HIGH',
           status: 'MOVED_TO_PROJECT',
           layerName: 'Giao thông',
-          location: 'Ngã tư Nam Kỳ Khởi Nghĩa - Hàm Nghi'
-        }
+          location: 'Ngã tư Nam Kỳ Khởi Nghĩa - Hàm Nghi',
+        },
       ],
       status: 'VERIFIED',
       evaluationGrade: 'DAT_CO_SU_CO',
-      operationalNotes: 'Vết lún sâu 12cm có nguy cơ lan rộng, đã lập biên bản và chuyển sang dự án sửa chữa mặt đường đợt tới.',
+      operationalNotes:
+        'Vết lún sâu 12cm có nguy cơ lan rộng, đã lập biên bản và chuyển sang dự án sửa chữa mặt đường đợt tới.',
       verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
       verifiedAt: '15/10/2026 14:15',
       weatherCondition: 'Nắng ráo, giao thông đông đúc giờ cao điểm',
-      vehiclePlate: '51A-992.81'
+      vehiclePlate: '51A-992.81',
     },
     {
       id: 'rec-5',
@@ -1222,9 +1263,10 @@ export class PatrolService {
       issues: [],
       status: 'NEEDS_REVIEW',
       evaluationGrade: 'CHUA_THAM_DINH',
-      operationalNotes: 'Có gián đoạn tín hiệu GPS khoảng 25 phút gần dốc cầu Ông Lãnh. Cán bộ vận hành đang liên hệ kiểm tra nguyên nhân thiết bị.',
+      operationalNotes:
+        'Có gián đoạn tín hiệu GPS khoảng 25 phút gần dốc cầu Ông Lãnh. Cán bộ vận hành đang liên hệ kiểm tra nguyên nhân thiết bị.',
       weatherCondition: 'Có mưa rào nhỏ lúc 20h15',
-      vehiclePlate: 'Xe máy tuần tra 59P1-123.45'
+      vehiclePlate: 'Xe máy tuần tra 59P1-123.45',
     },
     {
       id: 'rec-6',
@@ -1249,11 +1291,12 @@ export class PatrolService {
       issues: [],
       status: 'VERIFIED',
       evaluationGrade: 'DAT_YEU_CAU',
-      operationalNotes: 'Hoàn thành tốt ca tuần kiểm, chuẩn bị phục vụ sự kiện cuối tuần.',
+      operationalNotes:
+        'Hoàn thành tốt ca tuần kiểm, chuẩn bị phục vụ sự kiện cuối tuần.',
       verifiedBy: 'KS. Lê Hoàng Long (Cán bộ Vận hành Ban QLDA)',
       verifiedAt: '13/10/2026 11:30',
-      weatherCondition: 'Trời nắng mát'
-    }
+      weatherCondition: 'Trời nắng mát',
+    },
   ]);
 
   // Selected State
@@ -1820,10 +1863,16 @@ export class PatrolService {
       name: team.name || 'Đội tuần kiểm mới',
       leaderId: team.leaderId || 'ns-1',
       leaderName: team.leaderName || 'Trần Đình Nam',
-      assignedArea: team.assignedArea || 'Khu vực trung tâm',
+      assignedArea: team.assignedArea || 'Khu vực quản lý',
       permissionGroup: team.permissionGroup || 'NHÂN VIÊN HIỆN TRƯỜNG',
       description: team.description || '',
       memberCount: team.memberCount || 5,
+      mission: team.mission || 'Tuần kiểm',
+      permissionCode:
+        team.permissionCode ||
+        (team.mission === 'Duy tu' ? 'ROLE_MAINTENANCE' : 'ROLE_PATROL'),
+      domain: team.domain || 'Đô thị',
+      domainCode: team.domainCode || 'URBAN',
     };
 
     this.teams.update((list) => [...list, newTeam]);
@@ -1873,10 +1922,23 @@ export class PatrolService {
     this.toast.success('Cập nhật thông tin nhân sự thành công!');
   }
 
-  evaluateAttendance(personnelId: string, isValid: boolean, invalidReason?: string) {
+  evaluateAttendance(
+    personnelId: string,
+    isValid: boolean,
+    invalidReason?: string,
+  ) {
     this.personnel.update((list) =>
       list.map((p) =>
-        p.id === personnelId ? { ...p, isValidAttendance: isValid } : p,
+        p.id === personnelId
+          ? {
+              ...p,
+              isValidAttendance: isValid,
+              appealStatus: isValid ? 'APPROVED' : undefined,
+              appealReviewNote: isValid
+                ? 'Cán bộ xác nhận hợp lệ trực tiếp'
+                : undefined,
+            }
+          : p,
       ),
     );
     // Đồng bộ trực tiếp sang các ca tuần kiểm liên quan
@@ -1888,6 +1950,7 @@ export class PatrolService {
             ? {
                 ...p,
                 isValidAttendance: isValid,
+                appealStatus: isValid ? 'APPROVED' : undefined,
                 invalidReason: isValid
                   ? undefined
                   : invalidReason ||
@@ -1900,6 +1963,175 @@ export class PatrolService {
     this.toast.success(
       `Đã đánh giá điểm danh: ${isValid ? 'HỢP LỆ' : 'KHÔNG HỢP LỆ'}`,
     );
+  }
+
+  // --- NGHIỆP VỤ GIẢI TRÌNH ĐIỂM DANH KHI BỊ TỪ CHỐI (APPEAL ATTENDANCE) ---
+  submitAttendanceAppeal(
+    personnelId: string,
+    scheduleId: string,
+    note: string,
+    photoUrl?: string,
+  ) {
+    const timeStr =
+      new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) +
+      ' ' +
+      new Date().toLocaleDateString('vi-VN');
+
+    // 1. Cập nhật trong danh sách personnel
+    this.personnel.update((list) =>
+      list.map((p) => {
+        if (p.id === personnelId) {
+          return {
+            ...p,
+            appealStatus: 'PENDING' as const,
+            appealNote: note,
+            appealPhotoUrl: photoUrl,
+            appealSubmittedAt: timeStr,
+            appealReviewNote: undefined,
+          };
+        }
+        return p;
+      }),
+    );
+
+    // 2. Cập nhật trong schedules
+    this.schedules.update((list) =>
+      list.map((s) => {
+        if (s.id === scheduleId) {
+          return {
+            ...s,
+            assignedPersonnel: s.assignedPersonnel.map((p) =>
+              p.id === personnelId
+                ? {
+                    ...p,
+                    appealStatus: 'PENDING' as const,
+                    appealNote: note,
+                    appealPhotoUrl: photoUrl,
+                    appealSubmittedAt: timeStr,
+                    appealReviewNote: undefined,
+                  }
+                : p,
+            ),
+          };
+        }
+        return s;
+      }),
+    );
+
+    const worker = this.personnel().find((p) => p.id === personnelId);
+    this.addLog({
+      scheduleId,
+      personnelName: worker?.name || 'Nhân viên tuần kiểm',
+      action: 'APPEAL_ATTENDANCE',
+      title: `Gửi đơn giải trình điểm danh: ${worker?.name}`,
+      details: `Nội dung giải trình: "${note}". Đang chờ Cán bộ thẩm tra.`,
+      timestamp: timeStr,
+      lat: 10.7745,
+      lng: 106.7025,
+      status: 'WARNING',
+    });
+
+    this.toast.success(
+      'Gửi giải trình thành công!',
+      'Hệ thống đã chuyển đơn giải trình điểm danh đến Cán bộ Ban QLDA để thẩm tra đối soát.',
+    );
+  }
+
+  reviewAttendanceAppeal(
+    personnelId: string,
+    scheduleId: string,
+    isApproved: boolean,
+    reviewNote?: string,
+    reviewerName: string = 'KS. Hoàng Minh Tuấn (QLDA)',
+  ) {
+    const timeStr =
+      new Date().toLocaleTimeString('vi-VN', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }) +
+      ' ' +
+      new Date().toLocaleDateString('vi-VN');
+
+    // 1. Cập nhật trong personnel
+    this.personnel.update((list) =>
+      list.map((p) => {
+        if (p.id === personnelId) {
+          return {
+            ...p,
+            isValidAttendance: isApproved,
+            appealStatus: isApproved ? 'APPROVED' : 'REJECTED',
+            appealReviewedBy: reviewerName,
+            appealReviewedAt: timeStr,
+            appealReviewNote:
+              reviewNote ||
+              (isApproved ? 'Đã duyệt giải trình hợp lệ' : 'Bác bỏ giải trình'),
+            todayAttendance: isApproved ? 'CHECKED_IN' : p.todayAttendance,
+          };
+        }
+        return p;
+      }),
+    );
+
+    // 2. Cập nhật trong schedules
+    this.schedules.update((list) =>
+      list.map((s) => {
+        if (s.id === scheduleId) {
+          return {
+            ...s,
+            assignedPersonnel: s.assignedPersonnel.map((p) =>
+              p.id === personnelId
+                ? {
+                    ...p,
+                    isValidAttendance: isApproved,
+                    appealStatus: isApproved ? 'APPROVED' : 'REJECTED',
+                    appealReviewedBy: reviewerName,
+                    appealReviewedAt: timeStr,
+                    appealReviewNote:
+                      reviewNote ||
+                      (isApproved
+                        ? 'Đã duyệt giải trình hợp lệ'
+                        : 'Bác bỏ giải trình'),
+                    invalidReason: isApproved
+                      ? undefined
+                      : `Giải trình bị từ chối: ${reviewNote || 'Chưa đủ chứng cứ đối soát'}`,
+                  }
+                : p,
+            ),
+          };
+        }
+        return s;
+      }),
+    );
+
+    const worker = this.personnel().find((p) => p.id === personnelId);
+    this.addLog({
+      scheduleId,
+      personnelName: reviewerName,
+      action: 'REVIEW_APPEAL',
+      title: isApproved
+        ? `Duyệt giải trình điểm danh: ${worker?.name}`
+        : `Bác giải trình điểm danh: ${worker?.name}`,
+      details: `Kết luận của Cán bộ: ${reviewNote || (isApproved ? 'Chấp thuận' : 'Bác bỏ')}`,
+      timestamp: timeStr,
+      lat: 10.7745,
+      lng: 106.7025,
+      status: isApproved ? 'SUCCESS' : 'DANGER',
+    });
+
+    if (isApproved) {
+      this.toast.success(
+        'Đã phê duyệt giải trình!',
+        `Điểm danh của [${worker?.name || personnelId}] đã được chuyển sang trạng thái HỢP LỆ.`,
+      );
+    } else {
+      this.toast.warning(
+        'Đã bác bỏ giải trình!',
+        `Điểm danh của [${worker?.name || personnelId}] tiếp tục giữ trạng thái KHÔNG HỢP LỆ.`,
+      );
+    }
   }
 
   // --- LẬP LỊCH & ĐIỀU PHỐI (UC 3, UC 7, UC 8) ---
@@ -1960,7 +2192,9 @@ export class PatrolService {
                 checkInTime: checkedIn ? p.checkInTime : undefined,
                 checkInLocation: checkedIn ? p.checkInLocation : undefined,
                 isValidAttendance: checkedIn ? p.isValidAttendance : false,
-                checkInTimestamp: checkedIn ? (p.checkInTimestamp || Date.now()) : 0,
+                checkInTimestamp: checkedIn
+                  ? p.checkInTimestamp || Date.now()
+                  : 0,
               };
             }
             return p;
@@ -1978,7 +2212,9 @@ export class PatrolService {
           assignedRoutes: [newSch.routeName],
           isActive: true,
           todayAttendance: assigned.checkedIn ? 'CHECKED_IN' : 'NOT_CHECKED_IN',
-          checkInTime: assigned.checkedIn ? new Date().toLocaleTimeString('vi-VN') : undefined,
+          checkInTime: assigned.checkedIn
+            ? new Date().toLocaleTimeString('vi-VN')
+            : undefined,
           isValidAttendance: false,
           currentScheduleId: newSch.id,
           currentShift: newSch.shift,
@@ -2008,7 +2244,11 @@ export class PatrolService {
     this.toast.info('Thông báo', 'Đã hủy bỏ ca tuần kiểm');
   }
 
-  checkInSchedulePersonnel(scheduleId: string, personnelId: string, location?: string) {
+  checkInSchedulePersonnel(
+    scheduleId: string,
+    personnelId: string,
+    location?: string,
+  ) {
     const timeStr =
       new Date().toLocaleTimeString('vi-VN', {
         hour: '2-digit',
@@ -2019,7 +2259,8 @@ export class PatrolService {
     const nowTimestamp = Date.now();
 
     const targetSchedule = this.schedules().find((s) => s.id === scheduleId);
-    const checkLocation = location || targetSchedule?.startPointName || 'Hiện trường tuần kiểm';
+    const checkLocation =
+      location || targetSchedule?.startPointName || 'Hiện trường tuần kiểm';
 
     // 1. Cập nhật trong schedules
     this.schedules.update((list) =>
@@ -2067,7 +2308,10 @@ export class PatrolService {
       status: 'SUCCESS',
     });
 
-    this.toast.success('Điểm danh nhân viên thành công!', `[${worker?.name || personnelId}] đã vào ca và chuyển lên đầu danh sách điểm danh.`);
+    this.toast.success(
+      'Điểm danh nhân viên thành công!',
+      `[${worker?.name || personnelId}] đã vào ca và chuyển lên đầu danh sách điểm danh.`,
+    );
   }
 
   updateScheduleStatus(
@@ -2296,7 +2540,7 @@ export class PatrolService {
   updateInspectionRecord(id: string, updates: Partial<PatrolInspectionRecord>) {
     const now = new Date();
     const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} ${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
-    
+
     this.inspectionRecords.update((list) =>
       list.map((item) =>
         item.id === id
@@ -2304,15 +2548,19 @@ export class PatrolService {
               ...item,
               ...updates,
               updatedAt: timeStr,
-              verifiedAt: updates.status === 'VERIFIED' ? timeStr : item.verifiedAt,
-              verifiedBy: updates.status === 'VERIFIED' ? (updates.verifiedBy || 'Cán bộ Vận hành Ban QLDA') : item.verifiedBy
+              verifiedAt:
+                updates.status === 'VERIFIED' ? timeStr : item.verifiedAt,
+              verifiedBy:
+                updates.status === 'VERIFIED'
+                  ? updates.verifiedBy || 'Cán bộ Vận hành Ban QLDA'
+                  : item.verifiedBy,
             }
-          : item
-      )
+          : item,
+      ),
     );
     this.toast.success(
       'Cập nhật thông tin thành công!',
-      `Đã lưu ý kiến thẩm tra & cập nhật sổ nhật ký tuần kiểm.`
+      `Đã lưu ý kiến thẩm tra & cập nhật sổ nhật ký tuần kiểm.`,
     );
   }
 
@@ -2322,7 +2570,7 @@ export class PatrolService {
     this.inspectionRecords.update((list) => list.filter((r) => r.id !== id));
     this.toast.success(
       'Xóa kết quả tuần kiểm thành công!',
-      `Đã xóa bản ghi nhật ký [${item?.code || id}] khỏi hệ thống.`
+      `Đã xóa bản ghi nhật ký [${item?.code || id}] khỏi hệ thống.`,
     );
   }
 
@@ -2346,13 +2594,17 @@ export class PatrolService {
       'Xếp Loại Đánh Giá',
       'Ý Kiến Thẩm Định Ban QLDA',
       'Người Thẩm Định',
-      'Ngày Giờ Thẩm Định'
+      'Ngày Giờ Thẩm Định',
     ];
 
     const rows = records.map((r) => [
       r.code,
       r.date,
-      r.shift === 'SANG' ? 'Ca Sáng' : r.shift === 'CHIEU' ? 'Ca Chiều' : 'Ca Tối',
+      r.shift === 'SANG'
+        ? 'Ca Sáng'
+        : r.shift === 'CHIEU'
+          ? 'Ca Chiều'
+          : 'Ca Tối',
       r.routeName,
       r.teamName,
       r.leadInspector,
@@ -2363,11 +2615,19 @@ export class PatrolService {
       r.normalAssetsCount,
       r.issueAssetsCount,
       r.issuesFoundCount,
-      r.status === 'VERIFIED' ? 'Đã thẩm định' : r.status === 'NEEDS_REVIEW' ? 'Chờ kiểm tra lại' : 'Hoàn thành',
-      r.evaluationGrade === 'DAT_YEU_CAU' ? 'Đạt yêu cầu' : r.evaluationGrade === 'DAT_CO_SU_CO' ? 'Đạt (kèm sự cố)' : 'Chưa thẩm định',
+      r.status === 'VERIFIED'
+        ? 'Đã thẩm định'
+        : r.status === 'NEEDS_REVIEW'
+          ? 'Chờ kiểm tra lại'
+          : 'Hoàn thành',
+      r.evaluationGrade === 'DAT_YEU_CAU'
+        ? 'Đạt yêu cầu'
+        : r.evaluationGrade === 'DAT_CO_SU_CO'
+          ? 'Đạt (kèm sự cố)'
+          : 'Chưa thẩm định',
       r.operationalNotes || '',
       r.verifiedBy || '',
-      r.verifiedAt || ''
+      r.verifiedAt || '',
     ]);
 
     this.exportToCsv('So_Nhat_Ky_Tuan_Kiem_Ha_Tang', headers, rows);

@@ -47,9 +47,13 @@ export interface PatrolTeam {
   leaderId: string;
   leaderName: string;
   assignedArea: string;
-  permissionGroup: 'QUẢN TRỊ VẬN HÀNH' | 'TRƯỞNG ĐỘI TUẦN KIỂM' | 'NHÂN VIÊN HIỆN TRƯỜNG';
+  permissionGroup: 'QUẢN TRỊ VẬN HÀNH' | 'TRƯỞNG ĐỘI TUẦN KIỂM' | 'NHÂN VIÊN HIỆN TRƯỜNG' | string;
   description: string;
   memberCount: number;
+  mission?: 'Tuần kiểm' | 'Duy tu';
+  permissionCode?: string;
+  domain?: 'Đô thị' | 'Giao thông' | string;
+  domainCode?: 'URBAN' | 'TRAFFIC' | string;
 }
 
 // UC 1 & UC 5: Nhân sự tuần kiểm
@@ -72,6 +76,14 @@ export interface PatrolPersonnel {
   currentShift?: ShiftType; // Ca trực được phân công
   currentScheduleId?: string; // ID ca trực liên kết
   currentRouteName?: string; // Tên tuyến đường của ca trực
+  // Nghiệp vụ Giải trình điểm danh khi bị từ chối
+  appealStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  appealNote?: string;
+  appealPhotoUrl?: string;
+  appealSubmittedAt?: string;
+  appealReviewedBy?: string;
+  appealReviewedAt?: string;
+  appealReviewNote?: string;
 }
 
 /**
@@ -137,6 +149,14 @@ export interface PatrolSchedule {
     checkInLocation?: string;
     isValidAttendance?: boolean;
     invalidReason?: string;
+    // Nghiệp vụ Giải trình điểm danh ca trực
+    appealStatus?: 'PENDING' | 'APPROVED' | 'REJECTED';
+    appealNote?: string;
+    appealPhotoUrl?: string;
+    appealSubmittedAt?: string;
+    appealReviewedBy?: string;
+    appealReviewedAt?: string;
+    appealReviewNote?: string;
   }[];
   status: 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
   checkpointsTotal: number;
@@ -222,12 +242,20 @@ export interface PatrolLog {
   scheduleId?: string;
   issueId?: string;
   personnelName: string;
-  action: 'CHECK_IN' | 'START_ROUTE' | 'REPORT_ISSUE' | 'INSPECT_ASSET' | 'END_ROUTE' | 'QUICK_FIX';
+  action:
+    | 'CHECK_IN'
+    | 'START_ROUTE'
+    | 'REPORT_ISSUE'
+    | 'INSPECT_ASSET'
+    | 'END_ROUTE'
+    | 'QUICK_FIX'
+    | 'APPEAL_ATTENDANCE'
+    | 'REVIEW_APPEAL';
   title: string;
   details: string;
   timestamp: string;
-  lat: number;
-  lng: number;
+  lat?: number;
+  lng?: number;
   status: 'INFO' | 'WARNING' | 'SUCCESS' | 'DANGER';
 }
 
