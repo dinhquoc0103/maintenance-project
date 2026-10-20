@@ -38,8 +38,8 @@ export interface ContractorAssetDraft {
   notes: string;
   completedDate: string;
   technicianName: string;
-  // Bổ sung thuộc tính hình học dạng tuyến / đoạn đường
-  geometryType?: 'POINT' | 'LINE';
+  // Bổ sung thuộc tính hình học dạng tuyến / đoạn đường / vùng
+  geometryType?: 'POINT' | 'LINE' | 'POLYGON';
   lengthMeters?: number;
   widthMeters?: number;
   areaSquareMeters?: number;

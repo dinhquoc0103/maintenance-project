@@ -737,9 +737,57 @@ export class ProjectService {
       lng: 106.70130,
       address: 'Góc Lê Lợi - Nguyễn Huệ',
       specs: 'Samanea saman, D=95cm, chiều cao H=22m, độ xòe tán 18m, tuổi thọ trên 75 năm',
-      commissioningDate: '2015-01-01',
+    },
+    {
+      id: 'ast-poly-01',
+      code: 'TC-NH-01',
+      name: 'Thảm cỏ & hoa viên Tượng đài Bác Hồ',
+      layerId: 'GREENERY',
+      layerName: 'Cây xanh & Công viên',
+      category: 'Thảm cỏ cảnh quan hoa viên',
+      route: 'Tuyến Nguyễn Huệ',
+      chainage: 'Km0+010 - Km0+060',
+      lat: 10.77615,
+      lng: 106.70245,
+      address: 'Quảng trường Tượng đài Bác Hồ, Nguyễn Huệ',
+      geometryType: 'POLYGON',
+      areaSquareMeters: 620,
+      polygonCoords: [
+        [10.7765, 106.7022],
+        [10.7768, 106.7027],
+        [10.7761, 106.7031],
+        [10.7758, 106.7025]
+      ],
+      specs: 'Thảm cỏ nhung Nhật kết hợp bồn hoa viền cúc mặt trời, hệ thống tưới ngầm phun sương áp lực cao',
+      commissioningDate: '2021-05-19',
+      managementUnit: 'Ban Quản lý Công viên Tượng đài Bác Hồ',
+      assignedProjectId: 'p-1',
+      notes: 'Khu vực cảnh quan trung tâm quảng trường đi bộ'
+    },
+    {
+      id: 'ast-poly-02',
+      code: 'TC-TDT-02',
+      name: 'Thảm cỏ dải phân cách ven sông Bến Bạch Đằng',
+      layerId: 'GREENERY',
+      layerName: 'Cây xanh & Công viên',
+      category: 'Thảm cỏ cảnh quan ven sông',
+      route: 'Tuyến Tôn Đức Thắng',
+      chainage: 'Km0+350 - Km0+500',
+      lat: 10.77450,
+      lng: 106.70700,
+      address: 'Công viên Bến Bạch Đằng, Tôn Đức Thắng',
+      geometryType: 'POLYGON',
+      areaSquareMeters: 850,
+      polygonCoords: [
+        [10.7752, 106.7067],
+        [10.7756, 106.7073],
+        [10.7742, 106.7079],
+        [10.7738, 106.7072]
+      ],
+      specs: 'Cỏ lá gừng Thái Lan chịu ngập triều nhẹ, viền đá xám băm nhám 20x20cm',
+      commissioningDate: '2022-03-15',
       managementUnit: 'Công ty TNHH MTV Công viên Cây xanh TP.HCM',
-      notes: 'Tài sản trong kho dữ liệu tổng, chưa gán vào dự án'
+      notes: 'Tài sản trong kho tổng Master Map'
     }
   ];
 
@@ -1309,21 +1357,33 @@ export class ProjectService {
     });
   }
 
-  // Map selected assets into project (Many-to-Many relation as specified)
-  mapAssetsToProject(projectId: string, assetIds: string[]) {
+  // Synchronize project assets with exact selected asset IDs (Union / Edit from modal)
+  syncProjectAssets(projectId: string, assetIds: string[]) {
+    const idSet = new Set(assetIds);
     this.masterAssets.update(assets =>
       assets.map(a => {
-        if (assetIds.includes(a.id)) {
+        if (idSet.has(a.id)) {
           return {
             ...a,
             assignedProjectId: projectId,
             lastUpdated: new Date().toISOString()
+          };
+        } else if (a.assignedProjectId === projectId) {
+          // If was assigned to this project but now removed from cart, unassign
+          return {
+            ...a,
+            assignedProjectId: undefined
           };
         }
         return a;
       })
     );
     this.recalculateProjectStats(projectId);
+  }
+
+  // Map selected assets into project (Many-to-Many relation as specified)
+  mapAssetsToProject(projectId: string, assetIds: string[]) {
+    this.syncProjectAssets(projectId, assetIds);
   }
 
   removeAssetFromProject(projectId: string, assetId: string) {

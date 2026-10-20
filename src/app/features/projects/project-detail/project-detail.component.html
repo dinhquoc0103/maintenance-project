@@ -384,7 +384,7 @@
 
     <!-- Layout: GIS Mini Map + Static Asset Catalog Table -->
     <div class="asset-content-split">
-      <!-- Mini Map preview -->
+      <!-- ẨN BẢN ĐỒ BÊN TAY TRÁI THEO YÊU CẦU: GIỮ CODE ĐỂ DÙNG KHI CẦN
       <div class="app-card map-side-card">
         <div class="map-card-header">
           <span class="title"><i class="bi bi-map"></i> Bản đồ GIS Tài sản Dự án</span>
@@ -398,18 +398,19 @@
           <span class="legend-item"><span class="dot roadway"></span> Đường bộ</span>
         </div>
       </div>
+      -->
 
-      <!-- Static Asset Catalog Table with Pagination -->
-      <div class="app-card table-side-card">
+      <!-- Bảng tài sản chiếm trọn chiều rộng (Full-width Table) -->
+      <div class="app-card table-side-card full-width-card">
         <div class="custom-table-container">
           <table class="custom-table">
             <thead>
               <tr>
-                <th style="width: 110px;">Mã TS</th>
-                <th>Tên Tài Sản & Vị Trí</th>
-                <th style="width: 180px;">Lớp & Phân Nhóm</th>
-                <th style="width: 220px;">Tuyến đường</th>
-                <th style="width: 60px; text-align: center;">Gỡ</th>
+                <th style="width: 120px;">Mã TS</th>
+                <th>Tên Tài Sản</th>
+                <th style="width: 200px;">Lớp & Phân Nhóm</th>
+                <th style="width: 240px;">Tuyến đường & Lý trình</th>
+                <th style="width: 110px; text-align: center;">Thao Tác</th>
               </tr>
             </thead>
             <tbody>
@@ -420,7 +421,6 @@
                 <td>
                   <div class="asset-title-block">
                     <span class="asset-name">{{ asset.name }}</span>
-                    <span class="asset-addr"><i class="bi bi-geo-alt"></i> {{ asset.address }}</span>
                   </div>
                 </td>
                 <td>
@@ -434,9 +434,22 @@
                   <span class="text-muted fs-xs" *ngIf="asset.chainage"><i class="bi bi-signpost-2"></i> {{ asset.chainage }}</span>
                 </td>
                 <td style="text-align: center;">
-                  <button class="btn btn-sm btn-ghost text-danger" title="Gỡ khỏi danh mục dự án" (click)="removeAsset(asset)">
-                    <i class="bi bi-trash"></i>
-                  </button>
+                  <div class="action-buttons-group">
+                    <button
+                      class="action-btn btn-view-map"
+                      title="Xem vị trí & tuyến đường trên bản đồ GIS"
+                      (click)="openAssetLocationModal(asset)"
+                    >
+                      <i class="bi bi-geo-alt"></i>
+                    </button>
+                    <button
+                      class="action-btn btn-delete"
+                      title="Gỡ khỏi danh mục dự án"
+                      (click)="removeAsset(asset)"
+                    >
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </div>
                 </td>
               </tr>
 
@@ -853,136 +866,321 @@
     </div>
   </div>
 
-  <!-- MODAL THÊM TÀI SẢN VÀO DỰ ÁN (TAB 3: CẬP NHẬT QUAN TRỌNG VỚI 3 THAO TÁC + DROPDOWN LAYER BẮT BUỘC) -->
+  <!-- MODAL THÊM TÀI SẢN VÀO DỰ ÁN (MỘT MÀN HÌNH - CHỌN CỘNG DỒN UNION) -->
   <div class="modal-backdrop" *ngIf="isAddAssetModalOpen" (click)="closeAddAssetModal()">
-    <div class="modal-content modal-lg" (click)="$event.stopPropagation()">
+    <div class="modal-content modal-xl union-modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3><i class="bi bi-layers-half text-primary"></i> Thêm Tài Sản Không Gian Vào Dự Án Duy Tu (Master Map)</h3>
-        <button class="close-btn" (click)="closeAddAssetModal()"><i class="bi bi-x-lg"></i></button>
+        <div>
+          <h3><i class="bi bi-layers-half text-primary"></i> Thêm Tài Sản Không Gian Vào Dự Án Duy Tu (Master Map)</h3>
+          <p class="modal-subtitle">Một màn hình làm việc thống nhất • Cơ chế Chọn Cộng dồn (Union) từ Tuyến, Bản đồ & Giỏ hàng</p>
+        </div>
+        <button class="close-btn" (click)="closeAddAssetModal()" title="Đóng modal"><i class="bi bi-x-lg"></i></button>
       </div>
+
       <div class="modal-body">
-        <!-- BƯỚC BẮT BUỘC: CHỌN LỚP DỮ LIỆU TRƯỚC -->
-        <div class="mandatory-layer-box">
-          <div class="box-badge">BƯỚC BẮT BUỘC</div>
-          <div class="form-group mb-0">
-            <label class="form-label font-bold text-primary">
-              <i class="bi bi-filter-circle"></i> BẮT BUỘC PHẢI CHỌN LỚP DỮ LIỆU (LAYER) TRƯỚC:
+        <!-- 2. KHU VỰC LỌC VĨ MÔ (TOP BAR) -->
+        <div class="macro-filter-bar">
+          <div class="filter-col layer-col">
+            <label class="filter-label">
+              <span class="required-star">*</span> 1. Chọn Lớp Dữ Liệu (Layer):
             </label>
-            <select
-              class="form-select layer-highlight-select"
-              [(ngModel)]="modalSelectedLayerId"
-              (ngModelChange)="onModalLayerChange()"
-            >
-              <option *ngFor="let layer of projectService.layers()" [value]="layer.id">
-                {{ layer.name }} (Mã: {{ layer.code }} - Tổng: {{ layer.totalCount }} tài sản)
-              </option>
-            </select>
-            <p class="layer-tip">
-              * Việc chọn lớp dữ liệu giúp bản đồ không bị rối, lọc chính xác loại đối tượng trước khi chọn theo tuyến, vẽ vùng hoặc tick chọn.
-            </p>
-          </div>
-        </div>
-
-        <!-- 3 THAO TÁC CHỌN TÀI SẢN -->
-        <div class="selection-methods-bar">
-          <button
-            class="method-btn"
-            [class.active]="modalSelectionMode === 'CHECKLIST'"
-            (click)="setModalSelectionMode('CHECKLIST')"
-          >
-            <i class="bi bi-check2-square"></i>
-            <span>1. Tick chọn từ danh sách & bản đồ</span>
-          </button>
-
-          <button
-            class="method-btn"
-            [class.active]="modalSelectionMode === 'ROUTE'"
-            (click)="setModalSelectionMode('ROUTE')"
-          >
-            <i class="bi bi-signpost-2"></i>
-            <span>2. Chọn theo tuyến đường</span>
-          </button>
-
-          <button
-            class="method-btn"
-            [class.active]="modalSelectionMode === 'POLYGON'"
-            (click)="setModalSelectionMode('POLYGON')"
-          >
-            <i class="bi bi-bounding-box"></i>
-            <span>3. Vẽ vùng khoanh trên bản đồ (Polygon)</span>
-          </button>
-        </div>
-
-        <!-- Bảng điều khiển phụ theo từng thao tác -->
-        <div class="method-sub-panel" *ngIf="modalSelectionMode === 'ROUTE'">
-          <div class="d-flex align-items-center gap-3">
-            <label class="form-label mb-0">Chọn tuyến đường:</label>
-            <select
-              class="form-select flex-1"
-              [(ngModel)]="modalSelectedRoute"
-              (ngModelChange)="applyRouteSelection()"
-            >
-              <option value="Tất cả tuyến đường">Tất cả tuyến đường</option>
-              <option value="Nguyễn Huệ">Tuyến đường Nguyễn Huệ (Phố đi bộ)</option>
-              <option value="Lê Lợi">Tuyến đường Lê Lợi</option>
-              <option value="Tôn Đức Thắng">Tuyến đường Tôn Đức Thắng</option>
-              <option value="Nam Kỳ Khởi Nghĩa">Tuyến đường Nam Kỳ Khởi Nghĩa</option>
-            </select>
-            <button class="btn btn-sm btn-primary" (click)="applyRouteSelection()">Áp dụng chọn cả tuyến</button>
-          </div>
-        </div>
-
-        <div class="method-sub-panel" *ngIf="modalSelectionMode === 'POLYGON'">
-          <div class="d-flex justify-content-between align-items-center">
-            <span><i class="bi bi-cursor text-primary"></i> Bản đồ đã kích hoạt chế độ khoanh vùng khu vực trung tâm Quận 1.</span>
-            <button class="btn btn-sm btn-primary" (click)="drawSimulatedPolygonArea()">
-              <i class="bi bi-pencil"></i> Vẽ lại vùng khoanh
-            </button>
-          </div>
-        </div>
-
-        <!-- Modal Split: Bản đồ GIS bên trái, Danh sách Checklist bên phải -->
-        <div class="modal-map-split">
-          <div class="modal-map-wrap">
-            <div #modalMapContainer class="modal-interactive-map"></div>
-            <div class="map-hint">
-              <i class="bi bi-info-circle"></i> Nhấp vào marker trên bản đồ để chọn hoặc bỏ chọn tài sản
+            <div class="select-wrapper">
+              <select
+                class="form-select macro-select"
+                [(ngModel)]="modalSelectedLayerId"
+                (ngModelChange)="onModalLayerChange()"
+              >
+                <option *ngFor="let layer of projectService.layers()" [value]="layer.id">
+                  {{ layer.name }} (Mã: {{ layer.code }} - {{ layer.totalCount }} tài sản)
+                </option>
+              </select>
             </div>
           </div>
 
-          <div class="modal-list-wrap">
-            <div class="list-header">
-              <span>Danh sách tài sản ({{ getModalLayerAssets().length }})</span>
-              <div class="list-actions">
-                <a (click)="selectAllModalAssets()">Chọn hết</a> |
-                <a (click)="deselectAllModalAssets()">Bỏ chọn</a>
+          <div class="filter-col route-col">
+            <label class="filter-label">
+              <i class="bi bi-signpost-2 text-primary"></i> 2. Chọn Tuyến Đường (FlyTo & Lọc List):
+            </label>
+            <div class="select-wrapper d-flex gap-2">
+              <select
+                class="form-select macro-select flex-1"
+                [(ngModel)]="modalSelectedRoute"
+                (ngModelChange)="onModalRouteChange()"
+              >
+                <option *ngFor="let r of modalRouteList" [value]="r">{{ r }}</option>
+              </select>
+              <button
+                class="btn btn-outline-primary btn-sm btn-select-route-union"
+                title="Cộng dồn toàn bộ tài sản của tuyến này vào giỏ hàng"
+                (click)="selectRouteAssets()"
+              >
+                <i class="bi bi-plus-circle-fill"></i>
+                <span>Chọn cả tuyến</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- WORKSPACE CHÍNH: MAP WORKSPACE (TRÁI) & RIGHT PANEL (PHẢI) -->
+        <div class="modal-workspace-split">
+          <!-- 3. KHU VỰC BẢN ĐỒ & TƯƠNG TÁC (MAP WORKSPACE) -->
+          <div class="map-workspace-col">
+            <div class="map-container-wrapper">
+              <!-- Bản đồ Leaflet -->
+              <div #modalMapContainer class="modal-interactive-map" [class.drawing-lasso]="isDrawingLasso"></div>
+
+              <!-- Thanh công cụ trôi nổi trên Map (Floating Toolbar) -->
+              <div class="map-floating-toolbar">
+                <button
+                  class="toolbar-btn"
+                  [class.active]="modalInteractionMode === 'POINTER' && !isDrawingLasso"
+                  (click)="setInteractionMode('POINTER')"
+                  title="Chế độ Con trỏ: Nhấp vào từng tài sản trên bản đồ để chọn/bỏ chọn cộng dồn"
+                >
+                  <i class="bi bi-cursor-fill"></i>
+                  <span>Con trỏ chọn</span>
+                </button>
+
+                <button
+                  class="toolbar-btn"
+                  [class.active]="modalInteractionMode === 'LASSO' && isDrawingLasso"
+                  (click)="setInteractionMode('LASSO')"
+                  title="Chế độ Vẽ vùng: Nhấp các điểm trên bản đồ để khoanh vùng (Polygon Lasso) gom tài sản"
+                >
+                  <i class="bi bi-bounding-box-circles"></i>
+                  <span>Vẽ vùng (Lasso)</span>
+                </button>
+
+                <button
+                  class="toolbar-btn toolbar-btn-sub"
+                  (click)="quickLassoCenter()"
+                  title="Quét nhanh vùng trung tâm quanh góc nhìn hiện tại"
+                >
+                  <i class="bi bi-lightning-charge-fill text-warning"></i>
+                  <span>Khoanh nhanh</span>
+                </button>
+
+                <button
+                  class="toolbar-btn toolbar-btn-sub"
+                  (click)="toggleMapAssetCodes()"
+                  [class.active]="showMapAssetCodes"
+                  title="Bật/Tắt nhãn mã tài sản trực tiếp trên bản đồ"
+                >
+                  <i class="bi bi-tag-fill"></i>
+                  <span>{{ showMapAssetCodes ? 'Ẩn mã TS' : 'Hiện mã TS' }}</span>
+                </button>
+              </div>
+
+              <!-- Floating Banner khi đang trong chế độ vẽ Lasso -->
+              <div class="lasso-floating-banner" *ngIf="isDrawingLasso">
+                <div class="lasso-info">
+                  <span class="pulse-indicator"></span>
+                  <span>Đang vẽ vùng khoanh (Đã tạo <strong>{{ lassoPoints.length }}</strong> đỉnh đa giác)</span>
+                </div>
+                <div class="lasso-actions">
+                  <button
+                    class="btn btn-xs btn-success font-semibold"
+                    [disabled]="lassoPoints.length < 3"
+                    (click)="completeLassoDrawing()"
+                  >
+                    <i class="bi bi-check2"></i> Chốt & Gom tài sản
+                  </button>
+                  <button class="btn btn-xs btn-outline-danger" (click)="cancelLassoDrawing()">
+                    <i class="bi bi-x"></i> Hủy vẽ
+                  </button>
+                </div>
+              </div>
+
+              <!-- Map Legend & Hint Footer -->
+              <div class="map-status-footer">
+                <div class="legend-pills">
+                  <span class="legend-pill"><span class="dot selected-dot"></span> Đang chọn (Highlight)</span>
+                  <span class="legend-pill"><span class="dot unselected-dot"></span> Chưa chọn</span>
+                  <span class="legend-pill"><span class="dot existing-dot"></span> Đã có trong dự án</span>
+                  <span class="legend-pill"><span class="line-dot"></span> Tuyến đường</span>
+                  <span class="legend-pill"><span class="poly-dot"></span> Đa giác (Vùng)</span>
+                </div>
+                <div class="context-tip">
+                  <i class="bi bi-info-circle"></i> Rà chuột để xem thông tin • Nhấp chuột để cộng dồn vào giỏ hàng
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. KHU VỰC DANH SÁCH & QUẢN LÝ (RIGHT PANEL) -->
+          <div class="right-panel-col">
+            <!-- Header Tab Chuyển Đổi: Danh sách theo tuyến vs Giỏ Hàng đã chọn -->
+            <div class="right-panel-nav">
+              <button
+                class="panel-tab-btn"
+                [class.active]="modalRightTab === 'ROUTE_LIST'"
+                (click)="modalRightTab = 'ROUTE_LIST'"
+              >
+                <i class="bi bi-card-checklist"></i>
+                <span>Theo Tuyến</span>
+                <span class="tab-count-badge">{{ getModalRouteAssets().length }}</span>
+              </button>
+
+              <button
+                class="panel-tab-btn cart-tab-btn"
+                [class.active]="modalRightTab === 'CART'"
+                (click)="modalRightTab = 'CART'"
+              >
+                <i class="bi bi-cart-check-fill"></i>
+                <span>Đã chọn (Giỏ hàng)</span>
+                <span class="tab-count-badge cart-badge">{{ modalSelectedAssetIds.size }}</span>
+              </button>
+            </div>
+
+            <!-- Sub-Header: Tìm kiếm nhanh & Thao tác tuyến / giỏ -->
+            <div class="right-panel-sub-header">
+              <div class="panel-search-box">
+                <i class="bi bi-search"></i>
+                <input
+                  type="text"
+                  class="form-control form-control-sm"
+                  [(ngModel)]="modalSearchKeyword"
+                  placeholder="Lọc nhanh mã, tên, vị trí..."
+                />
+                <button
+                  *ngIf="modalSearchKeyword"
+                  class="btn-clear-search"
+                  (click)="modalSearchKeyword = ''"
+                >
+                  <i class="bi bi-x"></i>
+                </button>
+              </div>
+
+              <!-- Thao tác nhanh cho Tab Tuyến -->
+              <div class="panel-actions-row" *ngIf="modalRightTab === 'ROUTE_LIST'">
+                <span class="route-assets-meta">
+                  <i class="bi bi-geo-alt"></i> {{ modalSelectedRoute }} ({{ getModalRouteAssets().length }})
+                </span>
+                <div class="actions-links">
+                  <a class="action-link-add" (click)="selectRouteAssets()">
+                    <i class="bi bi-plus-lg"></i> Chọn cả tuyến
+                  </a>
+                  <span class="separator">|</span>
+                  <a class="action-link-remove" (click)="deselectRouteAssets()">Bỏ chọn</a>
+                </div>
+              </div>
+
+              <!-- Thao tác nhanh cho Tab Giỏ Hàng -->
+              <div class="panel-actions-row cart-actions-row" *ngIf="modalRightTab === 'CART'">
+                <span class="cart-summary-text">
+                  Tổng cộng: <strong class="text-primary">{{ modalSelectedAssetIds.size }}</strong> tài sản gom được
+                </span>
+                <a
+                  class="action-link-clear-all"
+                  *ngIf="modalSelectedAssetIds.size > 0"
+                  (click)="clearCart()"
+                >
+                  <i class="bi bi-trash"></i> Xóa tất cả
+                </a>
               </div>
             </div>
 
-            <div class="modal-assets-scroll">
-              <div
-                *ngFor="let item of getModalLayerAssets()"
-                class="asset-select-card"
-                [class.selected]="modalSelectedAssetIds.has(item.id)"
-                [class.already-in]="isAssetAlreadyInProject(item.id)"
-                (click)="toggleModalAsset(item.id)"
-              >
-                <div class="checkbox-area">
-                  <input
-                    type="checkbox"
-                    [checked]="modalSelectedAssetIds.has(item.id)"
-                    (click)="$event.stopPropagation()"
-                    (change)="toggleModalAsset(item.id)"
-                  />
-                </div>
-                <div class="asset-info-area">
-                  <div class="code-line">
-                    <span class="code">{{ item.code }}</span>
-                    <span class="badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
-                    <span class="in-proj-badge" *ngIf="isAssetAlreadyInProject(item.id)">Đã có trong DA</span>
+            <!-- Danh sách cuộn -->
+            <div class="right-panel-list-scroll">
+              <!-- TAB 1: DANH SÁCH THEO TUYẾN (ROUTE-BASED LIST) -->
+              <div *ngIf="modalRightTab === 'ROUTE_LIST'" class="assets-stack">
+                <div
+                  *ngFor="let item of getModalRouteAssets()"
+                  class="route-asset-item-card"
+                  [class.is-selected]="modalSelectedAssetIds.has(item.id)"
+                  [class.is-pre-assigned]="isAssetAlreadyInProject(item.id)"
+                  (click)="toggleModalAsset(item.id)"
+                >
+                  <div class="item-checkbox-col" (click)="$event.stopPropagation()">
+                    <input
+                      type="checkbox"
+                      class="custom-checkbox"
+                      [checked]="modalSelectedAssetIds.has(item.id)"
+                      (change)="toggleModalAsset(item.id)"
+                    />
                   </div>
-                  <div class="name">{{ item.name }}</div>
-                  <div class="address"><i class="bi bi-geo-alt"></i> {{ item.address }}</div>
+
+                  <div class="item-body-col">
+                    <div class="item-top-row">
+                      <span class="item-code">{{ item.code }}</span>
+                      <span class="item-badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                      <span class="item-geom-badge" *ngIf="item.geometryType === 'LINE'">Đường (Line)</span>
+                      <span class="item-geom-badge" *ngIf="item.geometryType === 'POLYGON'">Vùng (Polygon)</span>
+                      <span class="item-in-proj-badge" *ngIf="isAssetAlreadyInProject(item.id)">Đã có trong DA</span>
+                    </div>
+
+                    <div class="item-name">{{ item.name }}</div>
+
+                    <div class="item-meta-row">
+                      <span class="meta-route"><i class="bi bi-signpost-2"></i> {{ item.route }}</span>
+                      <span class="meta-chainage" *ngIf="item.chainage"><i class="bi bi-pin-map"></i> {{ item.chainage }}</span>
+                    </div>
+
+                    <div class="item-addr-row" *ngIf="item.address">
+                      <i class="bi bi-geo-alt"></i> {{ item.address }}
+                    </div>
+                  </div>
+
+                  <div class="item-action-col" (click)="$event.stopPropagation()">
+                    <button
+                      class="btn btn-sm btn-icon-ghost"
+                      title="Định vị trên bản đồ"
+                      (click)="panToAsset(item)"
+                    >
+                      <i class="bi bi-geo"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="panel-empty-state" *ngIf="getModalRouteAssets().length === 0">
+                  <i class="bi bi-inbox fs-2 text-muted"></i>
+                  <p class="mt-2 mb-1 fw-medium">Không tìm thấy tài sản nào</p>
+                  <span class="fs-xs text-muted">Thử đổi lớp dữ liệu, tuyến đường hoặc từ khóa tìm kiếm.</span>
+                </div>
+              </div>
+
+              <!-- TAB 2: GIỎ HÀNG ĐÃ CHỌN (SELECTED SUMMARY) -->
+              <div *ngIf="modalRightTab === 'CART'" class="assets-stack">
+                <div
+                  *ngFor="let item of getModalCartAssets()"
+                  class="cart-asset-item-card"
+                  (click)="panToAsset(item)"
+                  title="Nhấp để xem vị trí trên bản đồ"
+                >
+                  <div class="cart-check-indicator">
+                    <i class="bi bi-check-circle-fill text-primary"></i>
+                  </div>
+
+                  <div class="cart-body-col">
+                    <div class="item-top-row">
+                      <span class="item-code">{{ item.code }}</span>
+                      <span class="item-badge" [ngClass]="getLayerBadgeClass(item.layerId)">{{ item.layerName }}</span>
+                      <span class="item-in-proj-badge" *ngIf="isAssetAlreadyInProject(item.id)">Đã có trong DA</span>
+                    </div>
+                    <div class="item-name">{{ item.name }}</div>
+                    <div class="item-meta-row">
+                      <span class="meta-route"><i class="bi bi-signpost-2"></i> {{ item.route }}</span>
+                      <span class="meta-chainage" *ngIf="item.chainage"> • {{ item.chainage }}</span>
+                    </div>
+                  </div>
+
+                  <div class="cart-remove-col" (click)="$event.stopPropagation()">
+                    <button
+                      class="btn btn-sm btn-cart-remove"
+                      title="Xóa tài sản này khỏi giỏ hàng"
+                      (click)="removeFromCart(item.id)"
+                    >
+                      <i class="bi bi-x-lg"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <div class="panel-empty-state" *ngIf="getModalCartAssets().length === 0">
+                  <i class="bi bi-cart-x fs-2 text-muted"></i>
+                  <p class="mt-2 mb-1 fw-medium">Giỏ hàng đang trống</p>
+                  <span class="fs-xs text-muted">
+                    Hãy tick chọn tài sản từ danh sách, click trực tiếp trên bản đồ hoặc dùng công cụ vẽ vùng (Polygon Lasso) để gom tài sản vào giỏ!
+                  </span>
                 </div>
               </div>
             </div>
@@ -990,19 +1188,25 @@
         </div>
       </div>
 
+      <!-- MODAL FOOTER -->
       <div class="modal-footer">
-        <div class="footer-selected-counter">
-          Đã chọn: <strong class="text-primary">{{ modalSelectedAssetIds.size }}</strong> tài sản từ kho tổng
+        <div class="footer-summary-counter">
+          <span>Tổng số tài sản trong giỏ: <strong class="text-primary fs-5">{{ modalSelectedAssetIds.size }}</strong></span>
+          <span class="text-muted ms-2 fs-xs" *ngIf="modalSelectedAssetIds.size > 0">
+            (Cộng dồn chuẩn xác từ Tuyến đường, Vẽ vùng Lasso & Thao tác trực tiếp)
+          </span>
         </div>
-        <button class="btn btn-secondary" (click)="closeAddAssetModal()">Hủy</button>
-        <button
-          class="btn btn-primary"
-          [disabled]="modalSelectedAssetIds.size === 0"
-          (click)="submitMapAssetsToProject()"
-        >
-          <i class="bi bi-check-circle-fill"></i>
-          <span>Xác Nhận Gán Vào Dự Án ({{ modalSelectedAssetIds.size }})</span>
-        </button>
+        <div class="footer-buttons-group">
+          <button class="btn btn-secondary" (click)="closeAddAssetModal()">Hủy</button>
+          <button
+            class="btn btn-primary"
+            [disabled]="modalSelectedAssetIds.size === 0"
+            (click)="submitMapAssetsToProject()"
+          >
+            <i class="bi bi-check2-circle"></i>
+            <span>Xác Nhận Gán Vào Dự Án ({{ modalSelectedAssetIds.size }})</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -1476,3 +1680,72 @@
     </div>
   </div>
 </div>
+
+<!-- MODAL XEM VỊ TRÍ TÀI SẢN & TUYẾN ĐƯỜNG TRÊN BẢN ĐỒ GIS -->
+<div class="modal-backdrop" *ngIf="isAssetLocationModalOpen" (click)="closeAssetLocationModal()">
+  <div class="modal-content modal-lg asset-location-modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="d-flex align-items-center gap-2">
+        <span class="modal-title-icon text-primary fs-5"><i class="bi bi-geo-alt-fill"></i></span>
+        <div>
+          <h3 class="mb-0 fs-6 fw-bold">Vị Trí Tài Sản & Tuyến Đường Trên Bản Đồ GIS</h3>
+          <p class="text-muted fs-xs mb-0">Hệ tọa độ VN2000 / WGS84 • Phóng to không gian & hành lang tuyến quản lý</p>
+        </div>
+      </div>
+      <button class="close-btn" (click)="closeAssetLocationModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <div class="modal-body p-0" *ngIf="selectedAssetForLocation as asset">
+      <!-- Asset Quick Info Bar -->
+      <div class="asset-modal-info-bar">
+        <div class="info-item">
+          <span class="info-label">MÃ TÀI SẢN</span>
+          <span class="asset-code-badge">{{ asset.code }}</span>
+        </div>
+        <div class="info-item flex-grow-1">
+          <span class="info-label">TÊN TÀI SẢN</span>
+          <span class="info-val fw-bold text-dark">{{ asset.name }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">LỚP HẠ TẦNG</span>
+          <span class="badge" [ngClass]="getLayerBadgeClass(asset.layerId)">{{ asset.layerName }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">TUYẾN ĐƯỜNG & LÝ TRÌNH</span>
+          <span class="info-val text-primary fw-semibold">
+            <i class="bi bi-signpost-2 me-1"></i>{{ asset.route }}
+            <span *ngIf="asset.chainage" class="text-muted ms-1">({{ asset.chainage }})</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Map Viewport -->
+      <div class="modal-map-viewport">
+        <div #singleAssetMapContainer class="single-asset-map"></div>
+
+        <!-- Floating Map Legend overlay -->
+        <div class="single-map-legend">
+          <div class="legend-row">
+            <span class="legend-indicator asset-point" [style.background-color]="getLayerColor(asset.layerId)"></span>
+            <span>Tài sản: <b>{{ asset.code }}</b> ({{ asset.geometryType || 'POINT' }})</span>
+          </div>
+          <div class="legend-row" *ngIf="routePolylineCoordinates[asset.route]">
+            <span class="legend-indicator route-line"></span>
+            <span>Hành lang: <b>{{ asset.route }}</b></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer d-flex justify-content-between align-items-center" *ngIf="selectedAssetForLocation as asset">
+      <div class="d-flex align-items-center gap-3 text-muted fs-xs">
+        <span><i class="bi bi-crosshair me-1"></i> Tọa độ GIS: <b>{{ asset.lat | number:'1.4-6' }}, {{ asset.lng | number:'1.4-6' }}</b></span>
+        <span *ngIf="asset.specs"><i class="bi bi-info-circle me-1"></i> Thông số: {{ asset.specs }}</span>
+      </div>
+      <button class="btn btn-secondary btn-sm" (click)="closeAssetLocationModal()">
+        <i class="bi bi-check-lg me-1"></i> Đóng bản đồ
+      </button>
+    </div>
+  </div>
+</div>
+

@@ -54,24 +54,47 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     notes: ''
   };
 
-  // --- TAB 3: ASSET MAPPING STATE ---
+  // --- TAB 3: ASSET MAPPING STATE (MỘT MÀN HÌNH - CHỌN CỘNG DỒN UNION) ---
   isAddAssetModalOpen = false;
-  // BẮT BUỘC có Dropdown Chọn Lớp dữ liệu TRƯỚC KHI thực hiện 3 thao tác
   modalSelectedLayerId: LayerId = 'LIGHTING';
-  modalSelectionMode: 'ROUTE' | 'POLYGON' | 'CHECKLIST' = 'CHECKLIST';
   modalSelectedRoute = 'Tất cả tuyến đường';
-  modalSelectedAssetIds = new Set<string>();
+  modalSelectedAssetIds = new Set<string>(); // Single Source of Truth
+  modalRightTab: 'ROUTE_LIST' | 'CART' = 'ROUTE_LIST';
+  modalSearchKeyword = '';
+  modalInteractionMode: 'POINTER' | 'LASSO' = 'POINTER';
+  isDrawingLasso = false;
+  lassoPoints: L.LatLng[] = [];
+  showMapAssetCodes = true;
   assetSearchKeyword = '';
   assetFilterLayer: string = 'ALL';
   assetFilterStatus: string = 'ALL';
   assetCurrentPage = 1;
   assetPageSize = 5;
 
+  readonly modalRouteList = [
+    'Tất cả tuyến đường',
+    'Tuyến Lê Lợi',
+    'Tuyến Nguyễn Huệ',
+    'Tuyến Nam Kỳ Khởi Nghĩa',
+    'Tuyến Hàm Nghi',
+    'Tuyến Tôn Đức Thắng'
+  ];
+
+  readonly routeCenterCoordinates: Record<string, { center: [number, number]; zoom: number }> = {
+    'Tất cả tuyến đường': { center: [10.7740, 106.7015], zoom: 15 },
+    'Tuyến Lê Lợi': { center: [10.7730, 106.6995], zoom: 17 },
+    'Tuyến Nguyễn Huệ': { center: [10.7745, 106.7025], zoom: 17 },
+    'Tuyến Nam Kỳ Khởi Nghĩa': { center: [10.7750, 106.6980], zoom: 17 },
+    'Tuyến Hàm Nghi': { center: [10.7710, 106.7030], zoom: 17 },
+    'Tuyến Tôn Đức Thắng': { center: [10.7755, 106.7065], zoom: 17 }
+  };
+
   // Leaflet map instances
   private assetTabMap?: L.Map;
   private modalAssetMap?: L.Map;
-  private modalMapMarkers: L.Marker[] = [];
-  private polygonLayer?: L.Polygon;
+  private modalMapLayers: L.Layer[] = [];
+  private drawnLassoPolygon?: L.Polygon;
+  private lassoVertexMarkers: L.CircleMarker[] = [];
 
   // --- TAB 4: TASK MANAGEMENT STATE ---
   isCreateTaskModalOpen = false;
@@ -110,6 +133,46 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
 
   @ViewChild('assetMiniMapContainer') assetMiniMapContainer?: ElementRef;
   @ViewChild('modalMapContainer') modalMapContainer?: ElementRef;
+  @ViewChild('singleAssetMapContainer') singleAssetMapContainer?: ElementRef;
+
+  // --- MODAL XEM VỊ TRÍ TÀI SẢN & TUYẾN ĐƯỜNG TRÊN MAP GIS ---
+  isAssetLocationModalOpen = false;
+  selectedAssetForLocation: Asset | null = null;
+  private singleAssetMap?: L.Map;
+
+  readonly routePolylineCoordinates: Record<string, [number, number][]> = {
+    'Tuyến Nguyễn Huệ': [
+      [10.7768, 106.7016],
+      [10.7758, 106.7027],
+      [10.7745, 106.7038],
+      [10.7733, 106.7049],
+      [10.7718, 106.7062]
+    ],
+    'Tuyến Lê Lợi': [
+      [10.7718, 106.6975],
+      [10.7728, 106.6992],
+      [10.7738, 106.7008],
+      [10.7748, 106.7024],
+      [10.7760, 106.7032]
+    ],
+    'Tuyến Nam Kỳ Khởi Nghĩa': [
+      [10.7785, 106.6950],
+      [10.7755, 106.6980],
+      [10.7730, 106.7005],
+      [10.7705, 106.7030]
+    ],
+    'Tuyến Hàm Nghi': [
+      [10.7702, 106.6990],
+      [10.7712, 106.7025],
+      [10.7728, 106.7065]
+    ],
+    'Tuyến Tôn Đức Thắng': [
+      [10.7810, 106.7075],
+      [10.7775, 106.7062],
+      [10.7745, 106.7070],
+      [10.7715, 106.7068]
+    ]
+  };
 
   ngOnInit() {
     this.route.params.subscribe(params => {
@@ -136,6 +199,9 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     }
     if (this.modalAssetMap) {
       this.modalAssetMap.remove();
+    }
+    if (this.singleAssetMap) {
+      this.singleAssetMap.remove();
     }
   }
 
@@ -421,94 +487,192 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     }
   }
 
-  // --- MODAL: THÊM TÀI SẢN VÀO DỰ ÁN (3 THAO TÁC + DROPDOWN LAYER BẮT BUỘC) ---
+  // --- XEM VỊ TRÍ TÀI SẢN & TUYẾN ĐƯỜNG TRÊN BẢN ĐỒ GIS ---
+  openAssetLocationModal(asset: Asset) {
+    this.selectedAssetForLocation = asset;
+    this.isAssetLocationModalOpen = true;
+    setTimeout(() => this.initSingleAssetMap(asset), 300);
+  }
+
+  closeAssetLocationModal() {
+    this.isAssetLocationModalOpen = false;
+    if (this.singleAssetMap) {
+      this.singleAssetMap.remove();
+      this.singleAssetMap = undefined;
+    }
+    this.selectedAssetForLocation = null;
+  }
+
+  initSingleAssetMap(asset: Asset) {
+    if (!this.singleAssetMapContainer) return;
+
+    if (this.singleAssetMap) {
+      this.singleAssetMap.remove();
+      this.singleAssetMap = undefined;
+    }
+
+    const container = this.singleAssetMapContainer.nativeElement;
+    this.singleAssetMap = L.map(container).setView([asset.lat, asset.lng], 17);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(this.singleAssetMap);
+
+    const bounds: L.LatLngExpression[] = [];
+
+    // 1. Vẽ corridor tuyến đường mà tài sản đang trực thuộc (nếu có trong danh mục)
+    const routeCoords = this.routePolylineCoordinates[asset.route];
+    if (routeCoords && routeCoords.length > 0) {
+      routeCoords.forEach(c => bounds.push(c));
+      const routeLine = L.polyline(routeCoords, {
+        color: '#0284c7',
+        weight: 6,
+        opacity: 0.65,
+        dashArray: '8, 6'
+      }).addTo(this.singleAssetMap);
+
+      routeLine.bindTooltip(`<b>${asset.route}</b> (Hành lang tuyến)`, {
+        sticky: true,
+        direction: 'top'
+      });
+    }
+
+    // 2. Vẽ hình học của chính tài sản (Line / Polygon / Point)
+    if (asset.geometryType === 'LINE' && asset.startPoint && asset.endPoint) {
+      const lineCoords: [number, number][] = [
+        [asset.startPoint.lat, asset.startPoint.lng],
+        [asset.endPoint.lat, asset.endPoint.lng]
+      ];
+      bounds.push(lineCoords[0], lineCoords[1]);
+      L.polyline(lineCoords, {
+        color: '#2563eb',
+        weight: 8,
+        opacity: 0.95
+      }).addTo(this.singleAssetMap);
+    } else if (asset.geometryType === 'POLYGON' && asset.polygonCoords && asset.polygonCoords.length >= 3) {
+      asset.polygonCoords.forEach(c => bounds.push(c));
+      L.polygon(asset.polygonCoords, {
+        color: '#2563eb',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.45,
+        weight: 3
+      }).addTo(this.singleAssetMap);
+    }
+
+    // 3. Marker trọng tâm của tài sản
+    bounds.push([asset.lat, asset.lng]);
+    const pinColor = this.getLayerColor(asset.layerId);
+    const icon = L.divIcon({
+      className: 'single-asset-pin',
+      html: `
+        <div style="display: flex; flex-direction: column; align-items: center;">
+          <div style="background-color: ${pinColor}; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 14px; border: 3px solid white; box-shadow: 0 0 0 4px rgba(37,99,235,0.35), 0 3px 8px rgba(0,0,0,0.35);">
+            <i class="bi bi-geo-alt-fill"></i>
+          </div>
+          <span style="background: rgba(15,23,42,0.85); color: white; font-size: 10px; font-weight: 700; font-family: monospace; padding: 1px 6px; border-radius: 4px; margin-top: 3px; white-space: nowrap;">${asset.code}</span>
+        </div>
+      `,
+      iconSize: [80, 52],
+      iconAnchor: [40, 17]
+    });
+
+    const marker = L.marker([asset.lat, asset.lng], { icon }).addTo(this.singleAssetMap);
+    marker.bindPopup(`
+      <div style="font-family: Inter, sans-serif; font-size: 12px; line-height: 1.5; padding: 2px;">
+        <div style="font-weight: 700; color: #1e293b; font-size: 13px;">${asset.name}</div>
+        <div style="color: #64748b;">Mã TS: <b>${asset.code}</b></div>
+        <div style="color: #64748b;">Tuyến đường: <b>${asset.route}</b> ${asset.chainage ? ' • ' + asset.chainage : ''}</div>
+        <div style="color: #64748b;">Vị trí: ${asset.address || 'Đang cập nhật'}</div>
+        <div style="color: #64748b;">Thông số KT: <i>${asset.specs || 'Theo hồ sơ'}</i></div>
+      </div>
+    `).openPopup();
+
+    if (bounds.length > 0) {
+      this.singleAssetMap.fitBounds(L.latLngBounds(bounds), { padding: [50, 50], maxZoom: 18 });
+    }
+
+    setTimeout(() => this.singleAssetMap?.invalidateSize(), 300);
+  }
+
+  // --- MODAL: THÊM TÀI SẢN VÀO DỰ ÁN (MỘT MÀN HÌNH - CHỌN CỘNG DỒN UNION) ---
   openAddAssetModal() {
     this.isAddAssetModalOpen = true;
     this.modalSelectedAssetIds.clear();
-    this.modalSelectionMode = 'CHECKLIST';
+
+    // Bài toán "Mở lại": Load toàn bộ tài sản đã có trong dự án này từ Database / Service
+    const existing = this.projectService.masterAssets().filter(a => a.assignedProjectId === this.projectId);
+    existing.forEach(a => this.modalSelectedAssetIds.add(a.id));
+
+    // Nếu đã có sẵn tài sản -> mở ngay tab Giỏ Hàng để Cán bộ kiểm soát ngay lập tức!
+    this.modalRightTab = existing.length > 0 ? 'CART' : 'ROUTE_LIST';
+    this.modalInteractionMode = 'POINTER';
+    this.cancelLassoDrawing();
+
     setTimeout(() => this.initModalAssetMap(), 300);
   }
 
   closeAddAssetModal() {
-    this.isAddAssetModalOpen = false;
+    this.cancelLassoDrawing();
     if (this.modalAssetMap) {
       this.modalAssetMap.remove();
       this.modalAssetMap = undefined;
     }
+    this.isAddAssetModalOpen = false;
   }
 
+  // Khu vực Lọc Vĩ mô (Top Bar): Thay đổi Lớp dữ liệu (Layer)
   onModalLayerChange() {
-    // When layer changes, re-filter pool and update map markers
-    this.modalSelectedAssetIds.clear();
-    if (this.modalSelectionMode === 'ROUTE') {
-      this.applyRouteSelection();
-    }
+    // Nguyên lý Union: KHÔNG xóa modalSelectedAssetIds khi đổi layer!
     this.updateModalMapMarkers();
   }
 
-  setModalSelectionMode(mode: 'ROUTE' | 'POLYGON' | 'CHECKLIST') {
-    this.modalSelectionMode = mode;
-    if (mode === 'ROUTE') {
-      this.applyRouteSelection();
-    } else if (mode === 'POLYGON') {
-      this.drawSimulatedPolygonArea();
+  // Khu vực Lọc Vĩ mô (Top Bar): Khi Cán bộ chọn Tuyến đường -> FlyTo và cập nhật danh sách
+  onModalRouteChange() {
+    const target = this.routeCenterCoordinates[this.modalSelectedRoute] || this.routeCenterCoordinates['Tất cả tuyến đường'];
+    if (this.modalAssetMap) {
+      this.modalAssetMap.flyTo(target.center, target.zoom, {
+        duration: 1.2
+      });
     }
+    // Tự động chuyển qua tab Danh sách theo tuyến để xem ngay dữ liệu tĩnh của tuyến đó
+    this.modalRightTab = 'ROUTE_LIST';
   }
 
-  // Thao tác 1: Chọn theo tuyến đường
-  applyRouteSelection() {
-    const pool = this.getModalLayerAssets();
-    this.modalSelectedAssetIds.clear();
-
-    pool.forEach(a => {
-      if (this.modalSelectedRoute === 'Tất cả tuyến đường' || a.route.includes(this.modalSelectedRoute)) {
+  // Chọn cộng dồn (Union) toàn bộ tài sản thuộc tuyến đang chọn vào giỏ hàng
+  selectRouteAssets() {
+    const list = this.getModalRouteAssets();
+    let newlyAdded = 0;
+    list.forEach(a => {
+      if (!this.modalSelectedAssetIds.has(a.id)) {
         this.modalSelectedAssetIds.add(a.id);
+        newlyAdded++;
       }
     });
-
+    this.toastService.info(
+      'Cộng dồn theo tuyến',
+      `Đã thêm ${newlyAdded} tài sản thuộc "${this.modalSelectedRoute}" vào giỏ hàng`
+    );
     this.updateModalMapMarkers();
   }
 
-  // Thao tác 2: Vẽ vùng trên bản đồ (Polygon selection)
-  drawSimulatedPolygonArea() {
-    if (!this.modalAssetMap) return;
-
-    if (this.polygonLayer) {
-      this.modalAssetMap.removeLayer(this.polygonLayer);
-    }
-
-    // Bounding polygon around District 1 core
-    const polygonCoords: L.LatLngExpression[] = [
-      [10.7765, 106.7015],
-      [10.7770, 106.7045],
-      [10.7735, 106.7055],
-      [10.7725, 106.7020]
-    ];
-
-    this.polygonLayer = L.polygon(polygonCoords, {
-      color: '#2563eb',
-      fillColor: '#3b82f6',
-      fillOpacity: 0.2,
-      weight: 2,
-      dashArray: '5, 5'
-    }).addTo(this.modalAssetMap);
-
-    // Pick assets inside this polygon bounds
-    const pool = this.getModalLayerAssets();
-    this.modalSelectedAssetIds.clear();
-
-    const bounds = this.polygonLayer.getBounds();
-    pool.forEach(a => {
-      if (bounds.contains([a.lat, a.lng])) {
-        this.modalSelectedAssetIds.add(a.id);
+  // Bỏ chọn toàn bộ tài sản thuộc tuyến đang xem khỏi giỏ hàng
+  deselectRouteAssets() {
+    const list = this.getModalRouteAssets();
+    let removed = 0;
+    list.forEach(a => {
+      if (this.modalSelectedAssetIds.has(a.id)) {
+        this.modalSelectedAssetIds.delete(a.id);
+        removed++;
       }
     });
-
-    this.toastService.info('Vẽ vùng GIS', `Hệ thống tự động gom ${this.modalSelectedAssetIds.size} tài sản thuộc lớp dữ liệu trong phạm vi khoanh vùng`);
+    this.toastService.info(
+      'Bỏ chọn tuyến',
+      `Đã bỏ ${removed} tài sản thuộc "${this.modalSelectedRoute}" khỏi giỏ hàng`
+    );
     this.updateModalMapMarkers();
   }
 
-  // Thao tác 3: Tick checklist
+  // Two-way binding: Toggle checkbox / click card / click map
   toggleModalAsset(assetId: string) {
     if (this.modalSelectedAssetIds.has(assetId)) {
       this.modalSelectedAssetIds.delete(assetId);
@@ -518,20 +682,195 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     this.updateModalMapMarkers();
   }
 
-  selectAllModalAssets() {
-    const pool = this.getModalLayerAssets();
-    pool.forEach(a => this.modalSelectedAssetIds.add(a.id));
+  // Xóa từng tài sản trong Giỏ hàng
+  removeFromCart(assetId: string) {
+    this.modalSelectedAssetIds.delete(assetId);
     this.updateModalMapMarkers();
   }
 
-  deselectAllModalAssets() {
+  // Xóa toàn bộ giỏ hàng
+  clearCart() {
     this.modalSelectedAssetIds.clear();
+    this.toastService.info('Làm trống giỏ hàng', 'Đã bỏ chọn tất cả tài sản');
     this.updateModalMapMarkers();
   }
 
-  getModalLayerAssets(): Asset[] {
-    // Only show assets of the SELECTED LAYER that are in master map
-    return this.projectService.masterAssets().filter(a => a.layerId === this.modalSelectedLayerId);
+  // Danh sách tài sản hiển thị tĩnh theo Tuyến (Right Panel Tab 1)
+  getModalRouteAssets(): Asset[] {
+    const list = this.projectService.masterAssets().filter(a => {
+      const matchLayer = a.layerId === this.modalSelectedLayerId;
+      const matchRoute = this.modalSelectedRoute === 'Tất cả tuyến đường' || a.route.includes(this.modalSelectedRoute);
+      return matchLayer && matchRoute;
+    });
+
+    if (!this.modalSearchKeyword.trim()) return list;
+    const kw = this.modalSearchKeyword.toLowerCase();
+    return list.filter(a =>
+      a.name.toLowerCase().includes(kw) ||
+      a.code.toLowerCase().includes(kw) ||
+      (a.address && a.address.toLowerCase().includes(kw)) ||
+      (a.chainage && a.chainage.toLowerCase().includes(kw))
+    );
+  }
+
+  // Danh sách tài sản trong Giỏ hàng (Right Panel Tab 2)
+  getModalCartAssets(): Asset[] {
+    const all = this.projectService.masterAssets().filter(a => this.modalSelectedAssetIds.has(a.id));
+    if (!this.modalSearchKeyword.trim()) return all;
+    const kw = this.modalSearchKeyword.toLowerCase();
+    return all.filter(a =>
+      a.name.toLowerCase().includes(kw) ||
+      a.code.toLowerCase().includes(kw) ||
+      a.route.toLowerCase().includes(kw) ||
+      a.layerName.toLowerCase().includes(kw)
+    );
+  }
+
+  // Pan bản đồ tới tài sản cụ thể khi click từ Right Panel
+  panToAsset(asset: Asset) {
+    if (this.modalAssetMap) {
+      this.modalAssetMap.flyTo([asset.lat, asset.lng], 18, { duration: 0.8 });
+    }
+  }
+
+  // Toggles hiển thị nhãn mã text trực tiếp trên bản đồ
+  toggleMapAssetCodes() {
+    this.showMapAssetCodes = !this.showMapAssetCodes;
+    this.updateModalMapMarkers();
+  }
+
+  // --- CÔNG CỤ TƯƠNG TÁC BẢN ĐỒ: CON TRỎ & VẼ VÙNG (POLYGON LASSO) ---
+  setInteractionMode(mode: 'POINTER' | 'LASSO') {
+    if (mode === 'LASSO') {
+      this.startLassoDrawing();
+    } else {
+      this.cancelLassoDrawing();
+    }
+  }
+
+  startLassoDrawing() {
+    this.modalInteractionMode = 'LASSO';
+    this.isDrawingLasso = true;
+    this.lassoPoints = [];
+    this.clearLassoVisuals();
+    this.toastService.info(
+      'Chế độ Vẽ vùng (Polygon Lasso)',
+      'Nhấp chuột các điểm trên bản đồ để tạo vùng khoanh. Nhấp "Chốt & Gom" khi xong.'
+    );
+  }
+
+  cancelLassoDrawing() {
+    this.clearLassoVisuals();
+    this.isDrawingLasso = false;
+    this.lassoPoints = [];
+    this.modalInteractionMode = 'POINTER';
+  }
+
+  private clearLassoVisuals() {
+    if (this.modalAssetMap) {
+      if (this.drawnLassoPolygon) {
+        this.modalAssetMap.removeLayer(this.drawnLassoPolygon);
+        this.drawnLassoPolygon = undefined;
+      }
+      this.lassoVertexMarkers.forEach(m => this.modalAssetMap?.removeLayer(m));
+      this.lassoVertexMarkers = [];
+    }
+  }
+
+  handleMapClickForLasso(latlng: L.LatLng) {
+    this.lassoPoints.push(latlng);
+
+    // Vẽ điểm đỉnh
+    const vertex = L.circleMarker(latlng, {
+      radius: 5,
+      color: '#2563eb',
+      fillColor: '#ffffff',
+      fillOpacity: 1,
+      weight: 2
+    }).addTo(this.modalAssetMap!);
+    this.lassoVertexMarkers.push(vertex);
+
+    // Cập nhật đường polygon preview
+    if (this.drawnLassoPolygon) {
+      this.modalAssetMap?.removeLayer(this.drawnLassoPolygon);
+    }
+
+    if (this.lassoPoints.length >= 2) {
+      this.drawnLassoPolygon = L.polygon(this.lassoPoints, {
+        color: '#2563eb',
+        fillColor: '#3b82f6',
+        fillOpacity: 0.25,
+        weight: 2,
+        dashArray: '5, 5'
+      }).addTo(this.modalAssetMap!);
+    }
+  }
+
+  // Hoàn tất vẽ & Gom tài sản trong vùng đa giác (Ray-casting Algorithm - Union vào Set)
+  completeLassoDrawing() {
+    if (this.lassoPoints.length < 3) {
+      this.toastService.warning('Chưa đủ điểm', 'Vui lòng chọn ít nhất 3 điểm trên bản đồ để tạo vùng khoanh đa giác');
+      return;
+    }
+
+    const poly = this.lassoPoints.map(p => [p.lat, p.lng] as [number, number]);
+    const candidates = this.projectService.masterAssets().filter(a => a.layerId === this.modalSelectedLayerId);
+    let newlyAdded = 0;
+
+    candidates.forEach(ast => {
+      let isInside = false;
+      if (ast.geometryType === 'LINE' && ast.startPoint && ast.endPoint) {
+        isInside = this.isPointInsidePolygon([ast.startPoint.lat, ast.startPoint.lng], poly) ||
+                   this.isPointInsidePolygon([ast.endPoint.lat, ast.endPoint.lng], poly);
+      } else {
+        isInside = this.isPointInsidePolygon([ast.lat, ast.lng], poly);
+      }
+
+      if (isInside) {
+        if (!this.modalSelectedAssetIds.has(ast.id)) {
+          this.modalSelectedAssetIds.add(ast.id);
+          newlyAdded++;
+        }
+      }
+    });
+
+    this.toastService.success(
+      'Gom vùng Polygon Lasso thành công',
+      `Đã gom thêm ${newlyAdded} tài sản vào giỏ hàng (Tổng hiện có: ${this.modalSelectedAssetIds.size} tài sản)`
+    );
+
+    this.cancelLassoDrawing();
+    this.updateModalMapMarkers();
+  }
+
+  // Quét nhanh vùng trung tâm dự án (Quick Lasso Preset)
+  quickLassoCenter() {
+    if (!this.modalAssetMap) return;
+    const center = this.modalAssetMap.getCenter();
+    const dLat = 0.0022;
+    const dLng = 0.0032;
+
+    this.lassoPoints = [
+      L.latLng(center.lat + dLat, center.lng - dLng),
+      L.latLng(center.lat + dLat, center.lng + dLng),
+      L.latLng(center.lat - dLat, center.lng + dLng),
+      L.latLng(center.lat - dLat, center.lng - dLng)
+    ];
+
+    this.completeLassoDrawing();
+  }
+
+  // Thuật toán Ray-Casting kiểm tra tọa độ điểm nằm trong đa giác
+  private isPointInsidePolygon(point: [number, number], vs: [number, number][]): boolean {
+    const x = point[0], y = point[1];
+    let inside = false;
+    for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+      const xi = vs[i][0], yi = vs[i][1];
+      const xj = vs[j][0], yj = vs[j][1];
+      const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
   }
 
   isAssetAlreadyInProject(assetId: string): boolean {
@@ -539,6 +878,7 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
     return a?.assignedProjectId === this.projectId;
   }
 
+  // Khởi tạo Leaflet Map cho Modal
   initModalAssetMap() {
     if (!this.modalMapContainer) return;
 
@@ -549,63 +889,163 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
       attribution: '&copy; OpenStreetMap'
     }).addTo(this.modalAssetMap);
 
+    // Lắng nghe sự kiện click trên bản đồ (phục vụ vẽ Polygon Lasso)
+    this.modalAssetMap.on('click', (e: L.LeafletMouseEvent) => {
+      if (this.isDrawingLasso) {
+        this.handleMapClickForLasso(e.latlng);
+      }
+    });
+
     this.updateModalMapMarkers();
   }
 
+  // Vẽ các đối tượng hình học (Point, Line, Polygon) kèm Highlight theo Set
   updateModalMapMarkers() {
     if (!this.modalAssetMap) return;
 
-    this.modalMapMarkers.forEach(m => this.modalAssetMap?.removeLayer(m));
-    this.modalMapMarkers = [];
+    // Xóa các layers cũ của tài sản
+    this.modalMapLayers.forEach(l => this.modalAssetMap?.removeLayer(l));
+    this.modalMapLayers = [];
 
-    const assets = this.getModalLayerAssets();
+    // Hiển thị tất cả tài sản của Layer hiện tại + những tài sản đang có trong Giỏ Hàng
+    const currentLayerAssets = this.projectService.masterAssets().filter(a => a.layerId === this.modalSelectedLayerId);
+    const cartAssets = this.projectService.masterAssets().filter(a => this.modalSelectedAssetIds.has(a.id));
+    
+    // Gộp danh sách không trùng lặp
+    const mapPoolMap = new Map<string, Asset>();
+    currentLayerAssets.forEach(a => mapPoolMap.set(a.id, a));
+    cartAssets.forEach(a => mapPoolMap.set(a.id, a));
+    const assets = Array.from(mapPoolMap.values());
+
     const bounds: L.LatLngExpression[] = [];
 
     assets.forEach(ast => {
       const isSelected = this.modalSelectedAssetIds.has(ast.id);
       const isAlreadyIn = ast.assignedProjectId === this.projectId;
 
-      const bg = isSelected ? '#2563eb' : (isAlreadyIn ? '#94a3b8' : '#f59e0b');
-      const border = isSelected ? '3px solid #ffffff' : '2px solid #ffffff';
+      // 1. TÀI SẢN DẠNG ĐƯỜNG (LINE)
+      if (ast.geometryType === 'LINE' && ast.startPoint && ast.endPoint) {
+        const lineCoords: [number, number][] = [
+          [ast.startPoint.lat, ast.startPoint.lng],
+          [ast.endPoint.lat, ast.endPoint.lng]
+        ];
+        bounds.push(lineCoords[0], lineCoords[1]);
 
-      const icon = L.divIcon({
-        className: 'modal-pin',
-        html: `
-          <div style="background-color: ${bg}; width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; border: ${border}; box-shadow: 0 2px 6px rgba(0,0,0,0.35); cursor: pointer;">
-            ${isSelected ? '✓' : '●'}
+        const polyline = L.polyline(lineCoords, {
+          color: isSelected ? '#2563eb' : (isAlreadyIn ? '#475569' : '#8b5cf6'),
+          weight: isSelected ? 7 : 4,
+          opacity: isSelected ? 0.95 : 0.65,
+          dashArray: isSelected ? undefined : '6, 4'
+        }).addTo(this.modalAssetMap!);
+
+        polyline.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (!this.isDrawingLasso) {
+            this.toggleModalAsset(ast.id);
+          }
+        });
+
+        this.bindHoverTooltip(polyline, ast, isSelected, isAlreadyIn);
+        this.modalMapLayers.push(polyline);
+      }
+      // 2. TÀI SẢN DẠNG VÙNG (POLYGON)
+      else if (ast.geometryType === 'POLYGON' && ast.polygonCoords && ast.polygonCoords.length >= 3) {
+        ast.polygonCoords.forEach(c => bounds.push(c));
+
+        const polygon = L.polygon(ast.polygonCoords, {
+          color: isSelected ? '#2563eb' : '#10b981',
+          fillColor: isSelected ? '#3b82f6' : '#10b981',
+          fillOpacity: isSelected ? 0.45 : 0.2,
+          weight: isSelected ? 3 : 2
+        }).addTo(this.modalAssetMap!);
+
+        polygon.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (!this.isDrawingLasso) {
+            this.toggleModalAsset(ast.id);
+          }
+        });
+
+        this.bindHoverTooltip(polygon, ast, isSelected, isAlreadyIn);
+        this.modalMapLayers.push(polygon);
+      }
+      // 3. TÀI SẢN DẠNG ĐIỂM (POINT)
+      else {
+        bounds.push([ast.lat, ast.lng]);
+
+        const bg = isSelected ? '#2563eb' : (isAlreadyIn ? '#64748b' : this.getLayerColor(ast.layerId));
+        const shadow = isSelected ? '0 0 0 4px rgba(37,99,235,0.35), 0 3px 8px rgba(0,0,0,0.35)' : '0 2px 5px rgba(0,0,0,0.25)';
+        const size = isSelected ? 28 : 22;
+
+        const iconHtml = `
+          <div class="custom-map-pin" style="display: flex; flex-direction: column; align-items: center;">
+            <div style="background-color: ${bg}; width: ${size}px; height: ${size}px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px; border: 2.5px solid #ffffff; box-shadow: ${shadow}; cursor: pointer; transition: all 0.2s ease;">
+              ${isSelected ? '✓' : '●'}
+            </div>
+            ${this.showMapAssetCodes ? `<span style="background: rgba(255,255,255,0.92); color: #1e293b; font-size: 10px; font-weight: 700; font-family: monospace; padding: 1px 4px; border-radius: 3px; border: 1px solid #cbd5e1; margin-top: 2px; white-space: nowrap; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">${ast.code}</span>` : ''}
           </div>
-        `,
-        iconSize: [26, 26],
-        iconAnchor: [13, 13]
-      });
+        `;
 
-      const marker = L.marker([ast.lat, ast.lng], { icon }).addTo(this.modalAssetMap!);
-      bounds.push([ast.lat, ast.lng]);
+        const icon = L.divIcon({
+          className: 'modal-asset-marker',
+          html: iconHtml,
+          iconSize: [60, 40],
+          iconAnchor: [30, 11]
+        });
 
-      marker.on('click', () => {
-        this.toggleModalAsset(ast.id);
-      });
+        const marker = L.marker([ast.lat, ast.lng], { icon }).addTo(this.modalAssetMap!);
 
-      marker.bindPopup(`
-        <div style="font-family: Inter, sans-serif; font-size: 12px;">
-          <b>${ast.code}</b>: ${ast.name}<br/>
-          <span style="color: #64748b;">${ast.address}</span><br/>
-          <div style="margin-top: 6px;">
-            <button style="padding: 3px 8px; font-size: 11px; border-radius: 4px; border: 1px solid #3b82f6; background: ${isSelected ? '#ef4444' : '#2563eb'}; color: white; cursor: pointer;">
-              ${isSelected ? 'Bỏ chọn' : 'Chọn gán'}
-            </button>
-          </div>
-        </div>
-      `);
+        marker.on('click', (e) => {
+          L.DomEvent.stopPropagation(e);
+          if (!this.isDrawingLasso) {
+            this.toggleModalAsset(ast.id);
+          }
+        });
 
-      this.modalMapMarkers.push(marker);
+        this.bindHoverTooltip(marker, ast, isSelected, isAlreadyIn);
+        this.modalMapLayers.push(marker);
+      }
     });
 
-    if (bounds.length > 0) {
-      this.modalAssetMap.fitBounds(L.latLngBounds(bounds), { padding: [20, 20] });
+    if (bounds.length > 0 && !this.isDrawingLasso) {
+      this.modalAssetMap.fitBounds(L.latLngBounds(bounds), { padding: [30, 30], maxZoom: 17 });
     }
   }
 
+  // Gắn Hover Tooltip định danh thông tin trực quan khi rà chuột qua đối tượng
+  private bindHoverTooltip(layer: L.Layer, ast: Asset, isSelected: boolean, isAlreadyIn: boolean) {
+    const statusText = isSelected
+      ? '<span style="color: #2563eb; font-weight: bold;">✓ Đang được chọn trong giỏ hàng</span>'
+      : (isAlreadyIn
+          ? '<span style="color: #64748b;">📌 Đã có sẵn trong dự án này</span>'
+          : '<span style="color: #059669;">⭕ Chưa chọn (Nhấp để cộng dồn)</span>');
+
+    const tooltipHtml = `
+      <div style="font-family: Inter, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 3px;">
+          <strong style="font-family: monospace; font-size: 12.5px; color: #1e293b;">${ast.code}</strong>
+          <span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1px 6px; border-radius: 10px; font-weight: 600;">${ast.layerName}</span>
+        </div>
+        <div style="font-weight: 600; color: #0f172a; margin-bottom: 3px;">${ast.name}</div>
+        <div style="font-size: 11px; color: #64748b; margin-bottom: 3px;">
+          <i class="bi bi-signpost-2"></i> ${ast.route} ${ast.chainage ? ' • ' + ast.chainage : ''}
+        </div>
+        <div style="font-size: 11px; margin-top: 4px; padding-top: 4px; border-top: 1px dashed #cbd5e1;">
+          ${statusText}
+        </div>
+      </div>
+    `;
+
+    layer.bindTooltip(tooltipHtml, {
+      sticky: true,
+      direction: 'top',
+      opacity: 0.98,
+      className: 'asset-map-hover-popup'
+    });
+  }
+
+
+  // Xác nhận gán toàn bộ tài sản trong biến Set vào dự án (Đồng bộ chuẩn xác)
   submitMapAssetsToProject() {
     const selectedIds = Array.from(this.modalSelectedAssetIds);
     if (selectedIds.length === 0) {
@@ -613,11 +1053,11 @@ export class ProjectDetailComponent implements OnInit, OnDestroy, AfterViewInit 
       return;
     }
 
-    this.projectService.mapAssetsToProject(this.projectId, selectedIds);
+    this.projectService.syncProjectAssets(this.projectId, selectedIds);
     this.loadProject();
     this.toastService.success(
       'Gán tài sản thành công',
-      `Đã ánh xạ (map) ${selectedIds.length} tài sản từ Master Map vào dự án ${this.project?.code}`
+      `Đã đồng bộ ${selectedIds.length} tài sản vào dự án ${this.project?.code}`
     );
     this.closeAddAssetModal();
     setTimeout(() => this.refreshAssetTabMap(), 200);

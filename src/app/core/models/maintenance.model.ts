@@ -91,13 +91,14 @@ export interface Asset {
   assignedTaskTitle?: string; // Legacy compatibility
   beforePhotoUrl?: string; // Legacy compatibility
   completedPhotoUrl?: string; // Legacy compatibility
-  // Hỗ trợ tài sản dạng tuyến / dạng đường (Line / Polyline)
-  geometryType?: 'POINT' | 'LINE';
+  // Hỗ trợ tài sản dạng tuyến / dạng đường / dạng vùng (Line / Polyline / Polygon)
+  geometryType?: 'POINT' | 'LINE' | 'POLYGON';
   lengthMeters?: number; // Chiều dài đoạn tuyến (m)
   widthMeters?: number;  // Chiều rộng mặt đường (m)
   areaSquareMeters?: number; // Diện tích mặt đường / thi công (m2)
   startPoint?: { lat: number; lng: number; label?: string };
   endPoint?: { lat: number; lng: number; label?: string };
+  polygonCoords?: [number, number][]; // Danh sách tọa độ đa giác [[lat, lng], ...]
 }
 
 export type TaskStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'PAUSED' | 'COMPLETED';
@@ -128,14 +129,15 @@ export interface TaskAssetItem {
   notes?: string; // Đánh giá hiện trạng / ghi chú thi công
   photoBeforeUrl?: string; // Ảnh hiện trạng trước khi làm
   photoAfterUrl?: string; // Ảnh kết quả sau khi hoàn thành
-  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường
-  geometryType?: 'POINT' | 'LINE';
+  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường / dạng vùng
+  geometryType?: 'POINT' | 'LINE' | 'POLYGON';
   lengthMeters?: number;
   widthMeters?: number;
   areaSquareMeters?: number;
   chainage?: string;
   startPoint?: { lat: number; lng: number; label?: string };
   endPoint?: { lat: number; lng: number; label?: string };
+  polygonCoords?: [number, number][];
 }
 
 export interface FieldPhoto {
@@ -189,8 +191,8 @@ export interface ReportItem {
   cost: number;
   inspectorApproved: boolean;
   inspectorNotes?: string;
-  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường
-  geometryType?: 'POINT' | 'LINE';
+  // Thuộc tính hình học cho tài sản dạng tuyến / dạng đường / dạng vùng
+  geometryType?: 'POINT' | 'LINE' | 'POLYGON';
   lengthMeters?: number;
   widthMeters?: number;
   areaSquareMeters?: number;
